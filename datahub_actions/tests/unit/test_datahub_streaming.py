@@ -1,6 +1,9 @@
 from typing import Any
 
-from datahub_actions.actions.dummy.dummy_action import DummyAction, DummyActionConfig
+from datahub_actions.actions.hello_world.hello_world import (
+    HelloWorldAction,
+    HelloWorldConfig,
+)
 from datahub_actions.api.action_core import (
     EntityType,
     RawMetadataChange,
@@ -22,12 +25,12 @@ from datahub_actions.source.datahub_streaming import handle_mcl
 
 
 def get_dummy_action(subscribe_to_all=False):
-    return DummyAction(
-        DummyActionConfig(subscribe_to_all=subscribe_to_all), None  # type: ignore
+    return HelloWorldAction(
+        HelloWorldConfig(subscribe_to_all=subscribe_to_all), None  # type: ignore
     )
 
 
-def assert_only_one_event_present(event_name: str, action: DummyAction) -> Any:
+def assert_only_one_event_present(event_name: str, action: HelloWorldAction) -> Any:
     for event in get_recognized_events():
         event_objs = get_helper_for_event(event).from_semantic_changes(
             None,
