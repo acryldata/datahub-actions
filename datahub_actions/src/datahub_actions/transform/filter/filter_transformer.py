@@ -34,6 +34,8 @@ class FilterTransformer(Transformer):
         config = FilterTransformerConfig.parse_obj(config_dict)
         return cls(config)
 
-    def transform(self, event: EnvelopedEvent) -> Optional[EnvelopedEvent]:
-        # TODO: Implement the events filter!
-        return event
+    def transform(self, env_event: EnvelopedEvent) -> Optional[EnvelopedEvent]:
+        for key, val in self.config.fields.items():
+            if val != env_event.event.get(key):
+                return None
+        return env_event
