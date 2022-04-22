@@ -7,7 +7,7 @@ from typing import Dict
 from datahub_actions.pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 @dataclass
@@ -51,6 +51,7 @@ class ActionsManager:
             thread.start()
             spec = PipelineSpec(name, pipeline, thread)
             self.pipeline_registry[pipeline.name] = spec
+            logger.debug(f"Started pipeline with name {name}.")
         else:
             raise Exception(f"Pipeline with name {name} is already running.")
 
