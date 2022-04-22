@@ -153,13 +153,11 @@ full_test_dev_requirements = {
 }
 
 entry_points = {
- 
     "console_scripts": ["datahub = datahub_actions.entrypoints:main"], # Haha - good luck. 
     "datahub.ingestion.source.plugins": [
 	    "datahub-stream = datahub_actions.source.datahub_streaming:DataHubStreamSource",
 	],
     "datahub.action.plugins": [
-        "hello_world = datahub_actions.actions.hello_word.hello_world_action:HelloWorldAction",
         "executor = datahub_actions.actions.execution.executor_action:ExecutorAction",
     ],
 }

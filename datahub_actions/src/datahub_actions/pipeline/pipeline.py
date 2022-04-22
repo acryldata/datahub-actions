@@ -3,12 +3,13 @@ import traceback
 from typing import Any, Dict, List, Optional
 
 from datahub.configuration import ConfigModel
-from datahub.graph.client import DatahubClientConfig, DataHubGraph
+from datahub.ingestion.graph.client import DatahubClientConfig, DataHubGraph
 
 from datahub_actions.action.action import Action
 from datahub_actions.action.action_registry import action_registry
 from datahub_actions.api.action_core import AcrylDataHubGraph
 from datahub_actions.pipeline.context import ActionContext
+from datahub_actions.events.event import EnvelopedEvent
 from datahub_actions.source.event_source import EventSource
 from datahub_actions.source.event_source_registry import event_source_registry
 from datahub_actions.transform.event_transformer import Transformer
@@ -188,29 +189,32 @@ class Pipeline:
         enveloped_events = self.source.events()
 
         for enveloped_event in enveloped_events:
-            if self.shutdown is True:
-                self.source.close()
-                logger.info(f"Stopping Actions Pipeline with name {self.name}")
-                return
+            # First, transform the event.
+            transformed_event = self._transform_event(enveloped_event)
 
-            # First, invoke transformers
-            curr_event = enveloped_event
-            for transformer in self.transforms:
-                transformed_event = transformer.transform(curr_event)
-                if curr_event is None:
-                    # Short circuit event. Skip to ack phase.
-                    self.source.ack(enveloped_event)
-                    continue
-                else:
-                    curr_event = transformed_event  # type: ignore
-
-            # Finally, invoke the action
-            self.action.act(curr_event)
+            # Then, invoke the action if the event is non-null.
+            if transformed_event is not None:
+                self.action.act(transformed_event)
 
             # Finally, ack the event.
             self.source.ack(enveloped_event)
+
+    def _transform_event(self, enveloped_event: EnvelopedEvent):
+        curr_event = enveloped_event
+        for transformer in self.transforms:
+            transformed_event = transformer.transform(curr_event)
+            if transformed_event is None:
+                # Short circuit event. Skip to ack phase.
+                self.source.ack(enveloped_event)
+                return None
+            else:
+                curr_event = transformed_event  # type: ignore
+        return curr_event
 
     # Terminate the pipeline.
     def stop(self):
         logger.info(f"Preparing to stop Actions Pipeline with name {self.name}")
         self.shutdown = True
+        self.source.close()
+        logger.info(f"Stopping Actions Pipeline with name {self.name}")
+

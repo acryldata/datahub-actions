@@ -26,7 +26,10 @@ from datahub.configuration.kafka import KafkaConsumerConnectionConfig
 from datahub.emitter.mce_builder import DEFAULT_ENV
 
 # DataHub imports.
-from datahub.metadata.schema_classes import MetadataChangeProposalClass
+from datahub.metadata.schema_classes import (
+    GenericAspectClass,
+    MetadataChangeProposalClass,
+)
 
 from datahub_actions.events.event import EnvelopedEvent, EventType
 
@@ -51,12 +54,34 @@ def build_kafka_meta(msg: Any) -> dict:
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
 def build_metadata_change_log_event(msg: Any) -> MetadataChangeProposalClass:
-    pass
+    # TODO: Map MCL to MetadataChangeLogClass
+    value: dict = msg.value()
+    return MetadataChangeProposalClass(
+        value["entityType"],
+        value["changeType"],
+        None,  # TODO
+        value["entityUrn"],
+        None,  # TODO
+        value["aspectName"],
+        GenericAspectClass(value["aspect"][1]["contentType"], value["aspect"][1]["value"])
+        if value["aspect"] is not None
+        else None,
+        None,  # TODO
+    )
 
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
 def build_platform_event(msg: Any) -> dict:
-    pass
+    return MetadataChangeProposalClass(
+        "test",
+        "UPSERT",
+        None,  # TODO
+        "urn:li:dataset:1",
+        None,  # TODO
+        "aspect",
+        None,
+        None,  # TODO
+    )
 
 
 class KafkaEventSourceConfig(ConfigModel):
@@ -69,6 +94,7 @@ class KafkaEventSourceConfig(ConfigModel):
 @dataclass
 class KafkaEventSource(EventSource):
 
+    running = False
     source_config: KafkaEventSourceConfig
 
     def __init__(self, config: KafkaEventSourceConfig):
@@ -104,6 +130,7 @@ class KafkaEventSource(EventSource):
         return cls(config)
 
     def events(self) -> Iterable[EnvelopedEvent]:
+        self.running = True
         topic_routes = self.source_config.topic_routes
         assert "mae" in topic_routes
         assert "mcl" in topic_routes
@@ -114,8 +141,7 @@ class KafkaEventSource(EventSource):
         self.consumer.subscribe(
             [topic_routes["mae"], topic_routes["mcl"], topic_routes["pe"]]
         )
-        running = True
-        while running:
+        while self.running:
             msg = self.consumer.poll(timeout=1.0)
             if msg is None:
                 continue
@@ -138,14 +164,16 @@ class KafkaEventSource(EventSource):
                 # yield from self._handle_mae(msg.value())
                 # Create a record envelope from MAE.
                 if msg.topic() == topic_routes["mcl"]:
+                    print(msg.value())
                     yield from self._handle_mcl(msg)
                 elif msg.topic() == topic_routes["pe"]:
+                    print(msg.value())
                     yield from self._handle_pe(msg)
                     # yield from self._handle_mcl(msg.value())
                     # Create a record envelope from PE.
 
     def _handle_mcl(self, msg: Any) -> Iterable[EnvelopedEvent]:
-        metadata_change_log_event = build_metadata_change_log_event(msg.value())
+        metadata_change_log_event = build_metadata_change_log_event(msg)
         kafka_meta = build_kafka_meta(msg)
         yield EnvelopedEvent(
             EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta
@@ -153,7 +181,11 @@ class KafkaEventSource(EventSource):
 
     def _handle_pe(self, msg: Any) -> Iterable[EnvelopedEvent]:
         # TODO
-        pass
+        event = build_platform_event(msg)
+        kafka_meta = build_kafka_meta(msg)
+        yield EnvelopedEvent(
+            EventType.METADATA_CHANGE_LOG, event, kafka_meta
+        )
         # platform_event = build_platform_event(msg.value())
         # kafka_meta = build_kafka_meta(msg)
         # yield EnvelopedEvent(EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta)
@@ -161,6 +193,7 @@ class KafkaEventSource(EventSource):
 
     def close(self) -> None:
         if self.consumer:
+            self.running = False
             self.consumer.close()
 
     def ack(self, event: EnvelopedEvent) -> None:

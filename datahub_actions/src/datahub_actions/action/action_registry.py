@@ -19,4 +19,4 @@ from datahub_actions.action.hello_world.hello_world import HelloWorldAction
 
 action_registry = PluginRegistry[Action]()
 action_registry.register_from_entrypoint("datahub.action.plugins")
-action_registry.register("helloworld", HelloWorldAction)
+action_registry.register("hello_world", HelloWorldAction)

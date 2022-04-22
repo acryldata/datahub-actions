@@ -24,7 +24,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class HelloWorldConfig(BaseModel):
-    subscribe_to_all: bool = False
+    casing: str = "lower"
 
 
 class HelloWorldAction(Action):
@@ -37,4 +37,4 @@ class HelloWorldAction(Action):
         self.config = config
 
     def act(self, event: EnvelopedEvent) -> None:
-        logger.info(f"Hello world! Received event {event}\n")
+        logger.info(f"Hello world! Received event {event} {self.config}\n")

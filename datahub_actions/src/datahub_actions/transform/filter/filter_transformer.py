@@ -31,4 +31,5 @@ class FilterTransformer(Transformer):
         return cls(config)
 
     def transform(self, event: EnvelopedEvent) -> Optional[EnvelopedEvent]:
+        # TODO: Implement the events filter!
         return event

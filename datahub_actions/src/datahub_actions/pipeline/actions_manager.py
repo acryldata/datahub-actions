@@ -47,7 +47,7 @@ class ActionsManager:
     def start_pipeline(self, name: str, pipeline: Pipeline) -> None:
         logger.debug(f"Attempting to start pipeline with name {name}...")
         if name not in self.pipeline_registry:
-            thread = Thread(target=run_pipeline, args=(pipeline))
+            thread = Thread(target=run_pipeline, args=([pipeline]))
             thread.start()
             spec = PipelineSpec(name, pipeline, thread)
             self.pipeline_registry[pipeline.name] = spec
@@ -78,9 +78,10 @@ class ActionsManager:
             raise Exception(f"No pipeline with name {name} found.")
 
     # Terminate all running pipelines.
-    def terminate_all(self, name: str) -> None:
+    def terminate_all(self) -> None:
         logger.debug("Attempting to terminate all running pipelines...")
         # Stop each running pipeline.
-        for name in self.pipeline_registry:
+        names = list(self.pipeline_registry.keys()).copy()
+        for name in names:
             self.terminate_pipeline(name)
         logger.debug("Successfully terminated all running pipelines.")

@@ -31,6 +31,7 @@ source: # Where the events are sources from.
       mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
 filter: 
+  # No op currently. 
   type: "EntityChangeEvent" # Each event type has their own fields. 
   payload: 
     operation: "ADD"

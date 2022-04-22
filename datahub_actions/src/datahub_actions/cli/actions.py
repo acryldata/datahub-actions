@@ -1,10 +1,10 @@
 import logging
 import pathlib
 import signal
+import time
 from typing import Any, List
 
 import click
-import readchar
 from datahub.configuration.config_loader import load_config_file
 
 import datahub_actions as datahub_actions_package
@@ -45,7 +45,7 @@ def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
 @click.option("-p", "--pipeline", required=False, type=str, multiple=True)
 @click.option("-c", "--config", required=False, type=str)
 @click.pass_context
-def actions(ctx: Any, pipeline_configs: List[str], config: str) -> None:
+def actions(ctx: Any, pipeline: List[str], config: str) -> None:
     """Execute one or more Actions Pipelines"""
 
     logger.info(
@@ -53,7 +53,7 @@ def actions(ctx: Any, pipeline_configs: List[str], config: str) -> None:
     )
 
     # Statically configured to be registered with the Actions Manager.
-    pipelines = []
+    pipelines: List[Pipeline] = []
 
     logger.debug("Creating Actions Pipelines...")
 
@@ -65,8 +65,8 @@ def actions(ctx: Any, pipeline_configs: List[str], config: str) -> None:
             pipelines.append(pipeline)
 
     # If individual pipeline config was provided, create a pipeline from it.
-    if pipeline_configs is not None:
-        for pipeline_config in pipeline_configs:
+    if pipeline is not None:
+        for pipeline_config in pipeline:
             pipeline_config_file = pathlib.Path(pipeline_config)
             pipeline_config_dict = load_config_file(pipeline_config_file)
             # Now, instantiate the pipeline.
@@ -75,26 +75,22 @@ def actions(ctx: Any, pipeline_configs: List[str], config: str) -> None:
     logger.debug("Starting Actions Pipelines...")
 
     # Start each pipeline.
-    for pipeline in pipelines:
-        actions_manager.start_pipeline(pipeline.name, pipeline)
+    for p in pipelines:
+        actions_manager.start_pipeline(p.name, p)
 
     logger.debug("Started all Action Pipelines.")
+
+    # Now, simply run forever.
+    while True:
+        # Todo: improve this. 
+        time.sleep(5)
 
 
 # Handle shutdown signal.
 def handle_shutdown(signum, frame):
-    msg = "Are you sure you want to stop running Actions Pipelines? y/n "
-    print(msg, end="", flush=True)
-    res = readchar.readchar()
-    if res == "y":
-        print("")
-        logger.info("Terminating all running Action Pipelines...")
-        actions_manager.terminate_all()
-        exit(1)
-    else:
-        print("", end="\r", flush=True)
-        print(" " * len(msg), end="", flush=True)  # clear the printed line
-        print("    ", end="\r", flush=True)
+    logger.info("Terminating all running Action Pipelines...")
+    actions_manager.terminate_all()
+    exit(1)
 
 
 signal.signal(signal.SIGINT, handle_shutdown)
