@@ -2,9 +2,8 @@ from abc import abstractmethod
 from typing import Iterable
 
 from datahub.ingestion.api.closeable import Closeable
-from datahub.ingestion.api.common import RecordEnvelope
 
-from datahub_actions.events.event import Event
+from datahub_actions.events.event import EnvelopedEvent
 
 
 class EventSource(Closeable):
@@ -14,13 +13,13 @@ class EventSource(Closeable):
         pass
 
     @abstractmethod
-    def events(self) -> Iterable[RecordEnvelope[Event]]:
+    def events(self) -> Iterable[EnvelopedEvent]:
         """
         Returns an iterable of DataHub events
         """
 
     @abstractmethod
-    def ack(self, event: RecordEnvelope[Event]):
+    def ack(self, event: EnvelopedEvent):
         """
         Ack the processing of an individual event
         """

@@ -13,9 +13,7 @@
 # limitations under the License.
 from abc import abstractmethod
 
-from datahub.ingestion.api.common import RecordEnvelope
-
-from datahub_actions.events.event import Event
+from datahub_actions.events.event import EnvelopedEvent
 from datahub_actions.pipeline.context import ActionContext
 
 
@@ -29,6 +27,6 @@ class Action:
         pass
 
     @abstractmethod
-    def act(self, event: RecordEnvelope[Event]):
+    def act(self, event: EnvelopedEvent):
         """Take Action on DataHub events"""
         pass

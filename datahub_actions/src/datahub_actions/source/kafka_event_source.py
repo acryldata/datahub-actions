@@ -21,13 +21,14 @@ import confluent_kafka
 from confluent_kafka import KafkaError, KafkaException
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from confluent_kafka.schema_registry.schema_registry_client import SchemaRegistryClient
-
-# DataHub imports.
-from datahub.metadata.schema_classes import MetadataChangeProposalClass
 from datahub.configuration import ConfigModel
 from datahub.configuration.kafka import KafkaConsumerConnectionConfig
 from datahub.emitter.mce_builder import DEFAULT_ENV
-from datahub.ingestion.api.common import RecordEnvelope
+
+# DataHub imports.
+from datahub.metadata.schema_classes import MetadataChangeProposalClass
+
+from datahub_actions.events.event import EnvelopedEvent, EventType
 
 # May or may not need these.
 from datahub_actions.pipeline.context import ActionContext
@@ -35,6 +36,7 @@ from datahub_actions.source.event_source import Event, EventSource
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 # Converts a Kafka Message to a Kafka Metadata Dictionary.
 def build_kafka_meta(msg) -> dict:
@@ -46,13 +48,15 @@ def build_kafka_meta(msg) -> dict:
         }
     }
 
-# Converts a Kafka Message to a MetadataChangeLogEvent
-def build_metadata_change_log_event(msg) -> MetadataChangeProposalClass:
-    return
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
-def build_platform_event(msg) -> Any:
-    return {}
+def build_metadata_change_log_event(msg) -> MetadataChangeProposalClass:
+    pass
+
+
+# Converts a Kafka Message to a MetadataChangeLogEvent
+def build_platform_event(msg):
+    pass
 
 
 class KafkaEventSourceConfig(ConfigModel):
@@ -100,7 +104,7 @@ class KafkaEventSource(EventSource):
         ), "topic_routes must contain an entry for pe (the platform event topic)"
         return cls(config)
 
-    def events(self) -> Iterable[RecordEnvelope[Event]]:
+    def events(self) -> Iterable[EnvelopedEvent]:
         topic_routes = self.source_config.topic_routes
         assert "mae" in topic_routes
         assert "mcl" in topic_routes
@@ -141,21 +145,26 @@ class KafkaEventSource(EventSource):
                     # yield from self._handle_mcl(msg.value())
                     # Create a record envelope from PE.
 
-    def _handle_mcl(self, msg) -> RecordEnv:
+    def _handle_mcl(self, msg):
         metadata_change_log_event = build_metadata_change_log_event(msg.value())
         kafka_meta = build_kafka_meta(msg)
-        yield RecordEnvelope(metadata_change_log_event, kafka_meta)
+        yield EnvelopedEvent(
+            EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta
+        )
 
     def _handle_pe(self, msg):
-        platform_event = build_platform_event(msg.value())
-        kafka_meta = build_kafka_meta(msg)
-        yield RecordEnvelope(platform_event, kafka_meta)
+        # TODO
+        pass
+        # platform_event = build_platform_event(msg.value())
+        # kafka_meta = build_kafka_meta(msg)
+        # yield EnvelopedEvent(EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta)
+        # yield EnvelopedEvent(platform_event, kafka_meta)
 
     def close(self):
         if self.consumer:
             self.consumer.close()
 
-    def ack(self, event: RecordEnvelope[Event]):
+    def ack(self, event: EnvelopedEvent):
         # Somehow we need to ack this particular event.
         # TODO: Commit offsets to kafka explicitly.
         pass

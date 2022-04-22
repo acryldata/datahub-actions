@@ -2,9 +2,8 @@ import logging
 from typing import Any, Dict, Optional
 
 from datahub.configuration import ConfigModel
-from datahub.ingestion.api.common import RecordEnvelope
 
-from datahub_actions.events.event import Event
+from datahub_actions.events.event import EnvelopedEvent
 from datahub_actions.pipeline.context import ActionContext
 from datahub_actions.transform.event_transformer import Transformer
 
@@ -31,7 +30,5 @@ class FilterTransformer(Transformer):
         config = FilterTransformerConfig.parse_obj(config)
         return cls(config)
 
-    def transform(
-        self, event: RecordEnvelope[Event]
-    ) -> Optional[RecordEnvelope[Event]]:
+    def transform(self, event: EnvelopedEvent) -> Optional[EnvelopedEvent]:
         return event

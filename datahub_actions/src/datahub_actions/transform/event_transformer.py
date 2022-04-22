@@ -1,9 +1,7 @@
 from abc import abstractmethod
 from typing import Optional
 
-from datahub.ingestion.api.common import RecordEnvelope
-
-from datahub_actions.events.event import Event
+from datahub_actions.events.event import EnvelopedEvent
 from datahub_actions.pipeline.pipeline import PipelineContext
 
 
@@ -14,9 +12,7 @@ class Transformer:
         pass
 
     @abstractmethod
-    def transform(
-        self, event: RecordEnvelope[Event]
-    ) -> Optional[RecordEnvelope[Event]]:
+    def transform(self, event: EnvelopedEvent) -> Optional[EnvelopedEvent]:
         """
         Transform a single event.
         """
