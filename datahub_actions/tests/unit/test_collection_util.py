@@ -1,4 +1,4 @@
-from datahub_actions.actions.utils.collection_util import flatten_dict, flatten_list
+from datahub_actions.action.utils.collection_util import flatten_dict, flatten_list
 
 
 def test_flatten_dict():

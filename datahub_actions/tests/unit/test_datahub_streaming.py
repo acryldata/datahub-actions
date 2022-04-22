@@ -1,6 +1,6 @@
 from typing import Any
 
-from datahub_actions.actions.hello_world.hello_world import (
+from datahub_actions.action.hello_world.hello_world import (
     HelloWorldAction,
     HelloWorldConfig,
 )

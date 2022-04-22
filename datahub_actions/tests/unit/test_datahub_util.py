@@ -1,4 +1,4 @@
-from datahub_actions.actions.utils.datahub_util import (
+from datahub_actions.action.utils.datahub_util import (
     entity_type_from_urn,
     pretty_anything_urn,
     pretty_dataset_urn,

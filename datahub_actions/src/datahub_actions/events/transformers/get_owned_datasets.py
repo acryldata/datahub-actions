@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List
 
-from datahub_actions.actions.utils.datahub_util import sanitize_user_urn_for_search
+from datahub_actions.action.utils.datahub_util import sanitize_user_urn_for_search
 from datahub_actions.api.action_core import (
     ActionContext,
     EntityType,

@@ -1,6 +1,6 @@
 from typing import List
 
-from datahub_actions.actions.utils.collection_util import flatten_dict
+from datahub_actions.action.utils.collection_util import flatten_dict
 from datahub_actions.api.action_core import (
     ActionContext,
     InvocationParams,
