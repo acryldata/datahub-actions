@@ -14,7 +14,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Callable, Dict, Iterable, List
+from typing import Any, Dict, Iterable
 
 # Confluent important
 import confluent_kafka
@@ -32,14 +32,14 @@ from datahub_actions.events.event import EnvelopedEvent, EventType
 
 # May or may not need these.
 from datahub_actions.pipeline.context import ActionContext
-from datahub_actions.source.event_source import Event, EventSource
+from datahub_actions.source.event_source import EventSource
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 # Converts a Kafka Message to a Kafka Metadata Dictionary.
-def build_kafka_meta(msg) -> dict:
+def build_kafka_meta(msg: Any) -> dict:
     return {
         "kafka": {
             "topic": msg.topic(),
@@ -50,12 +50,12 @@ def build_kafka_meta(msg) -> dict:
 
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
-def build_metadata_change_log_event(msg) -> MetadataChangeProposalClass:
+def build_metadata_change_log_event(msg: Any) -> MetadataChangeProposalClass:
     pass
 
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
-def build_platform_event(msg):
+def build_platform_event(msg: Any) -> dict:
     pass
 
 
@@ -70,7 +70,6 @@ class KafkaEventSourceConfig(ConfigModel):
 class KafkaEventSource(EventSource):
 
     source_config: KafkaEventSourceConfig
-    callbacks: List[Callable[Event]]
 
     def __init__(self, config: KafkaEventSourceConfig):
         self.source_config = config
@@ -94,7 +93,7 @@ class KafkaEventSource(EventSource):
         )
 
     @classmethod
-    def create(cls, config_dict, ctx: ActionContext):
+    def create(cls, config_dict: dict, ctx: ActionContext) -> "EventSource":
         config = KafkaEventSourceConfig.parse_obj(config_dict)
         assert (
             "mcl" in config.topic_routes
@@ -145,14 +144,14 @@ class KafkaEventSource(EventSource):
                     # yield from self._handle_mcl(msg.value())
                     # Create a record envelope from PE.
 
-    def _handle_mcl(self, msg):
+    def _handle_mcl(self, msg: Any) -> Iterable[EnvelopedEvent]:
         metadata_change_log_event = build_metadata_change_log_event(msg.value())
         kafka_meta = build_kafka_meta(msg)
         yield EnvelopedEvent(
             EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta
         )
 
-    def _handle_pe(self, msg):
+    def _handle_pe(self, msg: Any) -> Iterable[EnvelopedEvent]:
         # TODO
         pass
         # platform_event = build_platform_event(msg.value())
@@ -160,11 +159,11 @@ class KafkaEventSource(EventSource):
         # yield EnvelopedEvent(EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta)
         # yield EnvelopedEvent(platform_event, kafka_meta)
 
-    def close(self):
+    def close(self) -> None:
         if self.consumer:
             self.consumer.close()
 
-    def ack(self, event: EnvelopedEvent):
+    def ack(self, event: EnvelopedEvent) -> None:
         # Somehow we need to ack this particular event.
         # TODO: Commit offsets to kafka explicitly.
         pass

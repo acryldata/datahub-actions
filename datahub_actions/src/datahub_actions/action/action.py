@@ -27,6 +27,6 @@ class Action:
         pass
 
     @abstractmethod
-    def act(self, event: EnvelopedEvent):
+    def act(self, event: EnvelopedEvent) -> None:
         """Take Action on DataHub events"""
         pass

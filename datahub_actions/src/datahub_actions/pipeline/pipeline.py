@@ -1,6 +1,6 @@
 import logging
 import traceback
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from datahub.configuration import ConfigModel
 from datahub.graph.client import DatahubClientConfig, DataHubGraph
@@ -26,17 +26,17 @@ logger.setLevel(logging.INFO)
 
 class SourceConfig(ConfigModel):
     type: str
-    config: Optional[dict]
+    config: Optional[Dict[str, Any]]
 
 
 class TransformConfig(ConfigModel):
     type: str
-    config: Optional[dict]
+    config: Optional[Dict[str, Any]]
 
 
 class FilterConfig(ConfigModel):
     event_type: str
-    config: Optional[dict]
+    fields: Dict[str, Any]
 
 
 class ActionConfig(ConfigModel):
@@ -64,7 +64,10 @@ def create_event_source(source_config: SourceConfig, ctx: ActionContext) -> Even
         logger.debug(
             f"Attempting to instantiate new Event Source of type {source_config.type}.."
         )
-        return event_source_class.create(source_config.config, ctx)
+        event_source_config = (
+            source_config.config if source_config.config is not None else {}
+        )
+        return event_source_class.create(event_source_config, ctx)
     except Exception as e:
         logger.error(
             f"Caught exception while attempting to instantiate Event Source of type {source_config.type}: {traceback.format_exc(limit=3)}"
@@ -82,7 +85,7 @@ def create_filter_transformer(
         filter_transformer_config = FilterTransformerConfig(
             event_type=filter_config.event_type, fields=filter_config.fields
         )
-        return FilterTransformer.create(filter_transformer_config)
+        return FilterTransformer(filter_transformer_config)
     except Exception as e:
         logger.error(
             f"Caught exception while attempting to instantiate Filter transformer: {traceback.format_exc(limit=3)}"
@@ -101,7 +104,10 @@ def create_transformer(
         logger.debug(
             f"Attempting to instantiate new Transformer of type {transform_config.type}.."
         )
-        return transformer_class.create(transform_config.config, ctx)
+        transformer_config = (
+            transform_config.config if transform_config.config is not None else {}
+        )
+        return transformer_class.create(transformer_config, ctx)
     except Exception as e:
         logger.error(
             f"Caught exception while attempting to instantiate Transformer: {traceback.format_exc(limit=3)}"
@@ -118,7 +124,10 @@ def create_action(action_config: ActionConfig, ctx: ActionContext) -> Action:
         logger.debug(
             f"Attempting to instantiate new Action of type {action_config.type}.."
         )
-        return action_class.create(action_config.config, ctx)
+        action_config_dict = (
+            action_config.config if action_config.config is not None else {}
+        )
+        return action_class.create(action_config_dict, ctx)
     except Exception as e:
         logger.error(
             f"Caught exception while attempting to instantiate Action: {traceback.format_exc(limit=3)}"
@@ -143,7 +152,7 @@ class Pipeline:
         source: EventSource,
         transforms: List[Transformer],
         action: Action,
-    ) -> "Pipeline":
+    ) -> None:
         self.name = name
         self.source = source
         self.transforms = transforms
@@ -176,24 +185,30 @@ class Pipeline:
 
     # Launch the Pipeline.
     def start(self):
-        enveloped_events = self.event_source.events()
+        enveloped_events = self.source.events()
 
         for enveloped_event in enveloped_events:
             if self.shutdown is True:
-                self.event_source.close()
+                self.source.close()
                 logger.info(f"Stopping Actions Pipeline with name {self.name}")
                 return
 
             # First, invoke transformers
             curr_event = enveloped_event
             for transformer in self.transforms:
-                curr_event = transformer.transform(curr_event)
+                transformed_event = transformer.transform(curr_event)
+                if curr_event is None:
+                    # Short circuit event. Skip to ack phase.
+                    self.source.ack(enveloped_event)
+                    continue
+                else:
+                    curr_event = transformed_event  # type: ignore
 
             # Finally, invoke the action
             self.action.act(curr_event)
 
             # Finally, ack the event.
-            self.event_source.ack(enveloped_event)
+            self.source.ack(enveloped_event)
 
     # Terminate the pipeline.
     def stop(self):

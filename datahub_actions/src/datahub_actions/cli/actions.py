@@ -19,11 +19,11 @@ actions_manager = ActionsManager()
 actions_manager.init()
 
 
-def config_to_pipelines(config: dict):
+def config_to_pipelines(config: dict) -> List[Pipeline]:
     raise Exception("Config based pipeline creation not yet supported.")
 
 
-def pipeline_config_to_pipeline(pipeline_config: dict):
+def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
     logger.debug(
         f"Attempting to create Actions Pipeline using config {pipeline_config}"
     )
@@ -59,7 +59,9 @@ def actions(ctx: Any, pipeline_configs: List[str], config: str) -> None:
 
     # If the master config was provided, simply convert it into a list of pipelines.
     if config is not None:
-        for pipeline in config_to_pipelines(config):
+        config_file = pathlib.Path(config)
+        config_dict = load_config_file(config_file)
+        for pipeline in config_to_pipelines(config_dict):
             pipelines.append(pipeline)
 
     # If individual pipeline config was provided, create a pipeline from it.

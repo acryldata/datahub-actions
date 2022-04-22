@@ -22,12 +22,12 @@ class FilterTransformer(Transformer):
     fields: Dict[str, Any]
 
     def __init__(self, config: FilterTransformerConfig):
-        self.type = config.type
+        self.event_type = config.event_type
         self.fields = config.fields
 
     @classmethod
-    def create(cls, config: dict, ctx: ActionContext) -> "FilterTransformer":
-        config = FilterTransformerConfig.parse_obj(config)
+    def create(cls, config_dict: dict, ctx: ActionContext) -> "Transformer":
+        config = FilterTransformerConfig.parse_obj(config_dict)
         return cls(config)
 
     def transform(self, event: EnvelopedEvent) -> Optional[EnvelopedEvent]:

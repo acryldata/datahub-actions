@@ -1,8 +1,11 @@
+from dataclasses import dataclass
+from enum import Enum
+
 from datahub.metadata.schema_classes import DictWrapper
 
 
 # The set of event types made available for consumption via the DataHub Actions Framework.
-class EventType:
+class EventType(Enum):
     # High-level event emitted important changes are made to an Entity on DataHub.
     ENTITY_CHANGE_EVENT = "EntityChangeEvent"
 
@@ -19,12 +22,13 @@ class Event(DictWrapper):
 
 
 # An object representation of the actual change event.
+@dataclass
 class EnvelopedEvent:
     # The type of the event.
     event_type: EventType
 
     # The event itself
-    event: Event
+    event: DictWrapper
 
     # Arbitrary metadata about the event
     meta: dict

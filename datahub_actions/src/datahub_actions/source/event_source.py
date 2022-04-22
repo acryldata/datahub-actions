@@ -4,12 +4,13 @@ from typing import Iterable
 from datahub.ingestion.api.closeable import Closeable
 
 from datahub_actions.events.event import EnvelopedEvent
+from datahub_actions.pipeline.context import ActionContext
 
 
 class EventSource(Closeable):
     @classmethod
     @abstractmethod
-    def create(cls, config_dict: dict) -> "EventSource":
+    def create(cls, config_dict: dict, ctx: ActionContext) -> "EventSource":
         pass
 
     @abstractmethod
@@ -19,7 +20,7 @@ class EventSource(Closeable):
         """
 
     @abstractmethod
-    def ack(self, event: EnvelopedEvent):
+    def ack(self, event: EnvelopedEvent) -> None:
         """
         Ack the processing of an individual event
         """

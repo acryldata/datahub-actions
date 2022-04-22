@@ -13,12 +13,11 @@
 # limitations under the License.
 import logging
 
-from datahub.ingestion.api.common import RecordEnvelope
 from pydantic import BaseModel
 
 from datahub_actions.action.action import Action
-from datahub_actions.events.event import Event
-from datahub_actions.pipeline.pipeline import PipelineContext
+from datahub_actions.events.event import EnvelopedEvent
+from datahub_actions.pipeline.context import ActionContext
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -30,12 +29,12 @@ class HelloWorldConfig(BaseModel):
 
 class HelloWorldAction(Action):
     @classmethod
-    def create(cls, config_dict: dict, ctx: PipelineContext) -> "Action":
+    def create(cls, config_dict: dict, ctx: ActionContext) -> "Action":
         action_config = HelloWorldConfig.parse_obj(config_dict or {})
         return cls(action_config, ctx)
 
-    def __init__(self, config: HelloWorldConfig, ctx: PipelineContext):
+    def __init__(self, config: HelloWorldConfig, ctx: ActionContext):
         self.config = config
 
-    def act(self, event: RecordEnvelope[Event]):
+    def act(self, event: EnvelopedEvent) -> None:
         logger.info(f"Hello world! Received event {event}\n")

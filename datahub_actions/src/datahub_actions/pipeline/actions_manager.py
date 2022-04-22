@@ -23,7 +23,7 @@ class PipelineSpec:
 
 
 # Start a pipeline
-def run_pipeline(pipeline: Pipeline):
+def run_pipeline(pipeline: Pipeline) -> None:
     try:
         pipeline.start()
     except Exception:
@@ -44,7 +44,7 @@ class ActionsManager:
         pass
 
     # Start a new Action Pipeline.
-    def start_pipeline(self, name: str, pipeline: Pipeline):
+    def start_pipeline(self, name: str, pipeline: Pipeline) -> None:
         logger.debug(f"Attempting to start pipeline with name {name}...")
         if name not in self.pipeline_registry:
             thread = Thread(target=run_pipeline, args=(pipeline))
@@ -55,7 +55,7 @@ class ActionsManager:
             raise Exception(f"Pipeline with name {name} is already running.")
 
     # Terminate a running Action Pipeline.
-    def terminate_pipeline(self, name: str):
+    def terminate_pipeline(self, name: str) -> None:
         logger.debug(f"Attempting to terminate pipeline with name {name}...")
         if name in self.pipeline_registry:
             # First, stop the pipeline.
@@ -78,7 +78,7 @@ class ActionsManager:
             raise Exception(f"No pipeline with name {name} found.")
 
     # Terminate all running pipelines.
-    def terminate_all(self, name: str):
+    def terminate_all(self, name: str) -> None:
         logger.debug("Attempting to terminate all running pipelines...")
         # Stop each running pipeline.
         for name in self.pipeline_registry:
