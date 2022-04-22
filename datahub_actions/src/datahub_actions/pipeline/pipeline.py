@@ -8,8 +8,8 @@ from datahub.ingestion.graph.client import DatahubClientConfig, DataHubGraph
 from datahub_actions.action.action import Action
 from datahub_actions.action.action_registry import action_registry
 from datahub_actions.api.action_core import AcrylDataHubGraph
-from datahub_actions.pipeline.context import ActionContext
 from datahub_actions.events.event import EnvelopedEvent
+from datahub_actions.pipeline.context import ActionContext
 from datahub_actions.source.event_source import EventSource
 from datahub_actions.source.event_source_registry import event_source_registry
 from datahub_actions.transform.event_transformer import Transformer
@@ -199,7 +199,9 @@ class Pipeline:
             # Finally, ack the event.
             self.source.ack(enveloped_event)
 
-    def _transform_event(self, enveloped_event: EnvelopedEvent):
+    def _transform_event(
+        self, enveloped_event: EnvelopedEvent
+    ) -> Optional[EnvelopedEvent]:
         curr_event = enveloped_event
         for transformer in self.transforms:
             transformed_event = transformer.transform(curr_event)
@@ -217,4 +219,3 @@ class Pipeline:
         self.shutdown = True
         self.source.close()
         logger.info(f"Stopping Actions Pipeline with name {self.name}")
-

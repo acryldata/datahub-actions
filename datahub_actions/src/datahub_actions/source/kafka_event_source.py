@@ -63,7 +63,9 @@ def build_metadata_change_log_event(msg: Any) -> MetadataChangeProposalClass:
         value["entityUrn"],
         None,  # TODO
         value["aspectName"],
-        GenericAspectClass(value["aspect"][1]["contentType"], value["aspect"][1]["value"])
+        GenericAspectClass(
+            value["aspect"][1]["contentType"], value["aspect"][1]["value"]
+        )
         if value["aspect"] is not None
         else None,
         None,  # TODO
@@ -71,7 +73,7 @@ def build_metadata_change_log_event(msg: Any) -> MetadataChangeProposalClass:
 
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
-def build_platform_event(msg: Any) -> dict:
+def build_platform_event(msg: Any) -> MetadataChangeProposalClass:
     return MetadataChangeProposalClass(
         "test",
         "UPSERT",
@@ -183,9 +185,7 @@ class KafkaEventSource(EventSource):
         # TODO
         event = build_platform_event(msg)
         kafka_meta = build_kafka_meta(msg)
-        yield EnvelopedEvent(
-            EventType.METADATA_CHANGE_LOG, event, kafka_meta
-        )
+        yield EnvelopedEvent(EventType.METADATA_CHANGE_LOG, event, kafka_meta)
         # platform_event = build_platform_event(msg.value())
         # kafka_meta = build_kafka_meta(msg)
         # yield EnvelopedEvent(EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta)

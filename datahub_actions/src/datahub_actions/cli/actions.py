@@ -82,7 +82,7 @@ def actions(ctx: Any, pipeline: List[str], config: str) -> None:
 
     # Now, simply run forever.
     while True:
-        # Todo: improve this. 
+        # Todo: improve this.
         time.sleep(5)
 
 
