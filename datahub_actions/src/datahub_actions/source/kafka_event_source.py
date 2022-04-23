@@ -75,6 +75,7 @@ def build_metadata_change_log_event(msg: Any) -> MetadataChangeProposalClass:
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
 def build_platform_event(msg: Any) -> MetadataChangeProposalClass:
+    # TODO: Fix to return Entity Change Event type. 
     return MetadataChangeProposalClass(
         "test",
         "UPSERT",
