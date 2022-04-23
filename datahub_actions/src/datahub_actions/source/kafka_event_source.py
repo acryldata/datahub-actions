@@ -21,6 +21,7 @@ import confluent_kafka
 from confluent_kafka import KafkaError, KafkaException
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from confluent_kafka.schema_registry.schema_registry_client import SchemaRegistryClient
+from kafka import TopicPartition
 from datahub.configuration import ConfigModel
 from datahub.configuration.kafka import KafkaConsumerConnectionConfig
 from datahub.emitter.mce_builder import DEFAULT_ENV
@@ -89,8 +90,7 @@ def build_platform_event(msg: Any) -> MetadataChangeProposalClass:
 class KafkaEventSourceConfig(ConfigModel):
     env: str = DEFAULT_ENV
     connection: KafkaConsumerConnectionConfig = KafkaConsumerConnectionConfig()
-    auto_offset_reset: str = "latest"
-    topic_routes: Dict[str, str] = {"mae": "Failure"}
+    topic_routes: Dict[str, str]
 
 
 @dataclass
@@ -106,50 +106,39 @@ class KafkaEventSource(EventSource):
         )
         self.consumer: confluent_kafka.Consumer = confluent_kafka.DeserializingConsumer(
             {
-                "group.id": "test",  # TODO: Figure out if this is causing the issue.
+                # Provide a custom group id to subcribe to multiple partitions via separate actions pods.
+                "group.id": "datahub-actions",
                 "bootstrap.servers": self.source_config.connection.bootstrap,
                 "enable.auto.commit": False,
-                "auto.offset.reset": self.source_config.auto_offset_reset,
                 "value.deserializer": AvroDeserializer(
                     schema_registry_client=self.schema_registry_client,
                     return_record_name=True,
                 ),
                 "session.timeout.ms": "10000",
-                "max.poll.interval.ms": "10000",
-                **self.source_config.connection.consumer_config,
+                "max.poll.interval.ms": "5000",
+                **self.source_config.connection.consumer_config
             }
         )
 
     @classmethod
     def create(cls, config_dict: dict, ctx: ActionContext) -> "EventSource":
         config = KafkaEventSourceConfig.parse_obj(config_dict)
-        assert (
-            "mcl" in config.topic_routes
-        ), "topic_routes must contain an entry for mae (the metadata log event topic)"
-        assert (
-            "pe" in config.topic_routes
-        ), "topic_routes must contain an entry for pe (the platform event topic)"
         return cls(config)
 
     def events(self) -> Iterable[EnvelopedEvent]:
-        self.running = True
         topic_routes = self.source_config.topic_routes
-        assert "mae" in topic_routes
-        assert "mcl" in topic_routes
-        assert "pe" in topic_routes
-        logger.info(
-            f"Will subscribe to {topic_routes['mae']}, {topic_routes['mcl']}, {topic_routes['pe']}"
-        )
-        self.consumer.subscribe(
-            [topic_routes["mae"], topic_routes["mcl"], topic_routes["pe"]]
-        )
+        topics_to_subscribe = list(topic_routes.values())
+        logger.info(f"Subscribing to the following topics: {topics_to_subscribe}")
+        self.consumer.subscribe(topics_to_subscribe)
+        self.running = True
         while self.running:
-            msg = self.consumer.poll(timeout=1.0)
+            msg = self.consumer.poll(timeout=2.0)
             if msg is None:
                 continue
             else:
+                # TODO: Make this debug.
                 logger.info(
-                    f"Msg received: {msg.topic()}, {msg.partition()}, {msg.offset()}"
+                    f"Kafka msg received: {msg.topic()}, {msg.partition()}, {msg.offset()}"
                 )
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
@@ -161,18 +150,10 @@ class KafkaEventSource(EventSource):
                 elif msg.error():
                     raise KafkaException(msg.error())
             else:
-                # if msg.topic() == topic_routes["mae"]:
-                # pass
-                # yield from self._handle_mae(msg.value())
-                # Create a record envelope from MAE.
-                if msg.topic() == topic_routes["mcl"]:
-                    print(msg.value())
+                if "mcl" in topic_routes and msg.topic() == topic_routes["mcl"]:
                     yield from self._handle_mcl(msg)
-                elif msg.topic() == topic_routes["pe"]:
-                    print(msg.value())
+                elif "pe" in topic_routes and msg.topic() == topic_routes["pe"]:
                     yield from self._handle_pe(msg)
-                    # yield from self._handle_mcl(msg.value())
-                    # Create a record envelope from PE.
 
     def _handle_mcl(self, msg: Any) -> Iterable[EnvelopedEvent]:
         metadata_change_log_event = build_metadata_change_log_event(msg)
@@ -199,4 +180,12 @@ class KafkaEventSource(EventSource):
     def ack(self, event: EnvelopedEvent) -> None:
         # Somehow we need to ack this particular event.
         # TODO: Commit offsets to kafka explicitly.
-        pass
+        # self.consumer.commit({ }
+        #  tp: 
+        # )
+        # self.consumer.commit(
+        #    {
+        #        TopicPartition: TopicPartition(event.meta["topic"], event.meta["partition"])
+        #    }
+        #)
+        #logger.info(f"Successfully committed offsets. topic: {event.meta["topic"]}, partition: {event.meta["partition"]}")

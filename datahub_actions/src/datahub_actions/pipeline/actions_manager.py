@@ -65,6 +65,8 @@ class ActionsManager:
                 pipeline_spec.pipeline.stop()
                 # Next, wait for the thread to terminate.
                 pipeline_spec.thread.join()
+                logger.debug(f"Successfully terminated pipeline with name {name}")
+                pipeline_spec.pipeline.stats().pretty_print_summary() # Print the pipeline's statistics. 
                 del self.pipeline_registry[name]
             except Exception:
                 # Failed to stop a pipeline - this is a critical issue, we should avoid starting another action of the same type

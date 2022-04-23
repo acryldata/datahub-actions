@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: "Hello World"
-source: # Where the events are sources from. 
+source:
   type: "kafka"
   config:
-    auto_offset_reset: ${KAFKA_AUTO_OFFSET_POLICY:-latest} # earliest / latest are supported values
     connection:
         bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
         schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
         consumer_config:
+          auto.offset.reset: ${KAFKA_AUTO_OFFSET_POLICY:-latest} # earliest / latest are supported values
+          max.poll.interval.ms: ${KAFKA_PROPERTIES_MAX_POLL_INTERVAL_MS:-10000}
           security.protocol: ${KAFKA_PROPERTIES_SECURITY_PROTOCOL:-PLAINTEXT}
           #ssl.keystore.location: ${KAFKA_PROPERTIES_SSL_KEYSTORE_LOCATION:-/mnt/certs/keystore}
           #ssl.truststore.location: ${KAFKA_PROPERTIES_SSL_TRUSTSTORE_LOCATION:-/mnt/certs/truststore}
@@ -27,13 +28,16 @@ source: # Where the events are sources from.
           #ssl.key.password: ${KAFKA_PROPERTIES_SSL_KEY_PASSWORD:-keystore_password}
           #ssl.truststore.password: ${KAFKA_PROPERTIES_SSL_TRUSTSTORE_PASSWORD:-truststore_password}
     topic_routes:
-      mae: ${METADATA_AUDIT_EVENT_NAME:-MetadataAuditEvent_v4}
-      mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
+      # Selectively comment these out to disable consumption from one or more topics.
+      # mae: ${METADATA_AUDIT_EVENT_NAME:-MetadataAuditEvent_v4}
+      # mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
-filter:
-  event_type: "EntityChangeEvent"
-  fields:
-    a: "b"
+# filter:
+#  event_type: "MetadataChangeLogEvent"
+#  fields:
+#    entityType: "ASDSDSD"
+#    entityUrn:
+#    params:
 action:
   type: "hello_world" 
   config:

@@ -61,8 +61,8 @@ def actions(ctx: Any, pipeline: List[str], config: str) -> None:
     if config is not None:
         config_file = pathlib.Path(config)
         config_dict = load_config_file(config_file)
-        for pipeline in config_to_pipelines(config_dict):
-            pipelines.append(pipeline)
+        for p in config_to_pipelines(config_dict):
+            pipelines.append(p)
 
     # If individual pipeline config was provided, create a pipeline from it.
     if pipeline is not None:

@@ -10,6 +10,7 @@ from datahub_actions.action.action_registry import action_registry
 from datahub_actions.api.action_core import AcrylDataHubGraph
 from datahub_actions.events.event import EnvelopedEvent
 from datahub_actions.pipeline.context import ActionContext
+from datahub_actions.pipeline.stats import PipelineStats
 from datahub_actions.source.event_source import EventSource
 from datahub_actions.source.event_source_registry import event_source_registry
 from datahub_actions.transform.event_transformer import Transformer
@@ -145,7 +146,11 @@ class Pipeline:
     transforms: List[Transformer] = []
     action: Action
 
-    shutdown: bool = False
+    # Whether the Pipeline has been requested to shut down
+    _shutdown: bool = False
+
+    # Pipeline statistics
+    _stats: PipelineStats = PipelineStats()
 
     def __init__(
         self,
@@ -186,36 +191,74 @@ class Pipeline:
 
     # Launch the Pipeline.
     def start(self):
+
         enveloped_events = self.source.events()
 
         for enveloped_event in enveloped_events:
-            # First, transform the event.
-            transformed_event = self._transform_event(enveloped_event)
+            try: 
+                # First, transform the event.
+                transformed_event = self._transform_event(enveloped_event)
 
-            # Then, invoke the action if the event is non-null.
-            if transformed_event is not None:
-                self.action.act(transformed_event)
+                # Then, invoke the action if the event is non-null.
+                if transformed_event is not None:
+                    self._execute_action(transformed_event)
 
-            # Finally, ack the event.
-            self.source.ack(enveloped_event)
+            except Exception as e:
+                # Increment failed event count. 
+                self._stats.increment_exception_count()
+                # Catch all pipeline exceptions. This may mean that the event may be reprocessed. 
+                logger.error(f"Caught exception while attempting to process event. event type: {enveloped_event.event_type}, pipeline name: {self.name}", e)
+                # Log the raw event in the debug log.
+                logger.debug(f"Failed to process event: {enveloped_event}")
+                # Continue to next iteration of loop without committing the ack. 
+                continue
+
+            # Finally, ack the event
+            self._ack_event(enveloped_event)
+
 
     def _transform_event(
         self, enveloped_event: EnvelopedEvent
     ) -> Optional[EnvelopedEvent]:
         curr_event = enveloped_event
         for transformer in self.transforms:
-            transformed_event = transformer.transform(curr_event)
-            if transformed_event is None:
-                # Short circuit event. Skip to ack phase.
-                self.source.ack(enveloped_event)
-                return None
-            else:
-                curr_event = transformed_event  # type: ignore
+            try: 
+                transformed_event = transformer.transform(curr_event)
+                if transformed_event is None:
+                    # Short circuit event. Skip to ack phase.
+                    self._stats.increment_transformer_filtered_count(type(transformer).__name__)
+                    self._ack_event(enveloped_event)
+                    return None
+                else:
+                    curr_event = transformed_event  # type: ignore
+            except Exception as e:
+                self._stats.increment_transformer_exception_count(type(transformer).__name__)
+                raise Exception(f"Caught exception while executing Transformer with type {type(transformer).__name__}") from e
+
         return curr_event
+
+    def _execute_action(self, enveloped_event: EnvelopedEvent):
+        try: 
+            self.action.act(enveloped_event)
+        except Exception as e:
+            self._stats.increment_action_exception_count()
+            raise Exception(f"Caught exception while executing Action with type {type(self.action).__name__}") from e
+
+    def _ack_event(self, enveloped_event: EnvelopedEvent):
+        try:
+            self.source.ack(enveloped_event)
+            self._stats.increment_success_count()
+        except Exception as e:
+            self._stats.increment_exception_count()
+            logger.error(f"Caught exception while attempting to ack event. event type: {enveloped_event.event_type}, pipeline name: {self.name}", e)
+            logger.debug(f"Failed to ack event: {enveloped_event}")
 
     # Terminate the pipeline.
     def stop(self):
         logger.info(f"Preparing to stop Actions Pipeline with name {self.name}")
-        self.shutdown = True
+        self._shutdown = True
         self.source.close()
-        logger.info(f"Stopping Actions Pipeline with name {self.name}")
+
+    # Get the pipeline statistics 
+    def stats(self) -> PipelineStats:
+        return self._stats
