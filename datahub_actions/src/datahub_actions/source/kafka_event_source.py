@@ -21,16 +21,15 @@ import confluent_kafka
 from confluent_kafka import KafkaError, KafkaException
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from confluent_kafka.schema_registry.schema_registry_client import SchemaRegistryClient
-from kafka import TopicPartition
 from datahub.configuration import ConfigModel
 from datahub.configuration.kafka import KafkaConsumerConnectionConfig
-from datahub.emitter.mce_builder import DEFAULT_ENV
 
 # DataHub imports.
 from datahub.metadata.schema_classes import (
     GenericAspectClass,
     MetadataChangeProposalClass,
 )
+from confluent_kafka import TopicPartition
 
 from datahub_actions.events.event import EnvelopedEvent, EventType
 
@@ -75,7 +74,7 @@ def build_metadata_change_log_event(msg: Any) -> MetadataChangeProposalClass:
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
 def build_platform_event(msg: Any) -> MetadataChangeProposalClass:
-    # TODO: Fix to return Entity Change Event type. 
+    # TODO: Fix to return Entity Change Event type.
     return MetadataChangeProposalClass(
         "test",
         "UPSERT",
@@ -89,7 +88,6 @@ def build_platform_event(msg: Any) -> MetadataChangeProposalClass:
 
 
 class KafkaEventSourceConfig(ConfigModel):
-    env: str = DEFAULT_ENV
     connection: KafkaConsumerConnectionConfig = KafkaConsumerConnectionConfig()
     topic_routes: Dict[str, str]
 
@@ -100,7 +98,7 @@ class KafkaEventSource(EventSource):
     running = False
     source_config: KafkaEventSourceConfig
 
-    def __init__(self, config: KafkaEventSourceConfig):
+    def __init__(self, config: KafkaEventSourceConfig, ctx: ActionContext):
         self.source_config = config
         self.schema_registry_client = SchemaRegistryClient(
             {"url": self.source_config.connection.schema_registry_url}
@@ -108,23 +106,24 @@ class KafkaEventSource(EventSource):
         self.consumer: confluent_kafka.Consumer = confluent_kafka.DeserializingConsumer(
             {
                 # Provide a custom group id to subcribe to multiple partitions via separate actions pods.
-                "group.id": "datahub-actions",
+                "group.id": ctx.pipeline_name,
                 "bootstrap.servers": self.source_config.connection.bootstrap,
-                "enable.auto.commit": False,
+                "enable.auto.commit": False,  # We manually commit offsets.
+                "auto.offset.reset": "latest",  # Latest by default, unless overwritten.
                 "value.deserializer": AvroDeserializer(
                     schema_registry_client=self.schema_registry_client,
                     return_record_name=True,
                 ),
-                "session.timeout.ms": "10000",
-                "max.poll.interval.ms": "5000",
-                **self.source_config.connection.consumer_config
+                "session.timeout.ms": "10000",  # 10s timeout.
+                "max.poll.interval.ms": "10000",  # 10s poll max. 
+                **self.source_config.connection.consumer_config,
             }
         )
 
     @classmethod
     def create(cls, config_dict: dict, ctx: ActionContext) -> "EventSource":
         config = KafkaEventSourceConfig.parse_obj(config_dict)
-        return cls(config)
+        return cls(config, ctx)
 
     def events(self) -> Iterable[EnvelopedEvent]:
         topic_routes = self.source_config.topic_routes
@@ -179,14 +178,9 @@ class KafkaEventSource(EventSource):
             self.consumer.close()
 
     def ack(self, event: EnvelopedEvent) -> None:
-        # Somehow we need to ack this particular event.
-        # TODO: Commit offsets to kafka explicitly.
-        # self.consumer.commit({ }
-        #  tp: 
-        # )
-        # self.consumer.commit(
-        #    {
-        #        TopicPartition: TopicPartition(event.meta["topic"], event.meta["partition"])
-        #    }
-        #)
-        #logger.info(f"Successfully committed offsets. topic: {event.meta["topic"]}, partition: {event.meta["partition"]}")
+        self.consumer.commit(offsets=[TopicPartition(
+            event.meta["kafka"]["topic"], event.meta["kafka"]["partition"], event.meta["kafka"]["offset"] + 1
+        )])
+        logger.info(
+            f"Successfully committed offsets at message: topic: {event.meta['kafka']['topic']}, partition: {event.meta['kafka']['partition']}, offset: {event.meta['kafka']['offset']}"
+        )

@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from enum import Enum
 
@@ -32,3 +33,7 @@ class EnvelopedEvent:
 
     # Arbitrary metadata about the event
     meta: dict
+
+    # Convert an enveloped event to JSON representation
+    def to_json(self):
+        return f"{{ \"event_type\": {self.event_type.value}, \"event\": {json.dumps(self.event.to_obj())}, \"meta\": {json.dumps(self.meta)} }}"

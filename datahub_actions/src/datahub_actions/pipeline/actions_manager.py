@@ -23,6 +23,7 @@ class PipelineSpec:
 
 
 # Start a pipeline
+# TODO: Exit process on failure.
 def run_pipeline(pipeline: Pipeline) -> None:
     try:
         pipeline.start()
@@ -30,6 +31,8 @@ def run_pipeline(pipeline: Pipeline) -> None:
         logger.error(
             f"Caught exception while executing pipeline with name {pipeline.name}: {traceback.format_exc(limit=3)}"
         )
+        pipeline.stop()
+    logger.info(f"Pipeline with name {pipeline.name} has stopped.")
 
 
 # A manager of multiple Action Pipelines.
@@ -66,7 +69,7 @@ class ActionsManager:
                 # Next, wait for the thread to terminate.
                 pipeline_spec.thread.join()
                 logger.debug(f"Successfully terminated pipeline with name {name}")
-                pipeline_spec.pipeline.stats().pretty_print_summary() # Print the pipeline's statistics. 
+                pipeline_spec.pipeline.stats().pretty_print_summary()  # Print the pipeline's statistics.
                 del self.pipeline_registry[name]
             except Exception:
                 # Failed to stop a pipeline - this is a critical issue, we should avoid starting another action of the same type

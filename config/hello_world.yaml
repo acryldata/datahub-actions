@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: "Hello World"
+name: "Hello World" 
 source:
   type: "kafka"
   config:
@@ -33,9 +33,10 @@ source:
       # mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
 # filter:
-#  event_type: "MetadataChangeLogEvent"
+#  event_type: "EntityChangeEvent"
 #  fields:
-#    entityType: "ASDSDSD"
+#     category: "TAG"
+#    operation: "ADD"
 #    entityUrn:
 #    params:
 action:
@@ -47,3 +48,7 @@ datahub:
   # token: 
   extra_headers:
     Authorization: "Basic ${DATAHUB_SYSTEM_CLIENT_ID:-__datahub_system}:${DATAHUB_SYSTEM_CLIENT_SECRET:-JohnSnowKnowsNothing}"
+# Error Handling
+retry_count: 2 # Number of times to retry an event before declaring failure. 
+failure_mode: "LOG" # Exit the process when a message cannot be processed, options are 'EXIT', 'LOG'.
+failed_events_dir: "/tmp/logs/datahub/actions" # The path where failed events should be logged.
