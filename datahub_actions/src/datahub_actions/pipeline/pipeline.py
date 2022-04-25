@@ -4,10 +4,10 @@ import re
 import traceback
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel
 
 from datahub.configuration import ConfigModel
 from datahub.ingestion.graph.client import DatahubClientConfig, DataHubGraph
+from pydantic import BaseModel
 
 from datahub_actions.action.action import Action
 from datahub_actions.action.action_registry import action_registry
@@ -31,10 +31,10 @@ logger.setLevel(logging.INFO)
 
 
 class FailureMode(str, Enum):
-    # Exit the process with an error code when a message fails to proces.
+    # Log the failed event to the failed events log. Then throw an pipeline exception to stop the pipeline.
     THROW = "THROW"
-    # Log the problematic message to a file on failure, then continue to process new events.
-    LOG = "LOG"
+    # Log the failed event to the failed events log. Then continue processing the event stream.
+    CONTINUE = "CONTINUE"
 
 
 class SourceConfig(ConfigModel):
@@ -68,8 +68,8 @@ class PipelineConfig(BaseModel):
     failure_mode: Optional[FailureMode]
     failed_events_dir: Optional[str]  # The path where failed events should be logged.
 
-    class Config:  
-            use_enum_values = True
+    class Config:
+        use_enum_values = True
 
 
 def create_action_context(
@@ -182,9 +182,7 @@ class Pipeline:
 
     # Error handling
     _retry_count: int = 3  # Number of times a single event should be retried in case of processing error.
-    _failure_mode: FailureMode = (
-        FailureMode.LOG
-    )  # How a failure to process should be treated.
+    _failure_mode: FailureMode = FailureMode.CONTINUE
     _failed_events_dir: str = "/tmp/logs/datahub/actions"  # The top-level path where failed events will be logged.
 
     def __init__(
@@ -242,7 +240,7 @@ class Pipeline:
             config.failed_events_dir,
         )
 
-    # Launch the Pipeline.
+    # Start the Pipeline.
     def start(self) -> None:
         # First, source the events.
         enveloped_events = self.source.events()
@@ -336,7 +334,7 @@ class Pipeline:
         self._append_failed_event_to_file(enveloped_event)
         if self._failure_mode == FailureMode.THROW:
             raise Exception("Failed to process event after maximum retries.")
-        elif self._failure_mode == FailureMode.LOG:
+        elif self._failure_mode == FailureMode.CONTINUE:
             # Simply return, nothing left to do.
             pass
 
@@ -352,20 +350,26 @@ class Pipeline:
         failed_events_dir = os.path.join(
             self._failed_events_dir, normalize_directory_name(self.name)
         )
-        if not os.path.exists(failed_events_dir):
-            os.makedirs(failed_events_dir)
+        try:
+            if not os.path.exists(failed_events_dir):
+                os.makedirs(failed_events_dir)
 
-        failed_events_file_name = os.path.join(
-            failed_events_dir, FAILED_EVENTS_FILE_NAME
-        )
-        self._failed_events_fd = open(failed_events_file_name, "a")
+            failed_events_file_name = os.path.join(
+                failed_events_dir, FAILED_EVENTS_FILE_NAME
+            )
+            self._failed_events_fd = open(failed_events_file_name, "a")
+        except Exception as e:
+            logger.debug(e)
+            raise Exception(
+                f"Caught exception while attempting to create failed events log file at path {failed_events_dir}. Please check your file system permissions."
+            )
 
     # Terminate the pipeline.
     def stop(self) -> None:
         logger.info(f"Preparing to stop Actions Pipeline with name {self.name}")
         self._shutdown = True
-        self.source.close()
         self._failed_events_fd.close()
+        self.source.close()
 
     # Get the pipeline statistics
     def stats(self) -> PipelineStats:

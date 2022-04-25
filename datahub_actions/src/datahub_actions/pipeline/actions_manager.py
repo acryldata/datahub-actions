@@ -66,8 +66,7 @@ class ActionsManager:
             try:
                 pipeline_spec = self.pipeline_registry[name]
                 pipeline_spec.pipeline.stop()
-                # Next, wait for the thread to terminate.
-                pipeline_spec.thread.join()
+                pipeline_spec.thread.join()  # Wait for the pipeline thread to terminate.
                 logger.debug(f"Successfully terminated pipeline with name {name}")
                 pipeline_spec.pipeline.stats().pretty_print_summary()  # Print the pipeline's statistics.
                 del self.pipeline_registry[name]

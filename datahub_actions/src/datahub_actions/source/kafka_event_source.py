@@ -18,7 +18,7 @@ from typing import Any, Dict, Iterable
 
 # Confluent important
 import confluent_kafka
-from confluent_kafka import KafkaError, KafkaException
+from confluent_kafka import KafkaError, KafkaException, TopicPartition
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from confluent_kafka.schema_registry.schema_registry_client import SchemaRegistryClient
 from datahub.configuration import ConfigModel
@@ -29,7 +29,6 @@ from datahub.metadata.schema_classes import (
     GenericAspectClass,
     MetadataChangeProposalClass,
 )
-from confluent_kafka import TopicPartition
 
 from datahub_actions.events.event import EnvelopedEvent, EventType
 
@@ -115,7 +114,7 @@ class KafkaEventSource(EventSource):
                     return_record_name=True,
                 ),
                 "session.timeout.ms": "10000",  # 10s timeout.
-                "max.poll.interval.ms": "10000",  # 10s poll max. 
+                "max.poll.interval.ms": "10000",  # 10s poll max.
                 **self.source_config.connection.consumer_config,
             }
         )
@@ -178,9 +177,15 @@ class KafkaEventSource(EventSource):
             self.consumer.close()
 
     def ack(self, event: EnvelopedEvent) -> None:
-        self.consumer.commit(offsets=[TopicPartition(
-            event.meta["kafka"]["topic"], event.meta["kafka"]["partition"], event.meta["kafka"]["offset"] + 1
-        )])
+        self.consumer.commit(
+            offsets=[
+                TopicPartition(
+                    event.meta["kafka"]["topic"],
+                    event.meta["kafka"]["partition"],
+                    event.meta["kafka"]["offset"] + 1,
+                )
+            ]
+        )
         logger.info(
             f"Successfully committed offsets at message: topic: {event.meta['kafka']['topic']}, partition: {event.meta['kafka']['partition']}, offset: {event.meta['kafka']['offset']}"
         )

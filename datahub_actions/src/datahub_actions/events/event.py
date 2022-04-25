@@ -36,4 +36,4 @@ class EnvelopedEvent:
 
     # Convert an enveloped event to JSON representation
     def to_json(self):
-        return f"{{ \"event_type\": {self.event_type.value}, \"event\": {json.dumps(self.event.to_obj())}, \"meta\": {json.dumps(self.meta)} }}"
+        return f'{{ "event_type": {self.event_type.value}, "event": {json.dumps(self.event.to_obj())}, "meta": {json.dumps(self.meta)} }}'
