@@ -8,6 +8,14 @@ from datahub_actions.pipeline.context import ActionContext
 
 
 class EventSource(Closeable):
+    """
+    An Event Source is a producer of DataHub Events which can be acted on using the
+    Actions Framework.
+
+    Each Event Source may provide specific semantics, configurations, and processing guarantees.
+    Using this interface, the framework can accommodate at-least-once delivery to an individual Action.
+    """
+
     @classmethod
     @abstractmethod
     def create(cls, config_dict: dict, ctx: ActionContext) -> "EventSource":
@@ -16,11 +24,14 @@ class EventSource(Closeable):
     @abstractmethod
     def events(self) -> Iterable[EnvelopedEvent]:
         """
-        Returns an iterable of DataHub events
+        Returns an iterable of enveloped events.
+
+        In most cases this should be implemented via a Python generator function which
+        can produce a continuous stream of events.
         """
 
     @abstractmethod
     def ack(self, event: EnvelopedEvent) -> None:
         """
-        Ack the processing of an individual event
+        Acknowledges the processing of an individual event by the Actions Framework
         """

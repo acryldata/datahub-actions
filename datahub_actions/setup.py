@@ -40,7 +40,7 @@ base_requirements = {
     # Actual dependencies.
     "typing-inspect",
     "pydantic>=1.5.1",
-    "acryl-datahub>=0.8.33",
+    "acryl-datahub>=0.8.33.2rc2",
     "dictdiffer",
     "confluent-kafka>=1.5.0",
     "fastavro>=1.2.0",
