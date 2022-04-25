@@ -11,13 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import importlib
 import json
 import logging
 import sys
 import traceback
-from typing import Any, List, Optional
+from typing import Any
 
 from acryl.executor.dispatcher.default_dispatcher import DefaultDispatcher
 from acryl.executor.execution.executor import Executor
@@ -32,16 +31,10 @@ from acryl.executor.request.execution_request import (
 from acryl.executor.request.signal_request import SignalRequest as SignalRequestObj
 from acryl.executor.secret.datahub_secret_store import DataHubSecretStoreConfig
 from acryl.executor.secret.secret_store import SecretStoreConfig
-from datahub.emitter.mcp import MetadataChangeProposalWrapper
-from pydantic import BaseModel
 
-from datahub_actions.api.action_core import (
-    ActionContext,
-    DataHubAction,
-    RawMetadataChange,
-    SemanticChange,
-    Subscription,
-)
+from datahub_actions.action.action import Action
+from datahub_actions.events.event import EnvelopedEvent, EventType
+from datahub_actions.pipeline.context import ActionContext
 
 logger = logging.getLogger(__name__)
 
@@ -49,15 +42,6 @@ DATAHUB_EXECUTION_REQUEST_ENTITY_NAME = "dataHubExecutionRequest"
 DATAHUB_EXECUTION_REQUEST_INPUT_ASPECT_NAME = "dataHubExecutionRequestInput"
 DATAHUB_EXECUTION_REQUEST_SIGNAL_ASPECT_NAME = "dataHubExecutionRequestSignal"
 APPLICATION_JSON_CONTENT_TYPE = "application/json"
-
-
-class ExecutorActionConfig(BaseModel):
-    # TODO: Support further configuring the secret stores for local executors
-    local_executor_enabled: bool = True
-    remote_executor_enabled: bool = False
-    remote_executor_id: str = "remote"
-    remote_executor_type: Optional[str] = None
-    remote_executor_config: Optional[dict] = None
 
 
 def _is_importable(path: str) -> bool:
@@ -85,94 +69,68 @@ def import_path(path: str) -> Any:
 
 
 # Listens to new Execution Requests & dispatches them to the appropriate handler.
-class ExecutorAction(DataHubAction):
+class ExecutorAction(Action):
     @classmethod
-    def create(cls, config_dict: dict, ctx: ActionContext) -> "DataHubAction":
-        action_config = ExecutorActionConfig.parse_obj(config_dict or {})
-        return cls(action_config, ctx)
+    def create(cls, config_dict: dict, ctx: ActionContext) -> "Action":
+        return cls(ctx)
 
-    def __init__(self, action_config: ExecutorActionConfig, ctx: ActionContext):
-        self.action_config = action_config
+    def __init__(self, ctx: ActionContext):
         self.ctx = ctx
 
         executors = []
 
-        if action_config.local_executor_enabled is True:
-            local_exec_config = self._build_default_executor_config(ctx)
-            executors.append(ReportingExecutor(local_exec_config))
-
-        if action_config.remote_executor_enabled is True:
-            assert action_config.remote_executor_type is not None
-            assert action_config.remote_executor_config is not None
-            remote_executor = self._create_remote_executor(
-                action_config.remote_executor_type, action_config.remote_executor_config
-            )
-            executors.append(remote_executor)
+        executor_config = self._build_default_executor_config(ctx)
+        executors.append(ReportingExecutor(executor_config))
 
         # Construct execution request dispatcher
         self.dispatcher = DefaultDispatcher(executors)
 
-    def name(self) -> str:
-        return "ExecutionRequestAction"
-
-    def subscriptions(self) -> List[Subscription]:
-        return []
-
-    def subscription_to_all(self) -> bool:
-        """This overrides subscriptions method"""
-        return True
-
-    def act(
-        self,
-        match: Optional[Subscription],
-        raw_change: RawMetadataChange,
-        semantic_changes: Optional[List[SemanticChange]],
-    ) -> List[MetadataChangeProposalWrapper]:
+    def act(self, event: EnvelopedEvent) -> None:
         """This method listens for ExecutionRequest changes to execute in schedule and trigger events"""
-
-        orig_event = raw_change.original_event
-
-        # Verify the original request type, etc.
-        if (
-            orig_event["entityType"] == DATAHUB_EXECUTION_REQUEST_ENTITY_NAME
-            and orig_event["changeType"] == "UPSERT"
-        ):
-
-            if orig_event["aspectName"] == DATAHUB_EXECUTION_REQUEST_INPUT_ASPECT_NAME:
-                self._handle_execution_request_input(orig_event)
-
-            elif (
-                orig_event["aspectName"] == DATAHUB_EXECUTION_REQUEST_SIGNAL_ASPECT_NAME
+        if event.event_type is EventType.METADATA_CHANGE_LOG:
+            orig_event = event.event
+            if (
+                orig_event.get("entityType") == DATAHUB_EXECUTION_REQUEST_ENTITY_NAME
+                and orig_event.get("changeType") == "UPSERT"
             ):
-                self._handle_execution_request_signal(orig_event)
-
-        return []
+                if (
+                    orig_event.get("aspectName")
+                    == DATAHUB_EXECUTION_REQUEST_INPUT_ASPECT_NAME
+                ):
+                    logger.debug("Received execution request input. Processing...")
+                    self._handle_execution_request_input(orig_event)
+                elif (
+                    orig_event.get("aspectName")
+                    == DATAHUB_EXECUTION_REQUEST_SIGNAL_ASPECT_NAME
+                ):
+                    logger.debug("Received execution request signal. Processing...")
+                    self._handle_execution_request_signal(orig_event)
 
     def _handle_execution_request_input(self, orig_event):
 
-        entity_urn = orig_event["entityUrn"]
-        entity_key = orig_event["entityKeyAspect"]
+        entity_urn = orig_event.get("entityUrn")
+        entity_key = orig_event.get("entityKeyAspect")
 
         # Get the run id to use.
         exec_request_id = None
         if entity_key is not None:
             exec_request_key = json.loads(
-                entity_key[1]["value"]
+                entity_key[1].get("value")
             )  # this becomes the run id.
-            exec_request_id = exec_request_key["id"]
+            exec_request_id = exec_request_key.get("id")
         elif entity_urn is not None:
             urn_parts = entity_urn.split(":")
             exec_request_id = urn_parts[len(urn_parts) - 1]
 
         # Decode the aspect json into something more readable :)
-        exec_request_input = json.loads(orig_event["aspect"][1]["value"])
+        exec_request_input = json.loads(orig_event.get("aspect")[1].get("value"))
 
         # Build an Execution Request
         exec_request = ExecutionRequestObj(
-            executor_id=exec_request_input["executorId"],
+            executor_id=exec_request_input.get("executorId"),
             exec_id=exec_request_id,
-            name=exec_request_input["task"],
-            args=exec_request_input["args"],
+            name=exec_request_input.get("task"),
+            args=exec_request_input.get("args"),
         )
 
         # Try to dispatch the execution request
@@ -183,23 +141,23 @@ class ExecutorAction(DataHubAction):
 
     def _handle_execution_request_signal(self, orig_event):
 
-        entity_urn = orig_event["entityUrn"]
+        entity_urn = orig_event.get("entityUrn")
 
         if (
-            orig_event["aspect"][1]["contentType"] == APPLICATION_JSON_CONTENT_TYPE
+            orig_event.get("aspect")[1]("contentType") == APPLICATION_JSON_CONTENT_TYPE
             and entity_urn is not None
         ):
 
             # Decode the aspect json into something more readable :)
-            signal_request_input = json.loads(orig_event["aspect"][1]["value"])
+            signal_request_input = json.loads(orig_event.get("aspect")[1].get("value"))
 
             # Build a Signal Request
             urn_parts = entity_urn.split(":")
             exec_id = urn_parts[len(urn_parts) - 1]
             signal_request = SignalRequestObj(
-                executor_id=signal_request_input["executorId"],
+                executor_id=signal_request_input.get("executorId"),
                 exec_id=exec_id,
-                signal=signal_request_input["signal"],
+                signal=signal_request_input.get("signal"),
             )
 
             # Try to dispatch the signal request
