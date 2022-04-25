@@ -73,6 +73,37 @@ you can run
 datahub actions -c examples/hello_world.yaml
 ```
 
+
+## Development
+
+### Build and Test
+
+```
+# Build datahub_actions module
+./gradlew datahub_actions:build
+
+# Drop into virtual env
+cd datahub_actions && source venv/bin/activate 
+
+ # Start hello world action 
+datahub actions -c ../examples/hello_world.yaml
+
+# Start ingestion executor action
+datahub actions -c ../examples/executor.yaml
+
+# Start multiple actions 
+datahub actions -c ../examples/executor.yaml -c ../examples/hello_world.yaml
+```
+
+#### Developing an Event Source
+TODO
+
+#### Developing a Transformer
+TODO
+
+#### Developing an Action
+TODO
+
 ## FAQ
 
 ## Default Actions
