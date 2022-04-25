@@ -37,7 +37,9 @@ from datahub_actions.pipeline.context import ActionContext
 from datahub_actions.source.event_source import EventSource
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+
+
+ENTITY_CHANGE_EVENT_NAME = "entityChangeEvent"
 
 
 # Converts a Kafka Message to a Kafka Metadata Dictionary.
@@ -72,7 +74,7 @@ def build_metadata_change_log_event(msg: Any) -> MetadataChangeProposalClass:
 
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
-def build_platform_event(msg: Any) -> MetadataChangeProposalClass:
+def build_entity_change_event(msg: Any) -> MetadataChangeProposalClass:
     # TODO: Fix to return Entity Change Event type.
     return MetadataChangeProposalClass(
         "test",
@@ -127,7 +129,7 @@ class KafkaEventSource(EventSource):
     def events(self) -> Iterable[EnvelopedEvent]:
         topic_routes = self.source_config.topic_routes
         topics_to_subscribe = list(topic_routes.values())
-        logger.info(f"Subscribing to the following topics: {topics_to_subscribe}")
+        logger.debug(f"Subscribing to the following topics: {topics_to_subscribe}")
         self.consumer.subscribe(topics_to_subscribe)
         self.running = True
         while self.running:
@@ -136,7 +138,7 @@ class KafkaEventSource(EventSource):
                 continue
             else:
                 # TODO: Make this debug.
-                logger.info(
+                logger.debug(
                     f"Kafka msg received: {msg.topic()}, {msg.partition()}, {msg.offset()}"
                 )
             if msg.error():
@@ -162,14 +164,11 @@ class KafkaEventSource(EventSource):
         )
 
     def _handle_pe(self, msg: Any) -> Iterable[EnvelopedEvent]:
-        # TODO
-        event = build_platform_event(msg)
-        kafka_meta = build_kafka_meta(msg)
-        yield EnvelopedEvent(EventType.METADATA_CHANGE_LOG, event, kafka_meta)
-        # platform_event = build_platform_event(msg.value())
-        # kafka_meta = build_kafka_meta(msg)
-        # yield EnvelopedEvent(EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta)
-        # yield EnvelopedEvent(platform_event, kafka_meta)
+        value: dict = msg.value()
+        if (ENTITY_CHANGE_EVENT_NAME == value["name"]):
+            event = build_entity_change_event(msg)
+            kafka_meta = build_kafka_meta(msg)
+            yield EnvelopedEvent(EventType.ENTITY_CHANGE_EVENT, event, kafka_meta)
 
     def close(self) -> None:
         if self.consumer:
@@ -186,6 +185,6 @@ class KafkaEventSource(EventSource):
                 )
             ]
         )
-        logger.info(
+        logger.debug(
             f"Successfully committed offsets at message: topic: {event.meta['kafka']['topic']}, partition: {event.meta['kafka']['partition']}, offset: {event.meta['kafka']['offset']}"
         )

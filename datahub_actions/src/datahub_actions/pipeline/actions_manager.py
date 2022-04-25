@@ -7,7 +7,6 @@ from typing import Dict
 from datahub_actions.pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @dataclass
@@ -32,7 +31,7 @@ def run_pipeline(pipeline: Pipeline) -> None:
             f"Caught exception while executing pipeline with name {pipeline.name}: {traceback.format_exc(limit=3)}"
         )
         pipeline.stop()
-    logger.info(f"Pipeline with name {pipeline.name} has stopped.")
+    logger.debug(f"Thread for pipeline with name {pipeline.name} has terminated.")
 
 
 # A manager of multiple Action Pipelines.
@@ -67,7 +66,7 @@ class ActionsManager:
                 pipeline_spec = self.pipeline_registry[name]
                 pipeline_spec.pipeline.stop()
                 pipeline_spec.thread.join()  # Wait for the pipeline thread to terminate.
-                logger.debug(f"Successfully terminated pipeline with name {name}")
+                logger.info(f"Actions Pipeline with name '{name}' has been stopped.")
                 pipeline_spec.pipeline.stats().pretty_print_summary()  # Print the pipeline's statistics.
                 del self.pipeline_registry[name]
             except Exception:

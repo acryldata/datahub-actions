@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import traceback
+import time
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -27,7 +28,6 @@ from datahub_actions.transform.filter.filter_transformer import (
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class FailureMode(str, Enum):
@@ -57,6 +57,14 @@ class ActionConfig(ConfigModel):
     config: Optional[dict]
 
 
+class PipelineOptions(BaseModel): 
+    retry_count: Optional[int]
+    failure_mode: Optional[FailureMode]
+    failed_events_dir: Optional[str]  # The path where failed events should be logged.
+
+    class Config:
+        use_enum_values = True
+
 class PipelineConfig(BaseModel):
     name: str
     source: SourceConfig
@@ -64,12 +72,10 @@ class PipelineConfig(BaseModel):
     transform: Optional[List[TransformConfig]]
     action: ActionConfig
     datahub: DatahubClientConfig
-    retry_count: Optional[int]
-    failure_mode: Optional[FailureMode]
-    failed_events_dir: Optional[str]  # The path where failed events should be logged.
+    options: Optional[PipelineOptions]
 
     class Config:
-        use_enum_values = True
+        extra = 'allow'
 
 
 def create_action_context(
@@ -140,21 +146,18 @@ def create_transformer(
 
 def create_action(action_config: ActionConfig, ctx: ActionContext) -> Action:
     action_type = action_config.type
-    action_class = action_registry.get(action_type)
     try:
         logger.debug(
             f"Attempting to instantiate new Action of type {action_config.type}.."
         )
+        action_class = action_registry.get(action_type)
         action_config_dict = (
             action_config.config if action_config.config is not None else {}
         )
         return action_class.create(action_config_dict, ctx)
     except Exception as e:
-        logger.error(
-            f"Caught exception while attempting to instantiate Action: {traceback.format_exc(limit=3)}"
-        )
         raise Exception(
-            "Caught exception while attempting to instantiate Action"
+            "Caught exception while attempting to instantiate Action. "
         ) from e
 
 
@@ -235,9 +238,9 @@ class Pipeline:
             event_source,
             transforms,
             action,
-            config.retry_count,
-            config.failure_mode,
-            config.failed_events_dir,
+            config.options.retry_count if config.options else None,
+            config.options.failure_mode if config.options else None,
+            config.options.failed_events_dir if config.options else None,
         )
 
     # Start the Pipeline.
@@ -250,7 +253,10 @@ class Pipeline:
             # Finally, ack the event.
             self._ack_event(enveloped_event)
 
+
     def _process_event(self, enveloped_event: EnvelopedEvent) -> None:
+        start_time = time.time()
+
         # Retry event processing.
         curr_attempt = 1
         max_attempts = self._retry_count + 1
@@ -282,6 +288,8 @@ class Pipeline:
             # Finally, handle the failure
             self._handle_failure(enveloped_event)
 
+            return False
+
     def _transform_event(
         self, enveloped_event: EnvelopedEvent
     ) -> Optional[EnvelopedEvent]:
@@ -294,7 +302,6 @@ class Pipeline:
                     self._stats.increment_transformer_filtered_count(
                         type(transformer).__name__
                     )
-                    self._ack_event(enveloped_event)
                     return None
                 else:
                     curr_event = transformed_event  # type: ignore
@@ -351,8 +358,7 @@ class Pipeline:
             self._failed_events_dir, normalize_directory_name(self.name)
         )
         try:
-            if not os.path.exists(failed_events_dir):
-                os.makedirs(failed_events_dir)
+            os.makedirs(failed_events_dir, exist_ok=True)
 
             failed_events_file_name = os.path.join(
                 failed_events_dir, FAILED_EVENTS_FILE_NAME
@@ -366,7 +372,7 @@ class Pipeline:
 
     # Terminate the pipeline.
     def stop(self) -> None:
-        logger.info(f"Preparing to stop Actions Pipeline with name {self.name}")
+        logger.debug(f"Preparing to stop Actions Pipeline with name {self.name}")
         self._shutdown = True
         self._failed_events_fd.close()
         self.source.close()

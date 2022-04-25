@@ -2,9 +2,8 @@ import logging
 import pathlib
 import signal
 import time
-from typing import Any, List
-
 import click
+from typing import Any, List
 from datahub.configuration.config_loader import load_config_file
 
 import datahub_actions as datahub_actions_package
@@ -12,7 +11,7 @@ from datahub_actions.pipeline.actions_manager import ActionsManager
 from datahub_actions.pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+
 
 # Instantiate a singleton instance of the Actions Manager.
 actions_manager = ActionsManager()
@@ -31,7 +30,7 @@ def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
         return Pipeline.create(pipeline_config)
     except Exception as e:
         raise Exception(
-            f"Failed to instantiate Actions Pipeline using config {pipeline_config}. Exiting.."
+            f"Failed to instantiate Actions Pipeline using config {pipeline_config}"
         ) from e
 
 
@@ -42,43 +41,44 @@ def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
         allow_extra_args=True,
     ),
 )
-@click.option("-p", "--pipeline", required=False, type=str, multiple=True)
-@click.option("-c", "--config", required=False, type=str)
+@click.option("-c", "--config", required=True, type=str, multiple=True)
+@click.option("--debug/--no-debug", default=False)
 @click.pass_context
-def actions(ctx: Any, pipeline: List[str], config: str) -> None:
+def actions(ctx: Any, config: List[str], debug: bool) -> None:
     """Execute one or more Actions Pipelines"""
 
     logger.info(
         "DataHub Actions version: %s", datahub_actions_package.nice_version_name()
     )
 
+    if debug: 
+        # Set root logger settings to debug mode. 
+        logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        # Set root logger settings to info mode. 
+        logging.getLogger().setLevel(logging.INFO)
+
     # Statically configured to be registered with the Actions Manager.
     pipelines: List[Pipeline] = []
 
     logger.debug("Creating Actions Pipelines...")
 
-    # If the master config was provided, simply convert it into a list of pipelines.
-    if config is not None:
-        config_file = pathlib.Path(config)
-        config_dict = load_config_file(config_file)
-        for p in config_to_pipelines(config_dict):
-            pipelines.append(p)
-
     # If individual pipeline config was provided, create a pipeline from it.
-    if pipeline is not None:
-        for pipeline_config in pipeline:
+    if config is not None:
+        for pipeline_config in config:
             pipeline_config_file = pathlib.Path(pipeline_config)
             pipeline_config_dict = load_config_file(pipeline_config_file)
-            # Now, instantiate the pipeline.
-            pipelines.append(pipeline_config_to_pipeline(pipeline_config_dict))
+            pipelines.append(
+                pipeline_config_to_pipeline(pipeline_config_dict)
+            )  # Now, instantiate the pipeline.
 
-    logger.debug("Starting Actions Pipelines...")
+    logger.debug("Starting Actions Pipelines")
 
     # Start each pipeline.
     for p in pipelines:
         actions_manager.start_pipeline(p.name, p)
+        logger.info(f"Action Pipeline with name '{p.name}' is now running.")
 
-    logger.debug("Started all Action Pipelines.")
 
     # Now, simply run forever.
     while True:

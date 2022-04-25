@@ -4,4 +4,7 @@ from datahub_actions.transform.event_transformer import Transformer
 from datahub_actions.transform.filter.filter_transformer import FilterTransformer
 
 event_transformer_registry = PluginRegistry[Transformer]()
+event_transformer_registry.register_from_entrypoint(
+    "datahub_actions.transformer.plugins"
+)
 event_transformer_registry.register("__filter", FilterTransformer)
