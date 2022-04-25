@@ -1,5 +1,7 @@
+import datetime
 import pprint
 import sys
+import json
 from time import time
 from typing import Dict
 
@@ -16,111 +18,157 @@ else:
 # TODO: Invocation time tracking.
 class ActionStats:
     # The number of exception raised by the Action.
-    _exception_count: int = 0
+    exception_count: int = 0
+
+    # The number of events that were actually submitted to the Action
+    success_count: int = 0
 
     def increment_exception_count(self) -> None:
-        self._exception_count = self._exception_count + 1
+        self.exception_count = self.exception_count + 1
 
     def get_exception_count(self) -> int:
-        return self._exception_count
+        return self.exception_count
+
+    def increment_success_count(self) -> None:
+        self.success_count = self.success_count + 1
+
+    def get_success_count(self) -> int:
+        return self.success_count
 
     def as_string(self) -> str:
-        return pprint.pformat(self.__dict__, width=150, **PPRINT_OPTIONS)
+        return pprint.pformat(json.dumps(self.__dict__, indent=4, sort_keys=True), width=150, **PPRINT_OPTIONS)
 
 
 # Class that stores running statistics for a single Actions Transformer.
 class TransformerStats:
     # The number of exceptions raised by the Transformer.
-    _exception_count: int = 0
+    exception_count: int = 0
 
-    # The number of events filtered by the Transformer.
-    _filtered_count: int = 0
+    # The total number of events that were received by the transformer. 
+    processed_count: int = 0
+
+    # The number of events filtered by the Transformer. The total transformed count is equal to processed count - filtered count.
+    filtered_count: int = 0
 
     def increment_exception_count(self) -> None:
-        self._exception_count = self._exception_count + 1
+        self.exception_count = self.exception_count + 1
+
+    def increment_processed_count(self) -> None:
+        self.processed_count = self.processed_count + 1
 
     def increment_filtered_count(self) -> None:
-        self._filtered_count = self._filtered_count + 1
+        self.filtered_count = self.filtered_count + 1
 
     def get_exception_count(self) -> int:
-        return self._exception_count
+        return self.exception_count
+
+    def get_processed_count(self) -> int:
+        return self.processed_count
 
     def get_filtered_count(self) -> int:
-        return self._filtered_count
+        return self.filtered_count
 
     def as_string(self) -> str:
-        return pprint.pformat(self.__dict__, width=150, **PPRINT_OPTIONS)
+        return pprint.pformat(json.dumps(self.__dict__,  indent=4, sort_keys=True), width=150, **PPRINT_OPTIONS)
 
 
 # Class that stores running statistics for a single Actions Pipeline.
 class PipelineStats:
     # Timestamp in milliseconds when the pipeline was launched.
-    _started_at: int
+    started_at: int
 
-    # Top-level number of failed processing executions. If a single event is reprocessed, this counter will be incremented.
-    _exception_count: int = 0
+    # Number of events that failed processing even after retry.
+    failed_event_count: int = 0
+
+    # Number of events that failed when "ack" was invoked.
+    failed_ack_count: int = 0
 
     # Top-level number of succeeded processing executions.
-    _success_count: int = 0
+    success_count: int = 0
 
     # Transformer Stats
-    _transformer_stats: Dict[str, TransformerStats] = {}
+    transformer_stats: Dict[str, TransformerStats] = {}
 
     # Action Stats
-    _action_stats: ActionStats = ActionStats()
+    action_stats: ActionStats = ActionStats()
 
     def mark_start(self) -> None:
-        self._started_at = int(time() * 1000)
+        self.started_at = int(time() * 1000)
 
-    def increment_exception_count(self) -> None:
-        self._exception_count = self._exception_count + 1
+    def increment_failed_event_count(self) -> None:
+        self.failed_event_count = self.failed_event_count + 1
+
+    def increment_failed_ack_count(self) -> None:
+        self.failed_ack_count = self.failed_ack_count + 1
 
     def increment_success_count(self) -> None:
-        self._success_count = self._success_count + 1
+        self.success_count = self.success_count + 1
 
     def increment_transformer_exception_count(self, transformer: str) -> None:
-        if transformer not in self._transformer_stats:
-            self._transformer_stats[transformer] = TransformerStats()
-        self._transformer_stats[transformer].increment_exception_count()
+        if transformer not in self.transformer_stats:
+            self.transformer_stats[transformer] = TransformerStats()
+        self.transformer_stats[transformer].increment_exception_count()
+
+    def increment_transformer_processed_count(self, transformer: str) -> None:
+        if transformer not in self.transformer_stats:
+            self.transformer_stats[transformer] = TransformerStats()
+        self.transformer_stats[transformer].increment_processed_count()
 
     def increment_transformer_filtered_count(self, transformer: str) -> None:
-        if transformer not in self._transformer_stats:
-            self._transformer_stats[transformer] = TransformerStats()
-        self._transformer_stats[transformer].increment_filtered_count()
+        if transformer not in self.transformer_stats:
+            self.transformer_stats[transformer] = TransformerStats()
+        self.transformer_stats[transformer].increment_filtered_count()
 
     def increment_action_exception_count(self) -> None:
-        self._action_stats.increment_exception_count()
+        self.action_stats.increment_exception_count()
+
+    def increment_action_success_count(self) -> None:
+        self.action_stats.increment_success_count()
 
     def get_started_at(self) -> int:
-        return self._started_at
+        return self.started_at
 
-    def get_exception_count(self) -> int:
-        return self._exception_count
+    def get_failed_event_count(self) -> int:
+        return self.failed_event_count
+
+    def get_failed_ack_count(self) -> int:
+        return self.failed_ack_count
 
     def get_success_count(self) -> int:
-        return self._success_count
+        return self.success_count
 
     def get_transformer_stats(self, transformer: str) -> TransformerStats:
-        if transformer not in self._transformer_stats:
-            self._transformer_stats[transformer] = TransformerStats()
-        return self._transformer_stats[transformer]
+        if transformer not in self.transformer_stats:
+            self.transformer_stats[transformer] = TransformerStats()
+        return self.transformer_stats[transformer]
 
     def get_action_stats(self) -> ActionStats:
-        return self._action_stats
+        return self.action_stats
 
     def as_string(self) -> str:
-        return pprint.pformat(self.__dict__, width=150, **PPRINT_OPTIONS)
+        return pprint.pformat(json.dumps(self.__dict__, indent=4, sort_keys=True), width=150, **PPRINT_OPTIONS)
 
-    def pretty_print_summary(self) -> None:
+    def pretty_print_summary(self, name: str) -> None:
+        curr_time = int(time() * 1000)
+        click.echo()
+        click.secho(f"Pipeline Report for {name}", bold=True, fg="blue")
+        click.echo()
+        click.echo(
+            f"Started at: {datetime.datetime.fromtimestamp(self._started_at/1000.0)} (Local Time)"
+        )
+        click.echo(f"Duration: {(curr_time - self._started_at)/1000.0}s")
         click.echo()
         click.secho("Pipeline statistics", bold=True)
+        click.echo()
         click.echo(self.as_string())
         click.echo()
-        if len(self._transformer_stats.keys()) > 0:
+        if len(self.transformer_stats.keys()) > 0:
             click.secho("Transformer statistics", bold=True)
-            for key in self._transformer_stats:
-                click.echo(self._transformer_stats[key].as_string())
+            for key in self.transformer_stats:
+                click.echo()
+                click.echo(f"{key}: {self._transformer_stats[key].as_string()}")
             click.echo()
         click.secho("Action statistics", bold=True)
-        click.echo(self._action_stats.as_string())
+        click.echo()
+        click.echo(self.action_stats.as_string())
         click.echo()

@@ -245,6 +245,7 @@ class Pipeline:
 
     # Start the Pipeline.
     def start(self) -> None:
+        self._stats.mark_start()
         # First, source the events.
         enveloped_events = self.source.events()
         for enveloped_event in enveloped_events:
@@ -281,7 +282,7 @@ class Pipeline:
             )
 
             # Increment failed event count.
-            self._stats.increment_exception_count()  # TODO rename this to failure count.
+            self._stats.increment_failed_event_count()
 
             # Finally, handle the failure
             self._handle_failure(enveloped_event)
@@ -291,13 +292,13 @@ class Pipeline:
     ) -> Optional[EnvelopedEvent]:
         curr_event = enveloped_event
         for transformer in self.transforms:
+            transformer_name = type(transformer).__name__
+            self._stats.increment_transformer_processed_count(transformer_name)
             try:
                 transformed_event = transformer.transform(curr_event)
                 if transformed_event is None:
-                    # Short circuit event. Skip to ack phase.
-                    self._stats.increment_transformer_filtered_count(
-                        type(transformer).__name__
-                    )
+                    # Short circuit if the transformer has filtered the event.
+                    self._stats.increment_transformer_filtered_count(transformer_name)
                     return None
                 else:
                     curr_event = transformed_event  # type: ignore
@@ -314,6 +315,7 @@ class Pipeline:
     def _execute_action(self, enveloped_event: EnvelopedEvent) -> None:
         try:
             self.action.act(enveloped_event)
+            self._stats.increment_action_success_count()
         except Exception as e:
             self._stats.increment_action_exception_count()
             raise Exception(
@@ -325,7 +327,7 @@ class Pipeline:
             self.source.ack(enveloped_event)
             self._stats.increment_success_count()
         except Exception as e:
-            self._stats.increment_exception_count()
+            self._stats.increment_failed_ack_count()
             logger.error(
                 f"Caught exception while attempting to ack successfully processed event. event type: {enveloped_event.event_type}, pipeline name: {self.name}",
                 e,

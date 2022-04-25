@@ -65,7 +65,7 @@ def build_metadata_change_log_event(msg: Any) -> MetadataChangeProposalClass:
         None,  # TODO
         value["aspectName"],
         GenericAspectClass(
-            value["aspect"][1]["contentType"], value["aspect"][1]["value"]
+            value["aspect"][1]["value"], value["aspect"][1]["contentType"], 
         )
         if value["aspect"] is not None
         else None,

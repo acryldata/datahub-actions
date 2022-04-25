@@ -9,7 +9,6 @@ from datahub_actions.pipeline.context import ActionContext
 from datahub_actions.transform.event_transformer import Transformer
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class FilterTransformerConfig(ConfigModel):
@@ -35,6 +34,9 @@ class FilterTransformer(Transformer):
         return cls(config)
 
     def transform(self, env_event: EnvelopedEvent) -> Optional[EnvelopedEvent]:
+
+        logger.info(f"Preparing to filter event {env_event}")
+
         for key, val in self.config.fields.items():
             if not self._matches(val, env_event.event.get(key)):
                 return None

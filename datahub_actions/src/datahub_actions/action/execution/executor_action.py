@@ -115,7 +115,7 @@ class ExecutorAction(Action):
         exec_request_id = None
         if entity_key is not None:
             exec_request_key = json.loads(
-                entity_key[1].get("value")
+                entity_key.get("value")
             )  # this becomes the run id.
             exec_request_id = exec_request_key.get("id")
         elif entity_urn is not None:
@@ -123,7 +123,7 @@ class ExecutorAction(Action):
             exec_request_id = urn_parts[len(urn_parts) - 1]
 
         # Decode the aspect json into something more readable :)
-        exec_request_input = json.loads(orig_event.get("aspect")[1].get("value"))
+        exec_request_input = json.loads(orig_event.get("aspect").get("value"))
 
         # Build an Execution Request
         exec_request = ExecutionRequestObj(
@@ -144,12 +144,12 @@ class ExecutorAction(Action):
         entity_urn = orig_event.get("entityUrn")
 
         if (
-            orig_event.get("aspect")[1]("contentType") == APPLICATION_JSON_CONTENT_TYPE
+            orig_event.get("aspect").get("contentType") == APPLICATION_JSON_CONTENT_TYPE
             and entity_urn is not None
         ):
 
             # Decode the aspect json into something more readable :)
-            signal_request_input = json.loads(orig_event.get("aspect")[1].get("value"))
+            signal_request_input = json.loads(orig_event.get("aspect").get("value"))
 
             # Build a Signal Request
             urn_parts = entity_urn.split(":")

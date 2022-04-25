@@ -27,7 +27,7 @@ source:
 filter: 
   event_type: "MetadataChangeLogEvent"
   fields: 
-    entityType: "DataHubExecutionRequest"
+    entityType: "dataHubExecutionRequest"
     changeType: "UPSERT"
 action:
   type: "executor"
