@@ -36,6 +36,21 @@ class FilterTransformer(Transformer):
 
     def transform(self, env_event: EnvelopedEvent) -> Optional[EnvelopedEvent]:
         for key, val in self.config.fields.items():
-            if val != env_event.event.get(key):
+            if not self._matches(val, env_event.event.get(key)):
                 return None
         return env_event
+
+    def _matches(self, match_val: Any, match_val_to: Any) -> bool:
+        if isinstance(match_val, dict):
+            return self._matches_dict(match_val, match_val_to)
+        else:
+            return match_val == match_val_to
+
+    def _matches_dict(self, match_filters: Dict[str, Any], match_with: Any) -> bool:
+        if not isinstance(match_with, dict):
+            return False
+        for key, val in match_filters.items():
+            curr = match_with.get(key)
+            if not self._matches(val, curr):
+                return False
+        return True

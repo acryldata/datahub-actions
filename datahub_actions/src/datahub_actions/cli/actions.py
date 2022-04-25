@@ -2,8 +2,9 @@ import logging
 import pathlib
 import signal
 import time
-import click
 from typing import Any, List
+
+import click
 from datahub.configuration.config_loader import load_config_file
 
 import datahub_actions as datahub_actions_package
@@ -51,11 +52,11 @@ def actions(ctx: Any, config: List[str], debug: bool) -> None:
         "DataHub Actions version: %s", datahub_actions_package.nice_version_name()
     )
 
-    if debug: 
-        # Set root logger settings to debug mode. 
+    if debug:
+        # Set root logger settings to debug mode.
         logging.getLogger().setLevel(logging.DEBUG)
     else:
-        # Set root logger settings to info mode. 
+        # Set root logger settings to info mode.
         logging.getLogger().setLevel(logging.INFO)
 
     # Statically configured to be registered with the Actions Manager.
@@ -78,7 +79,6 @@ def actions(ctx: Any, config: List[str], debug: bool) -> None:
     for p in pipelines:
         actions_manager.start_pipeline(p.name, p)
         logger.info(f"Action Pipeline with name '{p.name}' is now running.")
-
 
     # Now, simply run forever.
     while True:
