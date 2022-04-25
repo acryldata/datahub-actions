@@ -165,7 +165,7 @@ class KafkaEventSource(EventSource):
 
     def _handle_pe(self, msg: Any) -> Iterable[EnvelopedEvent]:
         value: dict = msg.value()
-        if (ENTITY_CHANGE_EVENT_NAME == value["name"]):
+        if ENTITY_CHANGE_EVENT_NAME == value["name"]:
             event = build_entity_change_event(msg)
             kafka_meta = build_kafka_meta(msg)
             yield EnvelopedEvent(EventType.ENTITY_CHANGE_EVENT, event, kafka_meta)

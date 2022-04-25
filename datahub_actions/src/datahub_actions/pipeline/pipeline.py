@@ -2,7 +2,6 @@ import logging
 import os
 import re
 import traceback
-import time
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -57,13 +56,14 @@ class ActionConfig(ConfigModel):
     config: Optional[dict]
 
 
-class PipelineOptions(BaseModel): 
+class PipelineOptions(BaseModel):
     retry_count: Optional[int]
     failure_mode: Optional[FailureMode]
     failed_events_dir: Optional[str]  # The path where failed events should be logged.
 
     class Config:
         use_enum_values = True
+
 
 class PipelineConfig(BaseModel):
     name: str
@@ -75,7 +75,7 @@ class PipelineConfig(BaseModel):
     options: Optional[PipelineOptions]
 
     class Config:
-        extra = 'allow'
+        extra = "allow"
 
 
 def create_action_context(
@@ -253,9 +253,7 @@ class Pipeline:
             # Finally, ack the event.
             self._ack_event(enveloped_event)
 
-
     def _process_event(self, enveloped_event: EnvelopedEvent) -> None:
-        start_time = time.time()
 
         # Retry event processing.
         curr_attempt = 1
@@ -287,8 +285,6 @@ class Pipeline:
 
             # Finally, handle the failure
             self._handle_failure(enveloped_event)
-
-            return False
 
     def _transform_event(
         self, enveloped_event: EnvelopedEvent
