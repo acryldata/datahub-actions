@@ -155,7 +155,7 @@ full_test_dev_requirements = {
 entry_points = {
     "console_scripts": ["datahub = datahub_actions.entrypoints:main"], 
     "datahub_actions.action.plugins": [
-        "executor = datahub_actions.action.execution.executor_action:ExecutorAction",
+        "executor = datahub_actions.plugin.action.execution.executor_action:ExecutorAction",
     ],
     "datahub_actions.transformer.plugins": [],
     "datahub_actions.source.plugins": [],

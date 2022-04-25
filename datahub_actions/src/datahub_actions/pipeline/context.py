@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from datahub_actions.api.action_core import AcrylDataHubGraph
+from datahub_actions.api.action_graph import AcrylDataHubGraph
 
 
 @dataclass

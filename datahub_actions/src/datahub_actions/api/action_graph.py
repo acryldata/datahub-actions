@@ -22,12 +22,9 @@ from typing import Any, Dict, List, Optional
 
 from datahub.configuration.common import OperationalError
 from datahub.ingestion.graph.client import DataHubGraph
-from datahub.metadata.com.linkedin.pegasus2avro.mxe import MetadataChangeProposal
 from datahub.metadata.schema_classes import (
     AuditStampClass,
-    ChangeTypeClass,
     DatasetSnapshotClass,
-    GenericAspectClass,
     GlobalTagsClass,
     GlossaryTermAssociationClass,
     GlossaryTermsClass,
@@ -183,65 +180,6 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
                 break
         return sources
 
-    def query_proposals_for_user(
-        self, user_id: str, start: int = 0, count: int = 10, pending: bool = True
-    ) -> Dict:
-
-        if pending:
-            status = "PENDING"
-        else:
-            status = "COMPLETED"
-
-        resp = self.get_by_graphql_query(
-            {
-                "query": """
-query listActionRequests($input: ListActionRequestsInput!) {
-  listActionRequests(input: $input) {
-    start
-    count
-    total
-    actionRequests {
-      entity {
-        urn
-        type
-      }
-      created {
-        time
-        actor {
-          urn
-        }
-      }
-      urn
-      type
-      params {
-        glossaryTermProposal {
-          glossaryTerm {
-            urn
-          }
-        }
-        tagProposal {
-          tag {
-            urn
-          }
-        }
-      }
-    }
-  }
-}
-            """,
-                "variables": {
-                    "input": {
-                        "start": start,
-                        "count": count,
-                        "status": status,
-                        "assignee": {"type": "USER", "urn": user_id},
-                    }
-                },
-            }
-        )
-        listActionRequests: Dict = resp.get("listActionRequests", {})
-        return listActionRequests.get("actionRequests", {})
-
     def get_downstreams(self, entity_urn: str) -> List[str]:
         url_frag = f"/relationships?direction=INCOMING&types=List(DownstreamOf)&urn={urllib.parse.quote(entity_urn)}"
         url = f"{self.graph._gms_server}{url_frag}"
@@ -388,86 +326,6 @@ query listActionRequests($input: ListActionRequestsInput!) {
         return self.get_untyped_aspect(
             urn, "corpUserInfo", "com.linkedin.identity.CorpUserInfo"
         )
-
-    def add_assignees_to_proposal(
-        self, proposal_urn: str, owner_urns: List[str]
-    ) -> None:
-        aspect = "actionRequestInfo"
-        action_request_info = self.get_untyped_aspect(
-            proposal_urn, aspect, "com.linkedin.actionrequest.ActionRequestInfo"
-        )
-
-        assigned_users: List[str] = action_request_info.get("assignedUsers", [])
-        assigned_groups: List[str] = action_request_info.get("assignedGroup", [])
-        has_changed = False
-
-        for owner_urn in owner_urns:
-            owner_urn_parts = owner_urn.split(":")
-            owner_urn_type = owner_urn_parts[2]
-            if owner_urn_type == "corpuser":
-                if owner_urn not in assigned_users:
-                    assigned_users.append(owner_urn)
-                    has_changed = True
-            elif owner_urn_type == "corpGroup":
-                if owner_urn not in assigned_groups:
-                    assigned_groups.append(owner_urn)
-                    has_changed = True
-
-        if has_changed:
-            action_request_info["assignedUsers"] = assigned_users
-            action_request_info["assignedGroups"] = assigned_groups
-            self.graph.emit_mcp(
-                MetadataChangeProposal(
-                    entityType="actionRequest",
-                    changeType=ChangeTypeClass.UPSERT,
-                    entityUrn=proposal_urn,
-                    aspectName=aspect,
-                    aspect=GenericAspectClass(
-                        contentType="application/json",
-                        value=json.dumps(action_request_info).encode(),
-                    ),
-                )
-            )
-
-    def remove_assignees_to_proposal(
-        self, proposal_urn: str, owner_urns_to_remove: List[str]
-    ) -> None:
-        aspect = "actionRequestInfo"
-        action_request_info = self.get_untyped_aspect(
-            proposal_urn, aspect, "com.linkedin.actionrequest.ActionRequestInfo"
-        )
-
-        assigned_users: List[str] = action_request_info.get("assignedUsers", [])
-        assigned_groups: List[str] = action_request_info.get("assignedGroup", [])
-        has_changed = False
-
-        for owner_urn in owner_urns_to_remove:
-            owner_urn_parts = owner_urn.split(":")
-            owner_urn_type = owner_urn_parts[2]
-            if owner_urn_type == "corpuser":
-                if owner_urn in assigned_users:
-                    assigned_users.remove(owner_urn)
-                    has_changed = True
-            elif owner_urn_type == "corpGroup":
-                if owner_urn in assigned_groups:
-                    assigned_groups.remove(owner_urn)
-                    has_changed = True
-
-        if has_changed:
-            action_request_info["assignedUsers"] = assigned_users
-            action_request_info["assignedGroups"] = assigned_groups
-            self.graph.emit_mcp(
-                MetadataChangeProposal(
-                    entityType="actionRequest",
-                    changeType=ChangeTypeClass.UPSERT,
-                    entityUrn=proposal_urn,
-                    aspectName=aspect,
-                    aspect=GenericAspectClass(
-                        contentType="application/json",
-                        value=json.dumps(action_request_info).encode(),
-                    ),
-                )
-            )
 
     def get_untyped_aspect(
         self,

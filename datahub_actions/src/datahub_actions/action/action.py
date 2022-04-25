@@ -13,7 +13,7 @@
 # limitations under the License.
 from abc import abstractmethod
 
-from datahub_actions.events.event import EnvelopedEvent
+from datahub_actions.event.event import EnvelopedEvent
 from datahub_actions.pipeline.context import ActionContext
 
 

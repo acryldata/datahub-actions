@@ -11,7 +11,7 @@ To install the Actions framework, simply install the "datahub-actions" package f
 ```
 python3 -m pip install --upgrade pip wheel setuptools
 python3 -m pip install --upgrade acryl-datahub-actions
-datahub-actions --version
+datahub actions --version
 ```
 
 ## Actions Library
@@ -24,15 +24,7 @@ TODO: Insert Table Here.
 
 Actions are configured using a YAML file, much in the same way DataHub ingestion sources are. An action configuration file consists of the following:
 
-- `version`: The version of the action config file. Defaults to 0.
-- `actions`: A list of actions to configure.
-- `actions.type`: The type of the action to configure. This can be a common name or a fully-qualified class name.
-- `actions.config`: Action-specific configurations. 
-- `server`: The location where DataHub GMS is deployed. E.g.
-    - `http://localhost:9002/api/gms`
-    - `http://localhost:8080`
-    - `https://datahub-your-org.com/api/gms`
-- `token`: An access token to use for accessing DataHub APIs. 
+TODO
 
 
 ### Sample Configuration
@@ -48,7 +40,37 @@ Once you've configured these properties, you can continue on to the next step.
 To run a new action, just use the datahub-actions CLI to start an actions listener. 
 
 ```
-datahub-actions run -c actions-config.yml 
+datahub actions -c <pipeline-config.yml>
+```
+
+### Running multiple actions
+
+You can run multiple actions pipeline within the same command. Simply provide multiple 
+config files by restating the "-c" command line argument.
+
+For example,
+
+```
+datahub actions -c <config-1.yaml> -c <config-2.yaml>
+```
+
+### Running in debug mode
+
+Simply append the `--debug` flag to the CLI to run your action in debug mode.
+
+```
+datahub actions -c <config.yaml> --debug
+```
+
+### Examples
+
+#### Hello World Action
+
+To run a "Hello World" action, which simply prints events it receives to the console,
+you can run
+
+```
+datahub actions -c examples/hello_world.yaml
 ```
 
 ## FAQ

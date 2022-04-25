@@ -2,8 +2,8 @@ from typing import Any
 
 from datahub.metadata.schema_classes import DictWrapper
 
-from datahub_actions.events.event import EnvelopedEvent, EventType
-from datahub_actions.transform.filter.filter_transformer import (
+from datahub_actions.event.event import EnvelopedEvent, EventType
+from datahub_actions.plugin.transform.filter.filter_transformer import (
     FilterTransformer,
     FilterTransformerConfig,
 )

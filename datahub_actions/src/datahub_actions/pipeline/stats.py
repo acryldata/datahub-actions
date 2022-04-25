@@ -1,17 +1,9 @@
 import datetime
-import pprint
-import sys
 import json
 from time import time
 from typing import Dict
 
 import click
-
-# The sort_dicts option was added in Python 3.8.
-if sys.version_info >= (3, 8):
-    PPRINT_OPTIONS = {"sort_dicts": False}
-else:
-    PPRINT_OPTIONS: Dict = {}
 
 
 # Class that stores running statistics for a single Action.
@@ -36,7 +28,7 @@ class ActionStats:
         return self.success_count
 
     def as_string(self) -> str:
-        return pprint.pformat(json.dumps(self.__dict__, indent=4, sort_keys=True), width=150, **PPRINT_OPTIONS)
+        return json.dumps(self.__dict__, indent=4, sort_keys=True)
 
 
 # Class that stores running statistics for a single Actions Transformer.
@@ -44,7 +36,7 @@ class TransformerStats:
     # The number of exceptions raised by the Transformer.
     exception_count: int = 0
 
-    # The total number of events that were received by the transformer. 
+    # The total number of events that were received by the transformer.
     processed_count: int = 0
 
     # The number of events filtered by the Transformer. The total transformed count is equal to processed count - filtered count.
@@ -69,7 +61,7 @@ class TransformerStats:
         return self.filtered_count
 
     def as_string(self) -> str:
-        return pprint.pformat(json.dumps(self.__dict__,  indent=4, sort_keys=True), width=150, **PPRINT_OPTIONS)
+        return json.dumps(self.__dict__, indent=4, sort_keys=True)
 
 
 # Class that stores running statistics for a single Actions Pipeline.
@@ -146,7 +138,7 @@ class PipelineStats:
         return self.action_stats
 
     def as_string(self) -> str:
-        return pprint.pformat(json.dumps(self.__dict__, indent=4, sort_keys=True), width=150, **PPRINT_OPTIONS)
+        return json.dumps(self.__dict__, indent=4, sort_keys=True)
 
     def pretty_print_summary(self, name: str) -> None:
         curr_time = int(time() * 1000)
@@ -154,9 +146,9 @@ class PipelineStats:
         click.secho(f"Pipeline Report for {name}", bold=True, fg="blue")
         click.echo()
         click.echo(
-            f"Started at: {datetime.datetime.fromtimestamp(self._started_at/1000.0)} (Local Time)"
+            f"Started at: {datetime.datetime.fromtimestamp(self.started_at/1000.0)} (Local Time)"
         )
-        click.echo(f"Duration: {(curr_time - self._started_at)/1000.0}s")
+        click.echo(f"Duration: {(curr_time - self.started_at)/1000.0}s")
         click.echo()
         click.secho("Pipeline statistics", bold=True)
         click.echo()
@@ -166,7 +158,7 @@ class PipelineStats:
             click.secho("Transformer statistics", bold=True)
             for key in self.transformer_stats:
                 click.echo()
-                click.echo(f"{key}: {self._transformer_stats[key].as_string()}")
+                click.echo(f"{key}: {self.transformer_stats[key].as_string()}")
             click.echo()
         click.secho("Action statistics", bold=True)
         click.echo()

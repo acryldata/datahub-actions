@@ -3,7 +3,7 @@ from typing import Iterable
 
 from datahub.ingestion.api.closeable import Closeable
 
-from datahub_actions.events.event import EnvelopedEvent
+from datahub_actions.event.event import EnvelopedEvent
 from datahub_actions.pipeline.context import ActionContext
 
 

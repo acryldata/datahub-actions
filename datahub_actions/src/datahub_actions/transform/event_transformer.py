@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Optional
 
-from datahub_actions.events.event import EnvelopedEvent
+from datahub_actions.event.event import EnvelopedEvent
 from datahub_actions.pipeline.context import ActionContext
 
 
