@@ -16,7 +16,7 @@ from abc import ABCMeta, abstractmethod
 from datahub.ingestion.api.closeable import Closeable
 
 from datahub_actions.event.event import EventEnvelope
-from datahub_actions.pipeline.context import ActionContext
+from datahub_actions.pipeline.pipeline_context import PipelineContext
 
 
 class Action(Closeable, metaclass=ABCMeta):
@@ -31,7 +31,7 @@ class Action(Closeable, metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def create(cls, config_dict: dict, ctx: ActionContext) -> "Action":
+    def create(cls, config_dict: dict, ctx: PipelineContext) -> "Action":
         """Factory method to create an instance of an Action"""
         pass
 

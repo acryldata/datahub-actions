@@ -4,7 +4,7 @@ from typing import Iterable
 from datahub.ingestion.api.closeable import Closeable
 
 from datahub_actions.event.event import EventEnvelope
-from datahub_actions.pipeline.context import ActionContext
+from datahub_actions.pipeline.pipeline_context import PipelineContext
 
 
 class EventSource(Closeable, metaclass=ABCMeta):
@@ -20,7 +20,7 @@ class EventSource(Closeable, metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def create(cls, config_dict: dict, ctx: ActionContext) -> "EventSource":
+    def create(cls, config_dict: dict, ctx: PipelineContext) -> "EventSource":
         """Factory method to create an instance of an Event Source"""
         pass
 

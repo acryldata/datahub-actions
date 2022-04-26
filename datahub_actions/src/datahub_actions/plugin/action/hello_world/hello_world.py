@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from datahub_actions.action.action import Action
 from datahub_actions.event.event import EventEnvelope
-from datahub_actions.pipeline.context import ActionContext
+from datahub_actions.pipeline.pipeline_context import PipelineContext
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +31,11 @@ class HelloWorldConfig(BaseModel):
 # events received to the console.
 class HelloWorldAction(Action):
     @classmethod
-    def create(cls, config_dict: dict, ctx: ActionContext) -> "Action":
+    def create(cls, config_dict: dict, ctx: PipelineContext) -> "Action":
         action_config = HelloWorldConfig.parse_obj(config_dict or {})
         return cls(action_config, ctx)
 
-    def __init__(self, config: HelloWorldConfig, ctx: ActionContext):
+    def __init__(self, config: HelloWorldConfig, ctx: PipelineContext):
         self.config = config
 
     def act(self, event: EventEnvelope) -> None:

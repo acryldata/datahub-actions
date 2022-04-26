@@ -34,7 +34,7 @@ from acryl.executor.secret.secret_store import SecretStoreConfig
 
 from datahub_actions.action.action import Action
 from datahub_actions.event.event import EventEnvelope, EventType
-from datahub_actions.pipeline.context import ActionContext
+from datahub_actions.pipeline.pipeline_context import PipelineContext
 
 logger = logging.getLogger(__name__)
 
@@ -71,10 +71,10 @@ def import_path(path: str) -> Any:
 # Listens to new Execution Requests & dispatches them to the appropriate handler.
 class ExecutorAction(Action):
     @classmethod
-    def create(cls, config_dict: dict, ctx: ActionContext) -> "Action":
+    def create(cls, config_dict: dict, ctx: PipelineContext) -> "Action":
         return cls(ctx)
 
-    def __init__(self, ctx: ActionContext):
+    def __init__(self, ctx: PipelineContext):
         self.ctx = ctx
 
         executors = []
@@ -167,7 +167,7 @@ class ExecutorAction(Action):
                 logger.error("ERROR", exc_info=sys.exc_info())
 
     def _build_default_executor_config(
-        self, ctx: ActionContext
+        self, ctx: PipelineContext
     ) -> ReportingExecutorConfig:
 
         # Build default task config

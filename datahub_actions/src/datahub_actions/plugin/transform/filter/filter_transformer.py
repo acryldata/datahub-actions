@@ -5,7 +5,7 @@ import pydantic
 from datahub.configuration import ConfigModel
 
 from datahub_actions.event.event import EventEnvelope, EventType
-from datahub_actions.pipeline.context import ActionContext
+from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.transform.transformer import Transformer
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class FilterTransformer(Transformer):
         self.config: FilterTransformerConfig = config
 
     @classmethod
-    def create(cls, config_dict: dict, ctx: ActionContext) -> "Transformer":
+    def create(cls, config_dict: dict, ctx: PipelineContext) -> "Transformer":
         config = FilterTransformerConfig.parse_obj(config_dict)
         return cls(config)
 

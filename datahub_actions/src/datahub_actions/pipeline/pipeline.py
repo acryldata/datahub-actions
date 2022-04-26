@@ -13,7 +13,7 @@ from datahub_actions.action.action import Action
 from datahub_actions.action.action_registry import action_registry
 from datahub_actions.api.action_graph import AcrylDataHubGraph
 from datahub_actions.event.event import EventEnvelope
-from datahub_actions.pipeline.context import ActionContext
+from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.pipeline.pipeline_stats import PipelineStats
 from datahub_actions.plugin.transform.filter.filter_transformer import (
     FilterTransformer,
@@ -78,11 +78,15 @@ class PipelineConfig(BaseModel):
 
 def create_action_context(
     pipeline_name: str, datahub_config: DatahubClientConfig
-) -> ActionContext:
-    return ActionContext(pipeline_name, AcrylDataHubGraph(DataHubGraph(datahub_config)))
+) -> PipelineContext:
+    return PipelineContext(
+        pipeline_name, AcrylDataHubGraph(DataHubGraph(datahub_config))
+    )
 
 
-def create_event_source(source_config: SourceConfig, ctx: ActionContext) -> EventSource:
+def create_event_source(
+    source_config: SourceConfig, ctx: PipelineContext
+) -> EventSource:
     event_source_type = source_config.type
     event_source_class = event_source_registry.get(event_source_type)
     try:
@@ -103,7 +107,7 @@ def create_event_source(source_config: SourceConfig, ctx: ActionContext) -> Even
 
 
 def create_filter_transformer(
-    filter_config: FilterConfig, ctx: ActionContext
+    filter_config: FilterConfig, ctx: PipelineContext
 ) -> Transformer:
     try:
         logger.debug("Attempting to instantiate filter transformer..")
@@ -121,7 +125,7 @@ def create_filter_transformer(
 
 
 def create_transformer(
-    transform_config: TransformConfig, ctx: ActionContext
+    transform_config: TransformConfig, ctx: PipelineContext
 ) -> Transformer:
     transformer_type = transform_config.type
     transformer_class = transformer_registry.get(transformer_type)
@@ -142,7 +146,7 @@ def create_transformer(
         ) from e
 
 
-def create_action(action_config: ActionConfig, ctx: ActionContext) -> Action:
+def create_action(action_config: ActionConfig, ctx: PipelineContext) -> Action:
     action_type = action_config.type
     try:
         logger.debug(
