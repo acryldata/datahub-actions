@@ -94,6 +94,7 @@ class KafkaEventSourceConfig(ConfigModel):
     topic_routes: Dict[str, str]
 
 
+# This is the default Kafka-based Event Source. 
 @dataclass
 class KafkaEventSource(EventSource):
 

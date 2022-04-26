@@ -32,7 +32,7 @@ source:
       # mae: ${METADATA_AUDIT_EVENT_NAME:-MetadataAuditEvent_v4}
       mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
-# filter:
+# filter: Optional Pre-Filter 
 #  event_type: "EntityChangeEvent"
 #  fields:
 #     category: "TAG"
