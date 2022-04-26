@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import pydantic
 from datahub.configuration import ConfigModel
@@ -45,8 +45,18 @@ class FilterTransformer(Transformer):
     def _matches(self, match_val: Any, match_val_to: Any) -> bool:
         if isinstance(match_val, dict):
             return self._matches_dict(match_val, match_val_to)
-        else:
-            return match_val == match_val_to
+        if isinstance(match_val, list):
+            return self._matches_list(match_val, match_val_to)
+        return match_val == match_val_to
+
+    def _matches_list(self, match_filters: List, match_with: Any) -> bool:
+        """When matching lists we do ANY not ALL match"""
+        if not isinstance(match_with, str):
+            return False
+        for filter in match_filters:
+            if filter == match_with:
+                return True
+        return False
 
     def _matches_dict(self, match_filters: Dict[str, Any], match_with: Any) -> bool:
         if not isinstance(match_with, dict):
