@@ -1,5 +1,4 @@
 name: Test Results
-
 on:
   workflow_run:
     workflows: ["build & test"]
