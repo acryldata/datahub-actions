@@ -10,15 +10,15 @@ from click_default_group import DefaultGroup
 from datahub.configuration.config_loader import load_config_file
 
 import datahub_actions as datahub_actions_package
-from datahub_actions.pipeline.actions_manager import ActionsManager
 from datahub_actions.pipeline.pipeline import Pipeline
+from datahub_actions.pipeline.pipeline_manager import PipelineManager
 
 logger = logging.getLogger(__name__)
 
 
 # Instantiate a singleton instance of the Actions Manager.
-actions_manager = ActionsManager()
-actions_manager.init()
+pipeline_manager = PipelineManager()
+pipeline_manager.init()
 
 
 def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
@@ -81,7 +81,7 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
 
     # Start each pipeline.
     for p in pipelines:
-        actions_manager.start_pipeline(p.name, p)
+        pipeline_manager.start_pipeline(p.name, p)
         logger.info(f"Action Pipeline with name '{p.name}' is now running.")
 
     # Now, simply run forever.
@@ -102,7 +102,7 @@ def version() -> None:
 # Handle shutdown signal. (ctrl-c)
 def handle_shutdown(signum, frame):
     logger.info("Terminating all running Action Pipelines...")
-    actions_manager.terminate_all()
+    pipeline_manager.terminate_all()
     exit(1)
 
 
