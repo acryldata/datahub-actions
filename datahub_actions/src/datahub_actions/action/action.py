@@ -11,14 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 
 from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.context import ActionContext
 
 
-class Action:
-    """The base class for all DataHub Actions"""
+class Action(metaclass=ABCMeta):
+    """
+    The base class for all DataHub Actions.
+
+    A DataHub action is a component capable of performing a specific action (notification, auditing, synchronization, & more)
+    when important events occur on DataHub.
+
+    Each Action may provide its own semantics, configurations, compatibility and guarantees.
+    """
 
     @classmethod
     @abstractmethod
@@ -28,5 +35,5 @@ class Action:
 
     @abstractmethod
     def act(self, event: EventEnvelope) -> None:
-        """Take Action on DataHub events"""
+        """Take Action on DataHub events, provided an instance of a DataHub event."""
         pass

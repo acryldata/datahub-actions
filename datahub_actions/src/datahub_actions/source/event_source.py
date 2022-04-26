@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from typing import Iterable
 
 from datahub.ingestion.api.closeable import Closeable
@@ -7,8 +7,10 @@ from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.context import ActionContext
 
 
-class EventSource(Closeable):
+class EventSource(Closeable, metaclass=ABCMeta):
     """
+    The base class for all DataHub Event Sources.
+
     An Event Source is a producer of DataHub Events which can be acted on using the
     Actions Framework.
 
@@ -19,6 +21,7 @@ class EventSource(Closeable):
     @classmethod
     @abstractmethod
     def create(cls, config_dict: dict, ctx: ActionContext) -> "EventSource":
+        """Factory method to create an instance of an Event Source"""
         pass
 
     @abstractmethod

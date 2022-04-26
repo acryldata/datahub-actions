@@ -1,6 +1,6 @@
 from datahub.ingestion.api.registry import PluginRegistry
 
-from datahub_actions.plugin.source.kafka_event_source import KafkaEventSource
+from datahub_actions.plugin.source.kafka.kafka_event_source import KafkaEventSource
 from datahub_actions.source.event_source import EventSource
 
 event_source_registry = PluginRegistry[EventSource]()

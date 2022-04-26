@@ -6,7 +6,7 @@ from datahub.configuration import ConfigModel
 
 from datahub_actions.event.event import EventEnvelope, EventType
 from datahub_actions.pipeline.context import ActionContext
-from datahub_actions.transform.event_transformer import Transformer
+from datahub_actions.transform.transformer import Transformer
 
 logger = logging.getLogger(__name__)
 

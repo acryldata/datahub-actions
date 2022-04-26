@@ -21,10 +21,8 @@ from datahub_actions.plugin.transform.filter.filter_transformer import (
 )
 from datahub_actions.source.event_source import EventSource
 from datahub_actions.source.event_source_registry import event_source_registry
-from datahub_actions.transform.event_transformer import Transformer
-from datahub_actions.transform.event_transformer_registry import (
-    event_transformer_registry,
-)
+from datahub_actions.transform.transformer import Transformer
+from datahub_actions.transform.transformer_registry import transformer_registry
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +124,7 @@ def create_transformer(
     transform_config: TransformConfig, ctx: ActionContext
 ) -> Transformer:
     transformer_type = transform_config.type
-    transformer_class = event_transformer_registry.get(transformer_type)
+    transformer_class = transformer_registry.get(transformer_type)
     try:
         logger.debug(
             f"Attempting to instantiate new Transformer of type {transform_config.type}.."
@@ -172,6 +170,25 @@ FAILED_EVENTS_FILE_NAME = "failed_events.log"
 
 # A component responsible for executing a single Actions pipeline.
 class Pipeline:
+    """
+    A Pipeline is responsible for coordinating execution of a single DataHub Action.
+
+    Most notably, this responsibility includes:
+
+        - sourcing events from an Event Source
+        - executing a configurable chain of Transformers
+        - invoking an Action with the final Event
+        - acknowledging the processing of an Event with the Event Source
+
+    Additionally, a Pipeline supports the following capabilities:
+
+        - Configurable retries of event processing in cases of component failure
+        - Configurable dead letter queue (defaults to failed_events.log file)
+        - Capturing basic statistics about each Pipeline component
+        - At-will start and stop
+
+    """
+
     name: str
     source: EventSource
     transforms: List[Transformer] = []
