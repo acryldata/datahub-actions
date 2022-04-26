@@ -1,175 +1,29 @@
 import logging
 import os
-import re
-import traceback
-from enum import Enum
-from typing import Any, Dict, List, Optional
-
-from datahub.configuration import ConfigModel
-from datahub.ingestion.graph.client import DatahubClientConfig, DataHubGraph
-from pydantic import BaseModel
+from typing import List, Optional
 
 from datahub_actions.action.action import Action
-from datahub_actions.action.action_registry import action_registry
-from datahub_actions.api.action_graph import AcrylDataHubGraph
 from datahub_actions.event.event import EventEnvelope
-from datahub_actions.pipeline.pipeline_context import PipelineContext
+from datahub_actions.pipeline.pipeline_config import FailureMode, PipelineConfig
 from datahub_actions.pipeline.pipeline_stats import PipelineStats
-from datahub_actions.plugin.transform.filter.filter_transformer import (
-    FilterTransformer,
-    FilterTransformerConfig,
+from datahub_actions.pipeline.pipeline_util import (
+    create_action,
+    create_action_context,
+    create_event_source,
+    create_filter_transformer,
+    create_transformer,
+    normalize_directory_name,
 )
 from datahub_actions.source.event_source import EventSource
-from datahub_actions.source.event_source_registry import event_source_registry
 from datahub_actions.transform.transformer import Transformer
-from datahub_actions.transform.transformer_registry import transformer_registry
 
 logger = logging.getLogger(__name__)
 
 
-class FailureMode(str, Enum):
-    # Log the failed event to the failed events log. Then throw an pipeline exception to stop the pipeline.
-    THROW = "THROW"
-    # Log the failed event to the failed events log. Then continue processing the event stream.
-    CONTINUE = "CONTINUE"
-
-
-class SourceConfig(ConfigModel):
-    type: str
-    config: Optional[Dict[str, Any]]
-
-
-class TransformConfig(ConfigModel):
-    type: str
-    config: Optional[Dict[str, Any]]
-
-
-class FilterConfig(ConfigModel):
-    event_type: str
-    fields: Dict[str, Any]
-
-
-class ActionConfig(ConfigModel):
-    type: str
-    config: Optional[dict]
-
-
-class PipelineOptions(BaseModel):
-    retry_count: Optional[int]
-    failure_mode: Optional[FailureMode]
-    failed_events_dir: Optional[str]  # The path where failed events should be logged.
-
-    class Config:
-        use_enum_values = True
-
-
-class PipelineConfig(BaseModel):
-    name: str
-    source: SourceConfig
-    filter: Optional[FilterConfig]
-    transform: Optional[List[TransformConfig]]
-    action: ActionConfig
-    datahub: DatahubClientConfig
-    options: Optional[PipelineOptions]
-
-    class Config:
-        extra = "allow"
-
-
-def create_action_context(
-    pipeline_name: str, datahub_config: DatahubClientConfig
-) -> PipelineContext:
-    return PipelineContext(
-        pipeline_name, AcrylDataHubGraph(DataHubGraph(datahub_config))
-    )
-
-
-def create_event_source(
-    source_config: SourceConfig, ctx: PipelineContext
-) -> EventSource:
-    event_source_type = source_config.type
-    event_source_class = event_source_registry.get(event_source_type)
-    try:
-        logger.debug(
-            f"Attempting to instantiate new Event Source of type {source_config.type}.."
-        )
-        event_source_config = (
-            source_config.config if source_config.config is not None else {}
-        )
-        return event_source_class.create(event_source_config, ctx)
-    except Exception as e:
-        logger.error(
-            f"Caught exception while attempting to instantiate Event Source of type {source_config.type}: {traceback.format_exc(limit=3)}"
-        )
-        raise Exception(
-            f"Caught exception while attempting to instantiate Event Source of type {source_config.type}"
-        ) from e
-
-
-def create_filter_transformer(
-    filter_config: FilterConfig, ctx: PipelineContext
-) -> Transformer:
-    try:
-        logger.debug("Attempting to instantiate filter transformer..")
-        filter_transformer_config = FilterTransformerConfig(
-            event_type=filter_config.event_type, fields=filter_config.fields
-        )
-        return FilterTransformer(filter_transformer_config)
-    except Exception as e:
-        logger.error(
-            f"Caught exception while attempting to instantiate Filter transformer: {traceback.format_exc(limit=3)}"
-        )
-        raise Exception(
-            "Caught exception while attempting to instantiate Filter transformer"
-        ) from e
-
-
-def create_transformer(
-    transform_config: TransformConfig, ctx: PipelineContext
-) -> Transformer:
-    transformer_type = transform_config.type
-    transformer_class = transformer_registry.get(transformer_type)
-    try:
-        logger.debug(
-            f"Attempting to instantiate new Transformer of type {transform_config.type}.."
-        )
-        transformer_config = (
-            transform_config.config if transform_config.config is not None else {}
-        )
-        return transformer_class.create(transformer_config, ctx)
-    except Exception as e:
-        logger.error(
-            f"Caught exception while attempting to instantiate Transformer: {traceback.format_exc(limit=3)}"
-        )
-        raise Exception(
-            "Caught exception while attempting to instantiate Transformer"
-        ) from e
-
-
-def create_action(action_config: ActionConfig, ctx: PipelineContext) -> Action:
-    action_type = action_config.type
-    try:
-        logger.debug(
-            f"Attempting to instantiate new Action of type {action_config.type}.."
-        )
-        action_class = action_registry.get(action_type)
-        action_config_dict = (
-            action_config.config if action_config.config is not None else {}
-        )
-        return action_class.create(action_config_dict, ctx)
-    except Exception as e:
-        raise Exception(
-            "Caught exception while attempting to instantiate Action. "
-        ) from e
-
-
-def normalize_directory_name(name: str) -> str:
-    # Lower case & remove whitespaces + periods.
-    return re.sub(r"[^\w\-_]", "_", name.lower())
-
-
-# The name of the file where failed events will be written.
-FAILED_EVENTS_FILE_NAME = "failed_events.log"
+# Defaults for the location where failed events will be written.
+DEFAULT_FAILED_EVENTS_DIR = "/tmp/logs/datahub/actions"
+DEFAULT_FAILED_EVENTS_FILE_NAME = "failed_events.log"  # Not currently configurable.
+DEFAULT_FAILURE_MODE = FailureMode.CONTINUE
 
 
 # A component responsible for executing a single Actions pipeline.
@@ -206,8 +60,8 @@ class Pipeline:
 
     # Error handling
     _retry_count: int = 3  # Number of times a single event should be retried in case of processing error.
-    _failure_mode: FailureMode = FailureMode.CONTINUE
-    _failed_events_dir: str = "/tmp/logs/datahub/actions"  # The top-level path where failed events will be logged.
+    _failure_mode: FailureMode = DEFAULT_FAILURE_MODE
+    _failed_events_dir: str = DEFAULT_FAILED_EVENTS_DIR  # The top-level path where failed events will be logged.
 
     def __init__(
         self,
@@ -380,7 +234,7 @@ class Pipeline:
             os.makedirs(failed_events_dir, exist_ok=True)
 
             failed_events_file_name = os.path.join(
-                failed_events_dir, FAILED_EVENTS_FILE_NAME
+                failed_events_dir, DEFAULT_FAILED_EVENTS_FILE_NAME
             )
             self._failed_events_fd = open(failed_events_file_name, "a")
         except Exception as e:
