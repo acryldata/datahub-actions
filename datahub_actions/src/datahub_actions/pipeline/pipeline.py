@@ -14,7 +14,7 @@ from datahub_actions.action.action_registry import action_registry
 from datahub_actions.api.action_graph import AcrylDataHubGraph
 from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.context import ActionContext
-from datahub_actions.pipeline.stats import PipelineStats
+from datahub_actions.pipeline.pipeline_stats import PipelineStats
 from datahub_actions.plugin.transform.filter.filter_transformer import (
     FilterTransformer,
     FilterTransformerConfig,
