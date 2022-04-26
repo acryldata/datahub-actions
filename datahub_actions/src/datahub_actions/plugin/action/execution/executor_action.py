@@ -202,3 +202,7 @@ class ExecutorAction(Action):
             raise Exception(
                 f"Failed to create instance of executor with type {type}: {traceback.format_exc(limit=3)}"
             )
+
+    def close(self) -> None:
+        # TODO: Handle closing action ingestion processing.
+        pass

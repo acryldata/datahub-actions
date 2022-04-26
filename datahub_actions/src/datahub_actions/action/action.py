@@ -13,11 +13,13 @@
 # limitations under the License.
 from abc import ABCMeta, abstractmethod
 
+from datahub.ingestion.api.closeable import Closeable
+
 from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.context import ActionContext
 
 
-class Action(metaclass=ABCMeta):
+class Action(Closeable, metaclass=ABCMeta):
     """
     The base class for all DataHub Actions.
 

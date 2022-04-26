@@ -391,6 +391,7 @@ class Pipeline:
         self._shutdown = True
         self._failed_events_fd.close()
         self.source.close()
+        self.action.close()
 
     # Get the pipeline statistics
     def stats(self) -> PipelineStats:

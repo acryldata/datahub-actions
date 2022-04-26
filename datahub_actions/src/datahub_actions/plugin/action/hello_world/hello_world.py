@@ -44,3 +44,6 @@ class HelloWorldAction(Action):
             print(message.upper())
         else:
             print(message)
+
+    def close(self) -> None:
+        pass

@@ -19,10 +19,6 @@ actions_manager = ActionsManager()
 actions_manager.init()
 
 
-def config_to_pipelines(config: dict) -> List[Pipeline]:
-    raise Exception("Config based pipeline creation not yet supported.")
-
-
 def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
     logger.debug(
         f"Attempting to create Actions Pipeline using config {pipeline_config}"
@@ -86,7 +82,7 @@ def actions(ctx: Any, config: List[str], debug: bool) -> None:
         time.sleep(5)
 
 
-# Handle shutdown signal.
+# Handle shutdown signal. (ctrl-c)
 def handle_shutdown(signum, frame):
     logger.info("Terminating all running Action Pipelines...")
     actions_manager.terminate_all()
