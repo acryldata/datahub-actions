@@ -13,7 +13,7 @@
 # limitations under the License.
 from abc import abstractmethod
 
-from datahub_actions.event.event import EnvelopedEvent
+from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.context import ActionContext
 
 
@@ -27,6 +27,6 @@ class Action:
         pass
 
     @abstractmethod
-    def act(self, event: EnvelopedEvent) -> None:
+    def act(self, event: EventEnvelope) -> None:
         """Take Action on DataHub events"""
         pass

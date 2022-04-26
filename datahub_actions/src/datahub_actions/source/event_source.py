@@ -3,7 +3,7 @@ from typing import Iterable
 
 from datahub.ingestion.api.closeable import Closeable
 
-from datahub_actions.event.event import EnvelopedEvent
+from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.context import ActionContext
 
 
@@ -22,7 +22,7 @@ class EventSource(Closeable):
         pass
 
     @abstractmethod
-    def events(self) -> Iterable[EnvelopedEvent]:
+    def events(self) -> Iterable[EventEnvelope]:
         """
         Returns an iterable of enveloped events.
 
@@ -31,7 +31,7 @@ class EventSource(Closeable):
         """
 
     @abstractmethod
-    def ack(self, event: EnvelopedEvent) -> None:
+    def ack(self, event: EventEnvelope) -> None:
         """
         Acknowledges the processing of an individual event by the Actions Framework
         """

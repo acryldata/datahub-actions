@@ -35,7 +35,7 @@ from datahub.metadata.schema_classes import (
     ParametersClass,
 )
 
-from datahub_actions.event.event import EnvelopedEvent, EventType
+from datahub_actions.event.event import EventEnvelope, EventType
 
 # May or may not need these.
 from datahub_actions.pipeline.context import ActionContext
@@ -127,7 +127,7 @@ class KafkaEventSource(EventSource):
         config = KafkaEventSourceConfig.parse_obj(config_dict)
         return cls(config, ctx)
 
-    def events(self) -> Iterable[EnvelopedEvent]:
+    def events(self) -> Iterable[EventEnvelope]:
         topic_routes = self.source_config.topic_routes
         topics_to_subscribe = list(topic_routes.values())
         logger.debug(f"Subscribing to the following topics: {topics_to_subscribe}")
@@ -157,14 +157,14 @@ class KafkaEventSource(EventSource):
                 elif "pe" in topic_routes and msg.topic() == topic_routes["pe"]:
                     yield from self._handle_pe(msg)
 
-    def _handle_mcl(self, msg: Any) -> Iterable[EnvelopedEvent]:
+    def _handle_mcl(self, msg: Any) -> Iterable[EventEnvelope]:
         metadata_change_log_event = build_metadata_change_log_event(msg)
         kafka_meta = build_kafka_meta(msg)
-        yield EnvelopedEvent(
+        yield EventEnvelope(
             EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta
         )
 
-    def _handle_pe(self, msg: Any) -> Iterable[EnvelopedEvent]:
+    def _handle_pe(self, msg: Any) -> Iterable[EventEnvelope]:
         value: dict = msg.value()
         payload: GenericPayloadClass = GenericPayloadClass.from_obj(
             post_json_transform(value["payload"])
@@ -172,14 +172,14 @@ class KafkaEventSource(EventSource):
         if ENTITY_CHANGE_EVENT_NAME == value["name"]:
             event = build_entity_change_event(payload)
             kafka_meta = build_kafka_meta(msg)
-            yield EnvelopedEvent(EventType.ENTITY_CHANGE_EVENT, event, kafka_meta)
+            yield EventEnvelope(EventType.ENTITY_CHANGE_EVENT, event, kafka_meta)
 
     def close(self) -> None:
         if self.consumer:
             self.running = False
             self.consumer.close()
 
-    def ack(self, event: EnvelopedEvent) -> None:
+    def ack(self, event: EventEnvelope) -> None:
         self.consumer.commit(
             offsets=[
                 TopicPartition(

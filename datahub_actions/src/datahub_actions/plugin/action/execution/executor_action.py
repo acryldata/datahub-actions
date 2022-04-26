@@ -33,7 +33,7 @@ from acryl.executor.secret.datahub_secret_store import DataHubSecretStoreConfig
 from acryl.executor.secret.secret_store import SecretStoreConfig
 
 from datahub_actions.action.action import Action
-from datahub_actions.event.event import EnvelopedEvent, EventType
+from datahub_actions.event.event import EventEnvelope, EventType
 from datahub_actions.pipeline.context import ActionContext
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ class ExecutorAction(Action):
         # Construct execution request dispatcher
         self.dispatcher = DefaultDispatcher(executors)
 
-    def act(self, event: EnvelopedEvent) -> None:
+    def act(self, event: EventEnvelope) -> None:
         """This method listens for ExecutionRequest changes to execute in schedule and trigger events"""
         if event.event_type is EventType.METADATA_CHANGE_LOG:
             orig_event = event.event

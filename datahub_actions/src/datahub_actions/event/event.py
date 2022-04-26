@@ -24,8 +24,8 @@ class Event(DictWrapper):
 
 # An object representation of the actual change event.
 @dataclass
-class EnvelopedEvent:
-    # The type of the event.
+class EventEnvelope:
+    # The type of the event. This corresponds to the shape of the payload.
     event_type: str
 
     # The event itself

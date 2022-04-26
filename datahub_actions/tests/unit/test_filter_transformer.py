@@ -2,7 +2,7 @@ from typing import Any
 
 from datahub.metadata.schema_classes import DictWrapper
 
-from datahub_actions.event.event import EnvelopedEvent, EventType
+from datahub_actions.event.event import EventEnvelope, EventType
 from datahub_actions.plugin.transform.filter.filter_transformer import (
     FilterTransformer,
     FilterTransformerConfig,
@@ -25,7 +25,7 @@ def test_filter_transformer_does_exact_match():
     test_event = TestEvent("a", "b")
 
     result = filter_transformer.transform(
-        EnvelopedEvent(
+        EventEnvelope(
             event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
         )
     )
@@ -42,7 +42,7 @@ def test_filter_transformer_returns_none_when_no_match():
     test_event = TestEvent("a", "c")
 
     result = filter_transformer.transform(
-        EnvelopedEvent(
+        EventEnvelope(
             event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
         )
     )
@@ -59,7 +59,7 @@ def test_filter_transformer_matches_on_nested_event():
     filter_transformer = FilterTransformer(filter_transformer_config)
     test_event = TestEvent({"nested_1": {"nested_b": "a"}, "nested_2": "c"}, None)
     result = filter_transformer.transform(
-        EnvelopedEvent(
+        EventEnvelope(
             event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
         )
     )
@@ -76,7 +76,7 @@ def test_filter_transformer_returns_none_when_no_match_nested_event():
     filter_transformer = FilterTransformer(filter_transformer_config)
     test_event = TestEvent({"nested_1": {"nested_b": "b"}, "nested_2": "c"}, None)
     result = filter_transformer.transform(
-        EnvelopedEvent(
+        EventEnvelope(
             event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
         )
     )
@@ -93,7 +93,7 @@ def test_filter_transformer_returns_none_when_different_data_type():
     filter_transformer = FilterTransformer(filter_transformer_config)
     test_event = TestEvent({"nested_1": ["a"]}, None)
     result = filter_transformer.transform(
-        EnvelopedEvent(
+        EventEnvelope(
             event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
         )
     )

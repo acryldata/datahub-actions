@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from datahub_actions.action.action import Action
 from datahub_actions.action.action_registry import action_registry
 from datahub_actions.api.action_graph import AcrylDataHubGraph
-from datahub_actions.event.event import EnvelopedEvent
+from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.context import ActionContext
 from datahub_actions.pipeline.stats import PipelineStats
 from datahub_actions.plugin.transform.filter.filter_transformer import (
@@ -254,7 +254,7 @@ class Pipeline:
             # Finally, ack the event.
             self._ack_event(enveloped_event)
 
-    def _process_event(self, enveloped_event: EnvelopedEvent) -> None:
+    def _process_event(self, enveloped_event: EventEnvelope) -> None:
 
         # Retry event processing.
         curr_attempt = 1
@@ -288,8 +288,8 @@ class Pipeline:
             self._handle_failure(enveloped_event)
 
     def _transform_event(
-        self, enveloped_event: EnvelopedEvent
-    ) -> Optional[EnvelopedEvent]:
+        self, enveloped_event: EventEnvelope
+    ) -> Optional[EventEnvelope]:
         curr_event = enveloped_event
         for transformer in self.transforms:
             transformer_name = type(transformer).__name__
@@ -312,7 +312,7 @@ class Pipeline:
 
         return curr_event
 
-    def _execute_action(self, enveloped_event: EnvelopedEvent) -> None:
+    def _execute_action(self, enveloped_event: EventEnvelope) -> None:
         try:
             self.action.act(enveloped_event)
             self._stats.increment_action_success_count()
@@ -322,7 +322,7 @@ class Pipeline:
                 f"Caught exception while executing Action with type {type(self.action).__name__}"
             ) from e
 
-    def _ack_event(self, enveloped_event: EnvelopedEvent) -> None:
+    def _ack_event(self, enveloped_event: EventEnvelope) -> None:
         try:
             self.source.ack(enveloped_event)
             self._stats.increment_success_count()
@@ -334,7 +334,7 @@ class Pipeline:
             )
             logger.debug(f"Failed to ack event: {enveloped_event}")
 
-    def _handle_failure(self, enveloped_event: EnvelopedEvent) -> None:
+    def _handle_failure(self, enveloped_event: EventEnvelope) -> None:
         # First, always save the failed event to a file. Useful for investigation.
         self._append_failed_event_to_file(enveloped_event)
         if self._failure_mode == FailureMode.THROW:
@@ -343,7 +343,7 @@ class Pipeline:
             # Simply return, nothing left to do.
             pass
 
-    def _append_failed_event_to_file(self, enveloped_event: EnvelopedEvent) -> None:
+    def _append_failed_event_to_file(self, enveloped_event: EventEnvelope) -> None:
         # First, convert the event to JSON.
         json = enveloped_event.to_json()
         # Then append to failed events file.

@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 import pydantic
 from datahub.configuration import ConfigModel
 
-from datahub_actions.event.event import EnvelopedEvent, EventType
+from datahub_actions.event.event import EventEnvelope, EventType
 from datahub_actions.pipeline.context import ActionContext
 from datahub_actions.transform.event_transformer import Transformer
 
@@ -33,7 +33,7 @@ class FilterTransformer(Transformer):
         config = FilterTransformerConfig.parse_obj(config_dict)
         return cls(config)
 
-    def transform(self, env_event: EnvelopedEvent) -> Optional[EnvelopedEvent]:
+    def transform(self, env_event: EventEnvelope) -> Optional[EventEnvelope]:
 
         logger.info(f"Preparing to filter event {env_event}")
 

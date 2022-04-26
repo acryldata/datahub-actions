@@ -16,7 +16,7 @@ import logging
 from pydantic import BaseModel
 
 from datahub_actions.action.action import Action
-from datahub_actions.event.event import EnvelopedEvent
+from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.context import ActionContext
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class HelloWorldAction(Action):
     def __init__(self, config: HelloWorldConfig, ctx: ActionContext):
         self.config = config
 
-    def act(self, event: EnvelopedEvent) -> None:
+    def act(self, event: EventEnvelope) -> None:
         message = f"Hello world! Received event {event}\n"
         if self.config.to_upper:
             print(message.upper())
