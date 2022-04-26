@@ -58,7 +58,7 @@ class Pipeline:
     # Pipeline statistics
     _stats: PipelineStats = PipelineStats()
 
-    # Error handling
+    # Options
     _retry_count: int = 3  # Number of times a single event should be retried in case of processing error.
     _failure_mode: FailureMode = DEFAULT_FAILURE_MODE
     _failed_events_dir: str = DEFAULT_FAILED_EVENTS_DIR  # The top-level path where failed events will be logged.
