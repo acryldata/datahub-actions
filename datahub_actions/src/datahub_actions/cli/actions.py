@@ -1,10 +1,12 @@
 import logging
 import pathlib
 import signal
+import sys
 import time
 from typing import Any, List
 
 import click
+from click_default_group import DefaultGroup
 from datahub.configuration.config_loader import load_config_file
 
 import datahub_actions as datahub_actions_package
@@ -31,8 +33,14 @@ def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
         ) from e
 
 
-@click.command(
-    name="actions",
+@click.group(cls=DefaultGroup, default="run")
+def actions() -> None:
+    """Execute one or more Actions Pipelines"""
+    pass
+
+
+@actions.command(
+    name="run",
     context_settings=dict(
         ignore_unknown_options=True,
         allow_extra_args=True,
@@ -41,7 +49,7 @@ def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
 @click.option("-c", "--config", required=True, type=str, multiple=True)
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
-def actions(ctx: Any, config: List[str], debug: bool) -> None:
+def run(ctx: Any, config: List[str], debug: bool) -> None:
     """Execute one or more Actions Pipelines"""
 
     logger.info(
@@ -80,6 +88,15 @@ def actions(ctx: Any, config: List[str], debug: bool) -> None:
     while True:
         # Todo: improve this.
         time.sleep(5)
+
+
+@actions.command()
+def version() -> None:
+    """Print version number and exit."""
+    click.echo(
+        f"DataHub Actions version: {datahub_actions_package.nice_version_name()}"
+    )
+    click.echo(f"Python version: {sys.version}")
 
 
 # Handle shutdown signal. (ctrl-c)

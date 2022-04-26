@@ -12,9 +12,6 @@ from datahub_actions.cli.actions import actions
 
 logger = logging.getLogger(__name__)
 
-# Configure some loggers.
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-
 # Configure logger.
 BASE_LOGGING_FORMAT = (
     "[%(asctime)s] %(levelname)-8s {%(name)s:%(lineno)d} - %(message)s"
@@ -23,6 +20,7 @@ logging.basicConfig(format=BASE_LOGGING_FORMAT)
 
 MAX_CONTENT_WIDTH = 120
 
+# Add "actions" command to datahub.
 datahub.add_command(actions)
 
 
