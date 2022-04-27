@@ -11,16 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
 import json
+import logging
+from typing import Optional
 
 from pydantic import BaseModel
 
 from datahub_actions.action.action import Action
 from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
-
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

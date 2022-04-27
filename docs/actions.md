@@ -3,9 +3,9 @@
 **DataHub Actions** is a python-based framework that makes responding to changes to your Metadata Graph in
 realtime easy, enabling you to seamlessly integrate DataHub into a broader events-based architecture.
 
-The framework consists of the following components & capabilities: 
+The framework includes
 
-- **Building Blocks**: Pluggable components for filering, transforming, and reacting to DataHub Events (e.g. tag is added, glossary term is removed, schema field is added, and so on.) in real time.
+- **Building Blocks**: Pluggable components for filtering, transforming, and reacting to DataHub Events (e.g. tag is added, glossary term is removed, schema field is added, and so on.) in real time.
 - **Actions Library**: An open library of freely available Transformers, Actions, Events, and more.
 - **Configurable Semantics** 
     - **At-least Once Delivery**: Native support for independent processing state across individual Actions (via per-Action consumer group),

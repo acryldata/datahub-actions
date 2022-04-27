@@ -53,8 +53,9 @@ logger = logging.getLogger(__name__)
 ENTITY_CHANGE_EVENT_NAME = "entityChangeEvent"
 DEFAULT_TOPIC_ROUTES = {
     "mcl": "MetadataChangeLog_Versioned_v1",
-    "pe": "PlatformEvent_v1"
+    "pe": "PlatformEvent_v1",
 }
+
 
 # Converts a Kafka Message to a Kafka Metadata Dictionary.
 def build_kafka_meta(msg: Any) -> dict:
