@@ -1,6 +1,8 @@
 import json
 from typing import Any
 
+import pydantic
+import pytest
 from datahub.metadata.schema_classes import DictWrapper
 
 from datahub_actions.event.event import Event, EventEnvelope, EventType
@@ -30,6 +32,31 @@ class TestEvent(Event, DictWrapper):
 
     def as_json(self) -> str:
         return json.dumps(self.to_obj())
+
+
+def test_error_when_wrong_event():
+    with pytest.raises(pydantic.ConfigError):
+        filter_transformer_config = FilterTransformerConfig.parse_obj(
+            {"event_type": "SomeOtherEvent", "event": {"field1": "a", "field2": "b"}}
+        )
+        FilterTransformer(filter_transformer_config)
+
+
+def test_returns_none_when_diff_event_type():
+    filter_transformer_config = FilterTransformerConfig.parse_obj(
+        {"event_type": "EntityChangeEvent", "event": {"field1": "a", "field2": "b"}}
+    )
+    filter_transformer = FilterTransformer(filter_transformer_config)
+
+    test_event = TestEvent("a", "b")
+
+    result = filter_transformer.transform(
+        EventEnvelope(
+            event_type=EventType.METADATA_CHANGE_LOG, event=test_event, meta={}
+        )
+    )
+
+    assert result is None
 
 
 def test_does_exact_match():
@@ -131,3 +158,37 @@ def test_returns_match_when_either_is_present():
         )
     )
     assert result is not None
+
+
+def test_returns_none_when_neither_is_present():
+    filter_transformer_config = FilterTransformerConfig.parse_obj(
+        {
+            "event_type": "EntityChangeEvent",
+            "event": {"field1": {"nested_1": ["a", "b"]}},
+        }
+    )
+    filter_transformer = FilterTransformer(filter_transformer_config)
+    test_event = TestEvent({"nested_1": "c"}, None)
+    result = filter_transformer.transform(
+        EventEnvelope(
+            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
+        )
+    )
+    assert result is None
+
+
+def test_no_match_when_list_filter_on_dict_obj():
+    filter_transformer_config = FilterTransformerConfig.parse_obj(
+        {
+            "event_type": "EntityChangeEvent",
+            "event": {"field1": {"nested_1": ["a", "b"]}},
+        }
+    )
+    filter_transformer = FilterTransformer(filter_transformer_config)
+    test_event = TestEvent({"nested_1": {"a": "B"}}, None)
+    result = filter_transformer.transform(
+        EventEnvelope(
+            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
+        )
+    )
+    assert result is None

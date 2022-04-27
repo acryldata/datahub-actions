@@ -6,6 +6,7 @@ from datahub_actions.utils.datahub_util import (
     sanitize_urn,
     sanitize_user_urn_for_search,
     strip_urn,
+    make_datahub_url,
 )
 
 
@@ -88,4 +89,14 @@ def test_sanitize_for_search():
     assert sanitize_user_urn_for_search("urn:li:corpuser:datahub") == "datahub"
     assert (
         sanitize_user_urn_for_search("urn:li:corpuser:aseem.bansal") == r"aseem\.bansal"
+    )
+
+
+def test_make_datahub_url():
+    assert (
+        make_datahub_url(
+            urn="urn:li:dataset:(urn:li:dataPlatform:snowflake,long_tail_companions.analytics.ShelterDogs,PROD)",
+            base_url="https://demo.datahubproject.io/",
+        )
+        == "https://demo.datahubproject.io//dataset/urn:li:dataset:(urn:li:dataPlatform:snowflake,long_tail_companions.analytics.ShelterDogs,PROD)/"
     )
