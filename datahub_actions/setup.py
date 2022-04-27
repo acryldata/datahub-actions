@@ -168,9 +168,9 @@ setuptools.setup(
     version=package_metadata["__version__"],
     url="https://datahubproject.io/",
     project_urls={
-        "Documentation": "https://datahubproject.io/docs/",
-        "Source": "https://github.com/linkedin/datahub",
-        "Changelog": "https://github.com/linkedin/datahub/releases",
+        "Documentation": "https://datahubproject.io/docs/actions",
+        "Source": "https://github.com/acryldata/datahub-actions",
+        "Changelog": "https://github.com/acryldata/datahub-actions/releases",
     },
     license="Apache License 2.0",
     description="An action framework to work with DataHub real time changes.",
