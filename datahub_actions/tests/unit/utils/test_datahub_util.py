@@ -1,12 +1,12 @@
 from datahub_actions.utils.datahub_util import (
     entity_type_from_urn,
+    make_datahub_url,
     pretty_anything_urn,
     pretty_dataset_urn,
     pretty_user_urn,
     sanitize_urn,
     sanitize_user_urn_for_search,
     strip_urn,
-    make_datahub_url,
 )
 
 
