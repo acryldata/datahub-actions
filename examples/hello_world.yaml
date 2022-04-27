@@ -33,7 +33,7 @@ source:
       mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
 # filter: Optional Pre-Filter 
-#  event_type: "EntityChangeEvent"
+#  event_type: "EntityChangeEvent_v1"
 #  event:
 #    category: "TAG"
 #    operation: "ADD"

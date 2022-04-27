@@ -34,7 +34,8 @@ from acryl.executor.secret.secret_store import SecretStoreConfig
 from datahub.metadata.schema_classes import MetadataChangeLogClass
 
 from datahub_actions.action.action import Action
-from datahub_actions.event.event import EventEnvelope, EventType
+from datahub_actions.event.event import EventEnvelope
+from datahub_actions.event.event_registry import METADATA_CHANGE_LOG_EVENT_V1_TYPE
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 
 logger = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ class ExecutorAction(Action):
 
     def act(self, event: EventEnvelope) -> None:
         """This method listens for ExecutionRequest changes to execute in schedule and trigger events"""
-        if event.event_type is EventType.METADATA_CHANGE_LOG:
+        if event.event_type is METADATA_CHANGE_LOG_EVENT_V1_TYPE:
             orig_event = cast(MetadataChangeLogClass, event.event)
             if (
                 orig_event.get("entityType") == DATAHUB_EXECUTION_REQUEST_ENTITY_NAME

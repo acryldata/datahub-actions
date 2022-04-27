@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from datahub_actions.action.action_registry import action_registry
-from datahub_actions.pipeline.pipeline import Pipeline
+from datahub_actions.pipeline.pipeline import Pipeline, PipelineException
 from datahub_actions.pipeline.pipeline_config import FailureMode
 from datahub_actions.plugin.transform.filter.filter_transformer import FilterTransformer
 from datahub_actions.source.event_source_registry import event_source_registry
@@ -148,7 +148,7 @@ def test_failed_events_throw_mode():
     )
     throwing_transformer_pipeline = Pipeline.create(throwing_transformer_config)
     with pytest.raises(
-        Exception, match="Failed to process event after maximum retries"
+        PipelineException, match="Failed to process event after maximum retries"
     ):
         throwing_transformer_pipeline.run()
     # Ensure that the message was NOT acked.
@@ -160,7 +160,7 @@ def test_failed_events_throw_mode():
     )
     throwing_action_pipeline = Pipeline.create(throwing_action_config)
     with pytest.raises(
-        Exception, match="Failed to process event after maximum retries"
+        PipelineException, match="Failed to process event after maximum retries"
     ):
         throwing_action_pipeline.run()
     # Ensure that the message was NOT acked.
@@ -197,7 +197,7 @@ def _build_valid_pipeline_config() -> dict:
     return {
         "name": "sample-pipeline",
         "source": {"type": "test_source", "config": {}},
-        "filter": {"event_type": "MetadataChangeLogEvent"},
+        "filter": {"event_type": "MetadataChangeLogEvent_v1"},
         "transform": [{"type": "test_transformer", "config": {"config1": "value1"}}],
         "action": {"type": "test_action", "config": {"config1": "value1"}},
         "options": {

@@ -1,11 +1,13 @@
 import json
 from typing import Any
 
-import pydantic
-import pytest
 from datahub.metadata.schema_classes import DictWrapper
 
-from datahub_actions.event.event import Event, EventEnvelope, EventType
+from datahub_actions.event.event import Event, EventEnvelope
+from datahub_actions.event.event_registry import (
+    ENTITY_CHANGE_EVENT_V1_TYPE,
+    METADATA_CHANGE_LOG_EVENT_V1_TYPE,
+)
 from datahub_actions.plugin.transform.filter.filter_transformer import (
     FilterTransformer,
     FilterTransformerConfig,
@@ -34,17 +36,9 @@ class TestEvent(Event, DictWrapper):
         return json.dumps(self.to_obj())
 
 
-def test_error_when_wrong_event():
-    with pytest.raises(pydantic.ConfigError):
-        filter_transformer_config = FilterTransformerConfig.parse_obj(
-            {"event_type": "SomeOtherEvent", "event": {"field1": "a", "field2": "b"}}
-        )
-        FilterTransformer(filter_transformer_config)
-
-
 def test_returns_none_when_diff_event_type():
     filter_transformer_config = FilterTransformerConfig.parse_obj(
-        {"event_type": "EntityChangeEvent", "event": {"field1": "a", "field2": "b"}}
+        {"event_type": "EntityChangeEvent_v1", "event": {"field1": "a", "field2": "b"}}
     )
     filter_transformer = FilterTransformer(filter_transformer_config)
 
@@ -52,7 +46,7 @@ def test_returns_none_when_diff_event_type():
 
     result = filter_transformer.transform(
         EventEnvelope(
-            event_type=EventType.METADATA_CHANGE_LOG, event=test_event, meta={}
+            event_type=METADATA_CHANGE_LOG_EVENT_V1_TYPE, event=test_event, meta={}
         )
     )
 
@@ -61,16 +55,14 @@ def test_returns_none_when_diff_event_type():
 
 def test_does_exact_match():
     filter_transformer_config = FilterTransformerConfig.parse_obj(
-        {"event_type": "EntityChangeEvent", "event": {"field1": "a", "field2": "b"}}
+        {"event_type": "EntityChangeEvent_v1", "event": {"field1": "a", "field2": "b"}}
     )
     filter_transformer = FilterTransformer(filter_transformer_config)
 
     test_event = TestEvent("a", "b")
 
     result = filter_transformer.transform(
-        EventEnvelope(
-            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
-        )
+        EventEnvelope(event_type=ENTITY_CHANGE_EVENT_V1_TYPE, event=test_event, meta={})
     )
 
     assert result is not None
@@ -78,16 +70,14 @@ def test_does_exact_match():
 
 def test_returns_none_when_no_match():
     filter_transformer_config = FilterTransformerConfig.parse_obj(
-        {"event_type": "EntityChangeEvent", "event": {"field1": "a", "field2": "b"}}
+        {"event_type": "EntityChangeEvent_v1", "event": {"field1": "a", "field2": "b"}}
     )
     filter_transformer = FilterTransformer(filter_transformer_config)
 
     test_event = TestEvent("a", "c")
 
     result = filter_transformer.transform(
-        EventEnvelope(
-            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
-        )
+        EventEnvelope(event_type=ENTITY_CHANGE_EVENT_V1_TYPE, event=test_event, meta={})
     )
     assert result is None
 
@@ -95,16 +85,14 @@ def test_returns_none_when_no_match():
 def test_matches_on_nested_event():
     filter_transformer_config = FilterTransformerConfig.parse_obj(
         {
-            "event_type": "EntityChangeEvent",
+            "event_type": "EntityChangeEvent_v1",
             "event": {"field1": {"nested_1": {"nested_b": "a"}}},
         }
     )
     filter_transformer = FilterTransformer(filter_transformer_config)
     test_event = TestEvent({"nested_1": {"nested_b": "a"}, "nested_2": "c"}, None)
     result = filter_transformer.transform(
-        EventEnvelope(
-            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
-        )
+        EventEnvelope(event_type=ENTITY_CHANGE_EVENT_V1_TYPE, event=test_event, meta={})
     )
     assert result is not None
 
@@ -112,16 +100,14 @@ def test_matches_on_nested_event():
 def test_returns_none_when_no_match_nested_event():
     filter_transformer_config = FilterTransformerConfig.parse_obj(
         {
-            "event_type": "EntityChangeEvent",
+            "event_type": "EntityChangeEvent_v1",
             "event": {"field1": {"nested_1": {"nested_b": "a"}}},
         }
     )
     filter_transformer = FilterTransformer(filter_transformer_config)
     test_event = TestEvent({"nested_1": {"nested_b": "b"}, "nested_2": "c"}, None)
     result = filter_transformer.transform(
-        EventEnvelope(
-            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
-        )
+        EventEnvelope(event_type=ENTITY_CHANGE_EVENT_V1_TYPE, event=test_event, meta={})
     )
     assert result is None
 
@@ -129,16 +115,14 @@ def test_returns_none_when_no_match_nested_event():
 def test_returns_none_when_different_data_type():
     filter_transformer_config = FilterTransformerConfig.parse_obj(
         {
-            "event_type": "EntityChangeEvent",
+            "event_type": "EntityChangeEvent_v1",
             "event": {"field1": {"nested_1": {"nested_b": "a"}}},
         }
     )
     filter_transformer = FilterTransformer(filter_transformer_config)
     test_event = TestEvent({"nested_1": ["a"]}, None)
     result = filter_transformer.transform(
-        EventEnvelope(
-            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
-        )
+        EventEnvelope(event_type=ENTITY_CHANGE_EVENT_V1_TYPE, event=test_event, meta={})
     )
     assert result is None
 
@@ -146,16 +130,14 @@ def test_returns_none_when_different_data_type():
 def test_returns_match_when_either_is_present():
     filter_transformer_config = FilterTransformerConfig.parse_obj(
         {
-            "event_type": "EntityChangeEvent",
+            "event_type": "EntityChangeEvent_v1",
             "event": {"field1": {"nested_1": ["a", "b"]}},
         }
     )
     filter_transformer = FilterTransformer(filter_transformer_config)
     test_event = TestEvent({"nested_1": "a"}, None)
     result = filter_transformer.transform(
-        EventEnvelope(
-            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
-        )
+        EventEnvelope(event_type=ENTITY_CHANGE_EVENT_V1_TYPE, event=test_event, meta={})
     )
     assert result is not None
 
@@ -163,16 +145,14 @@ def test_returns_match_when_either_is_present():
 def test_returns_none_when_neither_is_present():
     filter_transformer_config = FilterTransformerConfig.parse_obj(
         {
-            "event_type": "EntityChangeEvent",
+            "event_type": "EntityChangeEvent_v1",
             "event": {"field1": {"nested_1": ["a", "b"]}},
         }
     )
     filter_transformer = FilterTransformer(filter_transformer_config)
     test_event = TestEvent({"nested_1": "c"}, None)
     result = filter_transformer.transform(
-        EventEnvelope(
-            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
-        )
+        EventEnvelope(event_type=ENTITY_CHANGE_EVENT_V1_TYPE, event=test_event, meta={})
     )
     assert result is None
 
@@ -180,15 +160,13 @@ def test_returns_none_when_neither_is_present():
 def test_no_match_when_list_filter_on_dict_obj():
     filter_transformer_config = FilterTransformerConfig.parse_obj(
         {
-            "event_type": "EntityChangeEvent",
+            "event_type": "EntityChangeEvent_v1",
             "event": {"field1": {"nested_1": ["a", "b"]}},
         }
     )
     filter_transformer = FilterTransformer(filter_transformer_config)
     test_event = TestEvent({"nested_1": {"a": "B"}}, None)
     result = filter_transformer.transform(
-        EventEnvelope(
-            event_type=EventType.ENTITY_CHANGE_EVENT, event=test_event, meta={}
-        )
+        EventEnvelope(event_type=ENTITY_CHANGE_EVENT_V1_TYPE, event=test_event, meta={})
     )
     assert result is None

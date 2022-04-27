@@ -65,9 +65,13 @@ class EntityChangeEvent(EntityChangeEventClass, Event):
         return json.dumps(self.to_obj())
 
 
+# Standard Event Types for easy reference.
+ENTITY_CHANGE_EVENT_V1_TYPE = "EntityChangeEvent_v1"
+METADATA_CHANGE_LOG_EVENT_V1_TYPE = "MetadataChangeLogEvent_v1"
+
 # Lightweight Event Registry
 event_registry = PluginRegistry[Event]()
 
-# Register standard event library.
-event_registry.register("MetadataChangeLogEvent", MetadataChangeLogEvent)
-event_registry.register("EntityChangeEvent", EntityChangeEvent)
+# Register standard event library. Each type can be considered a separate "stream" / "topic"
+event_registry.register(METADATA_CHANGE_LOG_EVENT_V1_TYPE, MetadataChangeLogEvent)
+event_registry.register(ENTITY_CHANGE_EVENT_V1_TYPE, EntityChangeEvent)

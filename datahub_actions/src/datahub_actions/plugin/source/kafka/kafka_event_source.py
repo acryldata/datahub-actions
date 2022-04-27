@@ -35,8 +35,10 @@ from datahub.metadata.schema_classes import (
     ParametersClass,
 )
 
-from datahub_actions.event.event import EventEnvelope, EventType
+from datahub_actions.event.event import EventEnvelope
 from datahub_actions.event.event_registry import (
+    ENTITY_CHANGE_EVENT_V1_TYPE,
+    METADATA_CHANGE_LOG_EVENT_V1_TYPE,
     EntityChangeEvent,
     MetadataChangeLogEvent,
 )
@@ -170,7 +172,7 @@ class KafkaEventSource(EventSource):
         metadata_change_log_event = build_metadata_change_log_event(msg)
         kafka_meta = build_kafka_meta(msg)
         yield EventEnvelope(
-            EventType.METADATA_CHANGE_LOG, metadata_change_log_event, kafka_meta
+            METADATA_CHANGE_LOG_EVENT_V1_TYPE, metadata_change_log_event, kafka_meta
         )
 
     def _handle_pe(self, msg: Any) -> Iterable[EventEnvelope]:
@@ -181,7 +183,7 @@ class KafkaEventSource(EventSource):
         if ENTITY_CHANGE_EVENT_NAME == value["name"]:
             event = build_entity_change_event(payload)
             kafka_meta = build_kafka_meta(msg)
-            yield EventEnvelope(EventType.ENTITY_CHANGE_EVENT, event, kafka_meta)
+            yield EventEnvelope(ENTITY_CHANGE_EVENT_V1_TYPE, event, kafka_meta)
 
     def close(self) -> None:
         if self.consumer:

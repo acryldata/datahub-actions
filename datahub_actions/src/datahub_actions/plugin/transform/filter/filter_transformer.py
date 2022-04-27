@@ -2,10 +2,9 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Union
 
-import pydantic
 from datahub.configuration import ConfigModel
 
-from datahub_actions.event.event import EventEnvelope, EventType
+from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.transform.transformer import Transformer
 
@@ -15,19 +14,6 @@ logger = logging.getLogger(__name__)
 class FilterTransformerConfig(ConfigModel):
     event_type: Union[str, List[str]]
     event: Optional[Dict[str, Any]]
-
-    @pydantic.validator("event_type", always=True)
-    def event_type_is_valid(cls, v, values, **kwargs):
-        event_type_list = [v]
-        if isinstance(v, list):
-            event_type_list = v
-        for event_type in event_type_list:
-            valid_events = [e.value for e in EventType]
-            if event_type not in valid_events:
-                raise pydantic.ConfigError(
-                    f"Valid event_type are {valid_events} - {v} is invalid"
-                )
-        return v
 
 
 class FilterTransformer(Transformer):

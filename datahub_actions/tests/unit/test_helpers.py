@@ -88,8 +88,8 @@ class TestEventSource(EventSource):
 
     def events(self) -> Iterable[EventEnvelope]:
         return [
-            EventEnvelope("MetadataChangeLogEvent", metadata_change_log_event, {}),
-            EventEnvelope("EntityChangeLogEvent", entity_change_event, {}),
+            EventEnvelope("MetadataChangeLogEvent_v1", metadata_change_log_event, {}),
+            EventEnvelope("EntityChangeLogEvent_v1", entity_change_event, {}),
             EventEnvelope("TestEvent", TestEvent("value"), {}),
         ]
 
@@ -172,7 +172,9 @@ class StoppableEventSource(EventSource):
             time.sleep(1)
             if self.stopped:
                 return
-            yield EventEnvelope("MetadataChangeLogEvent", metadata_change_log_event, {})
+            yield EventEnvelope(
+                "MetadataChangeLogEvent_v1", metadata_change_log_event, {}
+            )
 
     def ack(self, event: EventEnvelope) -> None:
         pass
