@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
+import json
 
 from pydantic import BaseModel
 
@@ -19,12 +20,14 @@ from datahub_actions.action.action import Action
 from datahub_actions.event.event import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 
+from typing import Optional
+
 logger = logging.getLogger(__name__)
 
 
 class HelloWorldConfig(BaseModel):
     # Whether to print the message in upper case.
-    to_upper: bool
+    to_upper: Optional[bool]
 
 
 # A basic example of a DataHub action that prints all
@@ -39,7 +42,8 @@ class HelloWorldAction(Action):
         self.config = config
 
     def act(self, event: EventEnvelope) -> None:
-        message = f"Hello world! Received event {event}\n"
+        print("Hello world! Received event:")
+        message = json.dumps(json.loads(event.as_json()), indent=4)
         if self.config.to_upper:
             print(message.upper())
         else:

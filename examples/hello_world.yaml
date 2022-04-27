@@ -11,14 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: "Hello World" 
+# hello_world.yaml
+name: "hello_world"
 source:
   type: "kafka"
   config:
     connection:
-        bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
-        schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
+      bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
+      schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
+filter:
+  event_type: "EntityChangeEvent_v1"
+  event: 
+    category: "TAG"
+    operation: [ "ADD", "REMOVE" ]
+    modifier: "urn:li:tag:pii"
 action:
-  type: "hello_world" 
-  config:
-    to_upper: False
+  type: "hello_world"
