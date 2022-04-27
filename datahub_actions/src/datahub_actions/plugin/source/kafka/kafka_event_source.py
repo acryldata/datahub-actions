@@ -15,7 +15,7 @@
 import json
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, Optional
 
 # Confluent important
 import confluent_kafka
@@ -51,7 +51,10 @@ logger = logging.getLogger(__name__)
 
 
 ENTITY_CHANGE_EVENT_NAME = "entityChangeEvent"
-
+DEFAULT_TOPIC_ROUTES = {
+    "mcl": "MetadataChangeLog_Versioned_v1",
+    "pe": "PlatformEvent_v1"
+}
 
 # Converts a Kafka Message to a Kafka Metadata Dictionary.
 def build_kafka_meta(msg: Any) -> dict:
@@ -101,7 +104,7 @@ def build_entity_change_event(payload: GenericPayloadClass) -> EntityChangeEvent
 
 class KafkaEventSourceConfig(ConfigModel):
     connection: KafkaConsumerConnectionConfig = KafkaConsumerConnectionConfig()
-    topic_routes: Dict[str, str]
+    topic_routes: Optional[Dict[str, str]]
 
 
 # This is the default Kafka-based Event Source.
@@ -139,7 +142,7 @@ class KafkaEventSource(EventSource):
         return cls(config, ctx)
 
     def events(self) -> Iterable[EventEnvelope]:
-        topic_routes = self.source_config.topic_routes
+        topic_routes = self.source_config.topic_routes or DEFAULT_TOPIC_ROUTES
         topics_to_subscribe = list(topic_routes.values())
         logger.debug(f"Subscribing to the following topics: {topics_to_subscribe}")
         self.consumer.subscribe(topics_to_subscribe)

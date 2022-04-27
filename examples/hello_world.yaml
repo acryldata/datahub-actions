@@ -18,38 +18,7 @@ source:
     connection:
         bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
         schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
-        consumer_config:
-          auto.offset.reset: ${KAFKA_AUTO_OFFSET_POLICY:-latest} # earliest / latest are supported values
-          max.poll.interval.ms: ${KAFKA_PROPERTIES_MAX_POLL_INTERVAL_MS:-10000}
-          security.protocol: ${KAFKA_PROPERTIES_SECURITY_PROTOCOL:-PLAINTEXT}
-          #ssl.keystore.location: ${KAFKA_PROPERTIES_SSL_KEYSTORE_LOCATION:-/mnt/certs/keystore}
-          #ssl.truststore.location: ${KAFKA_PROPERTIES_SSL_TRUSTSTORE_LOCATION:-/mnt/certs/truststore}
-          #ssl.keystore.password: ${KAFKA_PROPERTIES_SSL_KEYSTORE_PASSWORD:-keystore_password}
-          #ssl.key.password: ${KAFKA_PROPERTIES_SSL_KEY_PASSWORD:-keystore_password}
-          #ssl.truststore.password: ${KAFKA_PROPERTIES_SSL_TRUSTSTORE_PASSWORD:-truststore_password}
-    topic_routes:
-      # Selectively comment these out to disable consumption from one or more topics.
-      # mae: ${METADATA_AUDIT_EVENT_NAME:-MetadataAuditEvent_v4}
-      mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
-      pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
-# filter: Optional Pre-Filter 
-#  event_type: "EntityChangeEvent_v1"
-#  event:
-#    category: "TAG"
-#    operation: "ADD"
-#    entityUrn:
-#    params:
 action:
   type: "hello_world" 
   config:
     to_upper: False
-datahub:
-  server: "http://${GMS_HOST:-localhost}:${GMS_PORT:-8080}"
-  # token: 
-  extra_headers:
-    Authorization: "Basic ${DATAHUB_SYSTEM_CLIENT_ID:-__datahub_system}:${DATAHUB_SYSTEM_CLIENT_SECRET:-JohnSnowKnowsNothing}"
-# Error Handling
-options:  
-  retry_count: 2 # Number of times to retry an event before declaring failure. 
-  failure_mode: "CONTINUE" # Log and continue the process when a message cannot be processed, options are 'LOG_AND_THROW', 'LOG_AND_CONTINUE'.
-  failed_events_dir: "/tmp/logs/datahub/actions" # The path where failed events should be logged.
