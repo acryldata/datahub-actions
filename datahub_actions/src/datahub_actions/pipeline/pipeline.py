@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 # Defaults for the location where failed events will be written.
+DEFAULT_RETRY_COUNT = 0  # Do not retry unless instructed.
 DEFAULT_FAILED_EVENTS_DIR = "/tmp/logs/datahub/actions"
 DEFAULT_FAILED_EVENTS_FILE_NAME = "failed_events.log"  # Not currently configurable.
 DEFAULT_FAILURE_MODE = FailureMode.CONTINUE
@@ -59,7 +60,7 @@ class Pipeline:
     _stats: PipelineStats = PipelineStats()
 
     # Options
-    _retry_count: int = 3  # Number of times a single event should be retried in case of processing error.
+    _retry_count: int = DEFAULT_RETRY_COUNT  # Number of times a single event should be retried in case of processing error.
     _failure_mode: FailureMode = DEFAULT_FAILURE_MODE
     _failed_events_dir: str = DEFAULT_FAILED_EVENTS_DIR  # The top-level path where failed events will be logged.
 
@@ -120,10 +121,10 @@ class Pipeline:
             config.options.failed_events_dir if config.options else None,
         )
 
-    # Start the pipeline and return. This method is non-blocking. 
+    # Start the pipeline and return. This method is non-blocking.
     async def start(self) -> None:
         self.run()
-    
+
     # Run the pipeline in blocking, synchronous fashion.
     def run(self) -> None:
         self._stats.mark_start()
@@ -135,7 +136,6 @@ class Pipeline:
             self._process_event(enveloped_event)
             # Finally, ack the event.
             self._ack_event(enveloped_event)
-
 
     def _process_event(self, enveloped_event: EventEnvelope) -> None:
 
@@ -153,7 +153,7 @@ class Pipeline:
 
                 # Short circuit - processing has succeeded.
                 return
-            except Exception as e:
+            except Exception:
                 logger.exception(
                     f"Caught exception while attempting to process event. Attempt {curr_attempt}/{max_attempts} event type: {enveloped_event.event_type}, pipeline name: {self.name}"
                 )
@@ -218,7 +218,7 @@ class Pipeline:
         try:
             self.source.ack(enveloped_event)
             self._stats.increment_success_count()
-        except Exception as e:
+        except Exception:
             self._stats.increment_failed_ack_count()
             logger.exception(
                 f"Caught exception while attempting to ack successfully processed event. event type: {enveloped_event.event_type}, pipeline name: {self.name}",
@@ -236,15 +236,17 @@ class Pipeline:
 
     def _append_failed_event_to_file(self, enveloped_event: EventEnvelope) -> None:
         # First, convert the event to JSON.
-        try: 
-            json = enveloped_event.to_json()
+        try:
+            json = enveloped_event.as_json()
             # Then append to failed events file.
             self._failed_events_fd.write(json + "\n")
             self._failed_events_fd.flush()
         except Exception as e:
             # This is a serious issue, as if we do not handle it can mean losing an event altogether.
             # Raise an exception to ensure this issue is reported to the operator.
-            raise Exception(f"Failed to log failed event to file! {enveloped_event}") from e
+            raise Exception(
+                f"Failed to log failed event to file! {enveloped_event}"
+            ) from e
 
     def _init_failed_events_dir(self) -> None:
         # create a directory for failed events from this actions pipeine.

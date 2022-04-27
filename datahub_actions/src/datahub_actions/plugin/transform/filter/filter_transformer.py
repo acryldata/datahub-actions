@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any, Dict, List, Optional, Union
 
@@ -46,10 +47,11 @@ class FilterTransformer(Transformer):
         if not self._matches(self.config.event_type, env_event.event_type):
             return None
 
-        # Match Event Body. 
+        # Match Event Body.
         if self.config.event is not None:
+            body_as_json_dict = json.loads(env_event.event.as_json())
             for key, val in self.config.event.items():
-                if not self._matches(val, env_event.event.get(key)):
+                if not self._matches(val, body_as_json_dict.get(key)):
                     return None
         return env_event
 

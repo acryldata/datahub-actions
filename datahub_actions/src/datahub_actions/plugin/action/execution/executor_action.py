@@ -16,7 +16,7 @@ import json
 import logging
 import sys
 import traceback
-from typing import Any
+from typing import Any, cast
 
 from acryl.executor.dispatcher.default_dispatcher import DefaultDispatcher
 from acryl.executor.execution.executor import Executor
@@ -31,6 +31,7 @@ from acryl.executor.request.execution_request import (
 from acryl.executor.request.signal_request import SignalRequest as SignalRequestObj
 from acryl.executor.secret.datahub_secret_store import DataHubSecretStoreConfig
 from acryl.executor.secret.secret_store import SecretStoreConfig
+from datahub.metadata.schema_classes import MetadataChangeLogClass
 
 from datahub_actions.action.action import Action
 from datahub_actions.event.event import EventEnvelope, EventType
@@ -88,7 +89,7 @@ class ExecutorAction(Action):
     def act(self, event: EventEnvelope) -> None:
         """This method listens for ExecutionRequest changes to execute in schedule and trigger events"""
         if event.event_type is EventType.METADATA_CHANGE_LOG:
-            orig_event = event.event
+            orig_event = cast(MetadataChangeLogClass, event.event)
             if (
                 orig_event.get("entityType") == DATAHUB_EXECUTION_REQUEST_ENTITY_NAME
                 and orig_event.get("changeType") == "UPSERT"
