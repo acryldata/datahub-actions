@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from threading import Thread
 from typing import Dict
 
-from datahub_actions.pipeline.pipeline import Pipeline
+from datahub_actions.pipeline.pipeline import Pipeline, PipelineException
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +21,12 @@ class PipelineSpec:
     thread: Thread
 
 
-# Start a pipeline
+# Run a pipeline in blocking fashion
 # TODO: Exit process on failure.
 def run_pipeline(pipeline: Pipeline) -> None:
     try:
         pipeline.run()
-    except Exception:
+    except PipelineException:
         logger.error(
             f"Caught exception while executing pipeline with name {pipeline.name}: {traceback.format_exc(limit=3)}"
         )

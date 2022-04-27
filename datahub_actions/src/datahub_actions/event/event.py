@@ -2,21 +2,9 @@ import json
 import logging
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
-
-
-# A standardized set of event types made available for consumption via the DataHub Actions Framework.
-class EventType(str, Enum):
-    # High-level event emitted important changes are made to an Entity on DataHub.
-    ENTITY_CHANGE_EVENT = "EntityChangeEvent"
-
-    # Low-level changelog event emitted when any change occurs at DataHub's storage layer.
-    # Disclaimer: If possible, it is recommended that system-external consumers avoid depending on MetadataChangeLog.
-    # It is a low-level, raw event produced from the internal DataHub CDC stream and is subject to change through time.
-    METADATA_CHANGE_LOG = "MetadataChangeLogEvent"
 
 
 class Event(metaclass=ABCMeta):

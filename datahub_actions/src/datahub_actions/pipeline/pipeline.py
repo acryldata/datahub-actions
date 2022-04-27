@@ -27,7 +27,15 @@ DEFAULT_FAILED_EVENTS_FILE_NAME = "failed_events.log"  # Not currently configura
 DEFAULT_FAILURE_MODE = FailureMode.CONTINUE
 
 
-# A component responsible for executing a single Actions pipeline.
+class PipelineException(Exception):
+    """
+    An exception thrown when a Pipeline encounters and unrecoverable situation.
+    Mainly a placeholder for now.
+    """
+
+    pass
+
+
 class Pipeline:
     """
     A Pipeline is responsible for coordinating execution of a single DataHub Action.
@@ -121,12 +129,17 @@ class Pipeline:
             config.options.failed_events_dir if config.options else None,
         )
 
-    # Start the pipeline and return. This method is non-blocking.
     async def start(self) -> None:
+        """
+        Start the action pipeline asynchronously. This method is non-blocking.
+        """
         self.run()
 
-    # Run the pipeline in blocking, synchronous fashion.
     def run(self) -> None:
+        """
+        Run the action pipeline synchronously. This method is blocking.
+        Raises an instance of PipelineException if an unrecoverable pipeline failure occurs.
+        """
         self._stats.mark_start()
 
         # First, source the events.
@@ -136,6 +149,22 @@ class Pipeline:
             self._process_event(enveloped_event)
             # Finally, ack the event.
             self._ack_event(enveloped_event)
+
+    def stop(self) -> None:
+        """
+        Stops a running action pipeline.
+        """
+        logger.debug(f"Preparing to stop Actions Pipeline with name {self.name}")
+        self._shutdown = True
+        self._failed_events_fd.close()
+        self.source.close()
+        self.action.close()
+
+    def stats(self) -> PipelineStats:
+        """
+        Returns basic statistics about the Pipeline run.
+        """
+        return self._stats
 
     def _process_event(self, enveloped_event: EventEnvelope) -> None:
 
@@ -200,7 +229,7 @@ class Pipeline:
             return transformer.transform(enveloped_event)
         except Exception as e:
             self._stats.increment_transformer_exception_count(transformer)
-            raise Exception(
+            raise PipelineException(
                 f"Caught exception while executing Transformer with name {type(transformer).__name__}"
             ) from e
 
@@ -210,7 +239,7 @@ class Pipeline:
             self._stats.increment_action_success_count()
         except Exception as e:
             self._stats.increment_action_exception_count()
-            raise Exception(
+            raise PipelineException(
                 f"Caught exception while executing Action with type {type(self.action).__name__}"
             ) from e
 
@@ -229,7 +258,7 @@ class Pipeline:
         # First, always save the failed event to a file. Useful for investigation.
         self._append_failed_event_to_file(enveloped_event)
         if self._failure_mode == FailureMode.THROW:
-            raise Exception("Failed to process event after maximum retries.")
+            raise PipelineException("Failed to process event after maximum retries.")
         elif self._failure_mode == FailureMode.CONTINUE:
             # Simply return, nothing left to do.
             pass
@@ -244,7 +273,7 @@ class Pipeline:
         except Exception as e:
             # This is a serious issue, as if we do not handle it can mean losing an event altogether.
             # Raise an exception to ensure this issue is reported to the operator.
-            raise Exception(
+            raise PipelineException(
                 f"Failed to log failed event to file! {enveloped_event}"
             ) from e
 
@@ -262,18 +291,6 @@ class Pipeline:
             self._failed_events_fd = open(failed_events_file_name, "a")
         except Exception as e:
             logger.debug(e)
-            raise Exception(
+            raise PipelineException(
                 f"Caught exception while attempting to create failed events log file at path {failed_events_dir}. Please check your file system permissions."
             )
-
-    # Terminate the pipeline.
-    def stop(self) -> None:
-        logger.debug(f"Preparing to stop Actions Pipeline with name {self.name}")
-        self._shutdown = True
-        self._failed_events_fd.close()
-        self.source.close()
-        self.action.close()
-
-    # Get the pipeline statistics
-    def stats(self) -> PipelineStats:
-        return self._stats
