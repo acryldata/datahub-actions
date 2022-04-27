@@ -34,8 +34,8 @@ source:
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
 # filter: Optional Pre-Filter 
 #  event_type: "EntityChangeEvent"
-#  fields:
-#     category: "TAG"
+#  event:
+#    category: "TAG"
 #    operation: "ADD"
 #    entityUrn:
 #    params:

@@ -31,19 +31,19 @@ class Pipeline:
     """
     A Pipeline is responsible for coordinating execution of a single DataHub Action.
 
-    Most notably, this responsibility includes:
+    This responsibility includes:
 
         - sourcing events from an Event Source
         - executing a configurable chain of Transformers
         - invoking an Action with the final Event
         - acknowledging the processing of an Event with the Event Source
 
-    Additionally, a Pipeline supports the following capabilities:
+    Additionally, a Pipeline supports the following notable capabilities:
 
         - Configurable retries of event processing in cases of component failure
-        - Configurable dead letter queue (defaults to failed_events.log file)
+        - Configurable dead letter queue
         - Capturing basic statistics about each Pipeline component
-        - At-will start and stop
+        - At-will start and stop of an individual pipeline
 
     """
 
@@ -77,6 +77,7 @@ class Pipeline:
         self.source = source
         self.transforms = transforms
         self.action = action
+
         if retry_count is not None:
             self._retry_count = retry_count
         if failure_mode is not None:
@@ -87,6 +88,7 @@ class Pipeline:
 
     @classmethod
     def create(cls, config_dict: dict) -> "Pipeline":
+        # Bind config
         config = PipelineConfig.parse_obj(config_dict)
 
         # Create Context
@@ -118,9 +120,14 @@ class Pipeline:
             config.options.failed_events_dir if config.options else None,
         )
 
-    # Start the Pipeline.
-    def start(self) -> None:
+    # Start the pipeline and return. This method is non-blocking. 
+    async def start(self) -> None:
+        self.run()
+    
+    # Run the pipeline in blocking, synchronous fashion.
+    def run(self) -> None:
         self._stats.mark_start()
+
         # First, source the events.
         enveloped_events = self.source.events()
         for enveloped_event in enveloped_events:
@@ -129,26 +136,26 @@ class Pipeline:
             # Finally, ack the event.
             self._ack_event(enveloped_event)
 
+
     def _process_event(self, enveloped_event: EventEnvelope) -> None:
 
-        # Retry event processing.
+        # Attempt to process the incoming event, with retry.
         curr_attempt = 1
         max_attempts = self._retry_count + 1
         while curr_attempt <= max_attempts:
             try:
                 # First, transform the event.
-                transformed_event = self._transform_event(enveloped_event)
+                transformed_event = self._execute_transformers(enveloped_event)
 
                 # Then, invoke the action if the event is non-null.
                 if transformed_event is not None:
                     self._execute_action(transformed_event)
 
+                # Short circuit - processing has succeeded.
                 return
-
             except Exception as e:
-                logger.error(
-                    f"Caught exception while attempting to process event. Attempt {curr_attempt}/{max_attempts} event type: {enveloped_event.event_type}, pipeline name: {self.name}",
-                    e,
+                logger.exception(
+                    f"Caught exception while attempting to process event. Attempt {curr_attempt}/{max_attempts} event type: {enveloped_event.event_type}, pipeline name: {self.name}"
                 )
                 curr_attempt = curr_attempt + 1
 
@@ -162,30 +169,40 @@ class Pipeline:
             # Finally, handle the failure
             self._handle_failure(enveloped_event)
 
-    def _transform_event(
+    def _execute_transformers(
         self, enveloped_event: EventEnvelope
     ) -> Optional[EventEnvelope]:
         curr_event = enveloped_event
+        # Iterate through all transformers, sequentially apply them to the result of the previous.
         for transformer in self.transforms:
-            transformer_name = type(transformer).__name__
-            self._stats.increment_transformer_processed_count(transformer_name)
-            try:
-                transformed_event = transformer.transform(curr_event)
-                if transformed_event is None:
-                    # Short circuit if the transformer has filtered the event.
-                    self._stats.increment_transformer_filtered_count(transformer_name)
-                    return None
-                else:
-                    curr_event = transformed_event  # type: ignore
-            except Exception as e:
-                self._stats.increment_transformer_exception_count(
-                    type(transformer).__name__
-                )
-                raise Exception(
-                    f"Caught exception while executing Transformer with type {type(transformer).__name__}"
-                ) from e
 
+            # Increment stats
+            self._stats.increment_transformer_processed_count(transformer)
+
+            # Transform the event
+            transformed_event = self._execute_transformer(curr_event, transformer)
+
+            # Process result
+            if transformed_event is None:
+                # If the transformer has filtered the event, short circuit.
+                self._stats.increment_transformer_filtered_count(transformer)
+                return None
+            # Otherwise, set the result to the transformed event.
+            curr_event = transformed_event
+
+        # Return the final transformed event.
         return curr_event
+
+    def _execute_transformer(
+        self, enveloped_event: EventEnvelope, transformer: Transformer
+    ) -> Optional[EventEnvelope]:
+        try:
+            return transformer.transform(enveloped_event)
+        except Exception as e:
+            self._stats.increment_transformer_exception_count(transformer)
+            raise Exception(
+                f"Caught exception while executing Transformer with name {type(transformer).__name__}"
+            ) from e
 
     def _execute_action(self, enveloped_event: EventEnvelope) -> None:
         try:
@@ -203,9 +220,8 @@ class Pipeline:
             self._stats.increment_success_count()
         except Exception as e:
             self._stats.increment_failed_ack_count()
-            logger.error(
+            logger.exception(
                 f"Caught exception while attempting to ack successfully processed event. event type: {enveloped_event.event_type}, pipeline name: {self.name}",
-                e,
             )
             logger.debug(f"Failed to ack event: {enveloped_event}")
 
@@ -220,10 +236,15 @@ class Pipeline:
 
     def _append_failed_event_to_file(self, enveloped_event: EventEnvelope) -> None:
         # First, convert the event to JSON.
-        json = enveloped_event.to_json()
-        # Then append to failed events file.
-        self._failed_events_fd.write(json + "\n")
-        self._failed_events_fd.flush()
+        try: 
+            json = enveloped_event.to_json()
+            # Then append to failed events file.
+            self._failed_events_fd.write(json + "\n")
+            self._failed_events_fd.flush()
+        except Exception as e:
+            # This is a serious issue, as if we do not handle it can mean losing an event altogether.
+            # Raise an exception to ensure this issue is reported to the operator.
+            raise Exception(f"Failed to log failed event to file! {enveloped_event}") from e
 
     def _init_failed_events_dir(self) -> None:
         # create a directory for failed events from this actions pipeine.

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pydantic
 from datahub.configuration import ConfigModel
@@ -12,16 +12,21 @@ logger = logging.getLogger(__name__)
 
 
 class FilterTransformerConfig(ConfigModel):
-    event_type: str
-    fields: Dict[str, Any]
+    event_type: Union[str, List[str]]
+    event: Optional[Dict[str, Any]]
 
     @pydantic.validator("event_type", always=True)
     def event_type_is_valid(cls, v, values, **kwargs):
-        valid_events = [e.value for e in EventType]
-        if v not in valid_events:
-            raise pydantic.ConfigError(
-                f"Valid event_type are {valid_events} - {v} is invalid"
-            )
+        event_type_list = [v]
+        if isinstance(v, list):
+            event_type_list = v
+        for event_type in event_type_list:
+            valid_events = [e.value for e in EventType]
+            if event_type not in valid_events:
+                raise pydantic.ConfigError(
+                    f"Valid event_type are {valid_events} - {v} is invalid"
+                )
+        return v
 
 
 class FilterTransformer(Transformer):
@@ -37,9 +42,15 @@ class FilterTransformer(Transformer):
 
         logger.info(f"Preparing to filter event {env_event}")
 
-        for key, val in self.config.fields.items():
-            if not self._matches(val, env_event.event.get(key)):
-                return None
+        # Match Event Type.
+        if not self._matches(self.config.event_type, env_event.event_type):
+            return None
+
+        # Match Event Body. 
+        if self.config.event is not None:
+            for key, val in self.config.event.items():
+                if not self._matches(val, env_event.event.get(key)):
+                    return None
         return env_event
 
     def _matches(self, match_val: Any, match_val_to: Any) -> bool:

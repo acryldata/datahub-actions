@@ -26,7 +26,7 @@ source:
       mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
 filter: 
   event_type: "MetadataChangeLogEvent"
-  fields: 
+  event: 
     entityType: "dataHubExecutionRequest"
     changeType: "UPSERT"
 action:

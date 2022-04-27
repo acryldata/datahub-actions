@@ -177,6 +177,13 @@ class ExecutorAction(Action):
             configs=dict({}),
         )
 
+        if not ctx.graph:
+            raise Exception(
+                "Invalid configuration provided to action. DataHub Graph Client Required. Try including the 'datahub' block in your configuration."
+            )
+
+        graph = ctx.graph
+
         # Build default executor config
         local_executor_config = ReportingExecutorConfig(
             id="default",
@@ -185,10 +192,10 @@ class ExecutorAction(Action):
                 SecretStoreConfig(type="env", config=dict({})),
                 SecretStoreConfig(
                     type="datahub",
-                    config=DataHubSecretStoreConfig(graph_client=ctx.graph.graph),
+                    config=DataHubSecretStoreConfig(graph_client=graph),
                 ),
             ],
-            graph_client=ctx.graph.graph,
+            graph_client=graph,
         )
 
         return local_executor_config
