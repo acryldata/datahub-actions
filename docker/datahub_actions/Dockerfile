@@ -43,9 +43,7 @@ COPY datahub_actions /actions-src
 RUN mkdir -p /etc/datahub/actions
 RUN cd /actions-src && \
     pip install "." && \
-    pip install '.[executor]' &&\
-    rm -rf *
-# Last line performs self-delete after installing main pieces
+    pip install '.[executor]'
     
 COPY ./docker/datahub_actions/start.sh /start_datahub_actions.sh
 RUN chmod a+x /start_datahub_actions.sh

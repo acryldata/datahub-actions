@@ -41,8 +41,7 @@ class PipelineManager:
     # A catalog of all the currently executing Action Pipelines.
     pipeline_registry: Dict[str, PipelineSpec] = {}
 
-    # Initialize the Actions Manager.
-    def init(self):
+    def __init__(self) -> None:
         pass
 
     # Start a new Action Pipeline.
