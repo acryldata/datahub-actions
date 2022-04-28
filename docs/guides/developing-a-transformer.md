@@ -49,7 +49,8 @@ Check out the [example](TODO) directory inside the [datahub-actions](TODO) repos
 
 ## Step 2: Installing the Transformer
 
-Now that we've defined the Transformer, we need to make it visible to the framework.
+Now that we've defined the Transformer, we need to make it visible to the framework by making
+it available in the Python runtime environment.
 
 The easiest way to do this is to just place it in the same directory as your configuration file, in which case the module name is the same as the file
 name - in this case it will be `custom_transformer`.
@@ -57,7 +58,6 @@ name - in this case it will be `custom_transformer`.
 ### Advanced: Installing as a Package
 
 Alternatively, create a `setup.py` file in the same directory as the new Transformer to convert it into a package that pip can understand.
-Next, install the package (e.g. via `python setup.py` or `pip install -e .`).
 
 ```
 from setuptools import find_packages, setup
@@ -70,6 +70,14 @@ setup(
     # install_requires=["acryl-datahub-actions"]
 )
 ```
+
+Next, install the package
+
+```shell
+pip install -e .
+```
+
+inside the module. (alt.`python setup.py`). 
 
 Once we have done this, our class will be referencable via `custom_transformer_example.custom_transformer:CustomTransformer`.
 
