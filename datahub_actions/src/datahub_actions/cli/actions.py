@@ -16,7 +16,7 @@ from datahub_actions.pipeline.pipeline_manager import PipelineManager
 logger = logging.getLogger(__name__)
 
 
-# Instantiate a singleton instance of the Actions Manager.
+# Instantiate a singleton instance of the Pipeline Manager.
 pipeline_manager = PipelineManager()
 pipeline_manager.init()
 
@@ -63,7 +63,7 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
         # Set root logger settings to info mode.
         logging.getLogger().setLevel(logging.INFO)
 
-    # Statically configured to be registered with the Actions Manager.
+    # Statically configured to be registered with the pipeline Manager.
     pipelines: List[Pipeline] = []
 
     logger.debug("Creating Actions Pipelines...")
