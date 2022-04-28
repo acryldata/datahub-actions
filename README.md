@@ -6,7 +6,7 @@ Welcome to DataHub Actions! This framework provides a mechanism to write custom 
 
 ## Installation
 
-To install the Actions framework, simply install the "datahub-actions" package from Acryl. 
+To install the Actions framework, simply install the "datahub-actions" package from Acryl Data, Inc.
 
 ```
 python3 -m pip install --upgrade pip wheel setuptools
