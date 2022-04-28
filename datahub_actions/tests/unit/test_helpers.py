@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Iterable, Optional
+from typing import Dict, Iterable, Optional
 
 from datahub.metadata.schema_classes import (
     AuditStampClass,
@@ -52,6 +52,23 @@ entity_change_event = EntityChangeEvent.from_class(
         None,  # TODO: Get rid of source.
     )
 )
+
+
+class TestMessage:
+    def __init__(self, msg: Dict):
+        self.msg: Dict = msg
+
+    def value(self) -> Dict:
+        return self.msg.get("value", {})
+
+    def topic(self) -> str:
+        return self.msg.get("topic", "dummytopic")
+
+    def offset(self) -> int:
+        return self.msg.get("offset", 1)
+
+    def partition(self) -> int:
+        return self.msg.get("partition", 1)
 
 
 class TestEvent(Event, DictWrapper):

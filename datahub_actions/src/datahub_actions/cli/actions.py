@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 # Instantiate a singleton instance of the Pipeline Manager.
 pipeline_manager = PipelineManager()
-pipeline_manager.init()
 
 
 def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:

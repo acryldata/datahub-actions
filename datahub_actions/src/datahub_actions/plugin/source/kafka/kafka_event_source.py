@@ -168,11 +168,12 @@ class KafkaEventSource(EventSource):
                     raise KafkaException(msg.error())
             else:
                 if "mcl" in topic_routes and msg.topic() == topic_routes["mcl"]:
-                    yield from self._handle_mcl(msg)
+                    yield from self.handle_mcl(msg)
                 elif "pe" in topic_routes and msg.topic() == topic_routes["pe"]:
                     yield from self._handle_pe(msg)
 
-    def _handle_mcl(self, msg: Any) -> Iterable[EventEnvelope]:
+    @staticmethod
+    def handle_mcl(msg: Any) -> Iterable[EventEnvelope]:
         metadata_change_log_event = build_metadata_change_log_event(msg)
         kafka_meta = build_kafka_meta(msg)
         yield EventEnvelope(
