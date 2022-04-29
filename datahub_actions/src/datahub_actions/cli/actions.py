@@ -85,7 +85,6 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
 
     # Now, simply run forever.
     while True:
-        # Todo: improve this.
         time.sleep(5)
 
 

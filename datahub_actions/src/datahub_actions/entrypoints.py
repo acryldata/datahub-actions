@@ -1,11 +1,11 @@
 import logging
+import os
 import platform
 import sys
 
 import click
 import stackprinter
 from datahub.configuration import SensitiveError
-from datahub.entrypoints import datahub
 
 import datahub_actions as datahub_package
 from datahub_actions.cli.actions import actions
@@ -20,14 +20,61 @@ logging.basicConfig(format=BASE_LOGGING_FORMAT)
 
 MAX_CONTENT_WIDTH = 120
 
-# Add "actions" command to datahub.
-datahub.add_command(actions)
+
+@click.group(
+    context_settings=dict(
+        # Avoid truncation of help text.
+        # See https://github.com/pallets/click/issues/486.
+        max_content_width=MAX_CONTENT_WIDTH,
+    )
+)
+@click.option("--debug/--no-debug", default=False)
+@click.version_option(
+    version=datahub_package.nice_version_name(),
+    prog_name=datahub_package.__package_name__,
+)
+@click.option(
+    "-dl",
+    "--detect-memory-leaks",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Run memory leak detection.",
+)
+@click.pass_context
+def datahub_actions(ctx: click.Context, debug: bool, detect_memory_leaks: bool) -> None:
+    # Insulate 'datahub_actions' and all child loggers from inadvertent changes to the
+    # root logger by the external site packages that we import.
+    # (Eg: https://github.com/reata/sqllineage/commit/2df027c77ea0a8ea4909e471dcd1ecbf4b8aeb2f#diff-30685ea717322cd1e79c33ed8d37903eea388e1750aa00833c33c0c5b89448b3R11
+    #  changes the root logger's handler level to WARNING, causing any message below
+    #  WARNING level to be dropped  after this module is imported, irrespective
+    #  of the logger's logging level! The lookml source was affected by this).
+
+    # 1. Create 'datahub' parent logger.
+    datahub_logger = logging.getLogger("datahub_actions")
+    # 2. Setup the stream handler with formatter.
+    stream_handler = logging.StreamHandler()
+    formatter = logging.Formatter(BASE_LOGGING_FORMAT)
+    stream_handler.setFormatter(formatter)
+    datahub_logger.addHandler(stream_handler)
+    # 3. Turn off propagation to the root handler.
+    datahub_logger.propagate = False
+    # 4. Adjust log-levels.
+    if debug or os.getenv("DATAHUB_DEBUG", False):
+        logging.getLogger().setLevel(logging.INFO)
+        datahub_logger.setLevel(logging.DEBUG)
+    else:
+        logging.getLogger().setLevel(logging.WARNING)
+        datahub_logger.setLevel(logging.INFO)
+    # Setup the context for the memory_leak_detector decorator.
+    ctx.ensure_object(dict)
+    ctx.obj["detect_memory_leaks"] = detect_memory_leaks
 
 
 def main(**kwargs):
     # This wrapper prevents click from suppressing errors.
     try:
-        sys.exit(datahub(standalone_mode=False, **kwargs))
+        sys.exit(datahub_actions(standalone_mode=False, **kwargs))
     except click.exceptions.Abort:
         # Click already automatically prints an abort message, so we can just exit.
         sys.exit(1)
@@ -57,3 +104,7 @@ def main(**kwargs):
             f"Python version: {sys.version} at {sys.executable} on {platform.platform()}"
         )
         sys.exit(1)
+
+
+# Add "actions" command to datahub.
+datahub_actions.add_command(actions)

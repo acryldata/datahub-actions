@@ -41,6 +41,8 @@ RUN apt-get update \
 FROM base as prod-install
 COPY datahub_actions /actions-src
 RUN mkdir -p /etc/datahub/actions
+RUN mkdir -p /tmp/datahub/logs/actions/
+RUN mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
     pip install "." && \
     pip install '.[executor]'
@@ -49,7 +51,8 @@ COPY ./docker/datahub_actions/start.sh /start_datahub_actions.sh
 RUN chmod a+x /start_datahub_actions.sh
 
 # Add other default configurations into this! 
-COPY ./recipes/executor.yaml /etc/datahub/actions/
+RUN mkdir -p /etc/datahub/actions
+COPY ./examples/executor.yaml /etc/datahub/actions/system
 
 RUN addgroup --system datahub && adduser --system datahub --ingroup datahub
 RUN chown datahub /etc/datahub

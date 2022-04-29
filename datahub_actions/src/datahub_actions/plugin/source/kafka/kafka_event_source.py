@@ -90,7 +90,7 @@ def build_entity_change_event(payload: GenericPayloadClass) -> EntityChangeEvent
             json_payload["operation"],
             AuditStampClass.from_obj(json_payload["auditStamp"]),
             json_payload["version"],
-            json_payload["modifier"] if "modifier" in json_payload else None, 
+            json_payload["modifier"] if "modifier" in json_payload else None,
             ParametersClass() if "parameters" in json_payload else None,
             json_payload["source"] if "source" in json_payload else None,
         )

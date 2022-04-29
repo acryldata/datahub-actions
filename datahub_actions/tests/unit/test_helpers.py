@@ -54,11 +54,16 @@ entity_change_event = EntityChangeEvent.from_class(
 )
 
 # Mocked Envelopes
-metadata_change_log_event_env = EventEnvelope("MetadataChangeLogEvent_v1", metadata_change_log_event, {})
-entity_change_event_env = EventEnvelope("EntityChangeLogEvent_v1", entity_change_event, {})
+metadata_change_log_event_env = EventEnvelope(
+    "MetadataChangeLogEvent_v1", metadata_change_log_event, {}
+)
+entity_change_event_env = EventEnvelope(
+    "EntityChangeLogEvent_v1", entity_change_event, {}
+)
 
 # Mocked Pipeline Context
 pipeline_context = PipelineContext(pipeline_name="test", graph=None)
+
 
 class TestMessage:
     def __init__(self, msg: Dict):
