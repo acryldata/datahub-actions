@@ -14,18 +14,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+touch /tmp/datahub/logs/actions/actions.out
+
 # Deploy System Actions
-system_config_files=""
-for file in /etc/datahub/system/actions/*
-do
-    system_config_files+="-c ${file} "
-done
-datahub_actions actions -c $system_config_files > /tmp/datahub/logs/system/actions/system/actions.out
+if [ "$(ls -A /etc/datahub/actions/system/conf/)" ]; then
+    config_files=""
+    # .yml 
+    for file in /etc/datahub/actions/system/conf/*.yml;
+    do
+        if [ -f "$file" ]; then
+            config_files+="-c $file "
+        fi
+    done
+    #.yaml
+    for file in /etc/datahub/actions/system/conf/*.yaml;
+    do
+        if [ -f "$file" ]; then
+            config_files+="-c $file "
+        fi
+    done
+else
+    echo "No system action configurations found. Not starting system actions."
+fi
 
 # Deploy User Actions
-user_config_files=""
-for file in /etc/datahub/actions/*
-do
-    user_config_files+="-c ${file} "
-done
-datahub_actions actions -c $user_config_files > /tmp/datahub/logs/actions/actions.out
+if [ "$(ls -A /etc/datahub/actions/system/conf/)" ]; then
+    # .yml
+    for file in /etc/datahub/actions/conf/*.yml;
+    do
+        if [ -f "$file" ]; then
+            config_files+="-c $file "
+        fi
+    done
+    #.yaml
+    for file in /etc/datahub/actions/conf/*.yaml;
+    do
+        if [ -f "$file" ]; then
+            config_files+="-c $file "
+        fi
+    done
+else
+    echo "No user action configurations found. Not starting user actions."
+fi
+
+datahub_actions actions $config_files > /tmp/datahub/logs/actions/actions.out

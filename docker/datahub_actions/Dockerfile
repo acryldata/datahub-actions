@@ -51,11 +51,13 @@ COPY ./docker/datahub_actions/start.sh /start_datahub_actions.sh
 RUN chmod a+x /start_datahub_actions.sh
 
 # Add other default configurations into this! 
-RUN mkdir -p /etc/datahub/actions
-COPY ./examples/executor.yaml /etc/datahub/actions/system
+RUN mkdir -p /etc/datahub/actions/conf
+RUN mkdir -p /etc/datahub/actions/system/conf
+COPY ./examples/executor.yaml /etc/datahub/actions/system/conf
 
 RUN addgroup --system datahub && adduser --system datahub --ingroup datahub
 RUN chown datahub /etc/datahub
+RUN chown -R datahub /tmp/datahub
 
 
 FROM ${APP_ENV}-install as final

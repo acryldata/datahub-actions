@@ -34,5 +34,5 @@ action:
 datahub:
   server: "http://${GMS_HOST:-localhost}:${GMS_PORT:-8080}"
   # token: 
-  extra_headers:
-    Authorization: "Basic ${DATAHUB_SYSTEM_CLIENT_ID:-__datahub_system}:${DATAHUB_SYSTEM_CLIENT_SECRET:-JohnSnowKnowsNothing}"
+  # extra_headers:
+  #  Authorization: "Basic ${DATAHUB_SYSTEM_CLIENT_ID:-__datahub_system}:${DATAHUB_SYSTEM_CLIENT_SECRET:-JohnSnowKnowsNothing}"

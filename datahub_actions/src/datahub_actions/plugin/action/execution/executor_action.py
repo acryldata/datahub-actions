@@ -184,7 +184,7 @@ class ExecutorAction(Action):
                 "Invalid configuration provided to action. DataHub Graph Client Required. Try including the 'datahub' block in your configuration."
             )
 
-        graph = ctx.graph
+        graph = ctx.graph.graph
 
         # Build default executor config
         local_executor_config = ReportingExecutorConfig(
