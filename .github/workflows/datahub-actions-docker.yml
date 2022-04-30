@@ -1,4 +1,4 @@
-name: datahub-actions docker (public)
+name: datahub-actions docker
 on:
   push:
     branches:
@@ -10,7 +10,7 @@ on:
     branches:
       - master
     paths:
-      - 'docker/public/'
+      - 'docker/'
       - '.github/workflows/datahub-actions-docker.yml'
     paths_ignore:
       - 'build/**'
@@ -53,8 +53,6 @@ jobs:
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v1
         with:
-          # list of Docker images to use as base name for tags
-          # todo - figure out if this is the "right" place to push. 
           images: |
             acryldata/datahub-actions
           tag-custom: ${{ needs.setup.outputs.tag }}
@@ -77,7 +75,8 @@ jobs:
       - name: Build and Push Image
         uses: docker/build-push-action@v2
         with:
-          file: ./docker/public/Dockerfile.public
+          # TODO: Push to OSS dockerhub.
+          file: ./docker/datahub_actions/Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.docker_meta.outputs.tags }}
           push: ${{ needs.setup.outputs.publish == 'true' && github.event_name != 'pull_request' }}
