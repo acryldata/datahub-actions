@@ -5,7 +5,7 @@ This module is used to publish docker images to acryldata's docker repository.
 From the root directory,
 
 ```
-docker build -f docker/datahub_actions/Dockerfile . --no-cache
+docker build -f docker/datahub-actions/Dockerfile . --no-cache
 ```
 
 # Running the Docker Image

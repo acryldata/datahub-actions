@@ -26,7 +26,7 @@ jobs:
           python-version: "3.9.9"
       - name: Test packages are correct
         run: |
-          cd datahub_actions;
+          cd datahub-actions;
           python -c 'import setuptools; where="./src"; assert setuptools.find_packages(where) == setuptools.find_namespace_packages(where), "you seem to be missing or have extra __init__.py files"'
       - name: Gradle build (and test)
         run: |
