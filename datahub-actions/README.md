@@ -132,7 +132,7 @@ datahub actions -c <config.yml>
 If successful, you'll see a message like the following in the CLI output:
 
 ```
-Actions Pipeline with name '<name>' is now running.
+Action Pipeline with name '<action-pipeline-name>' is now running.
 ```
 
 ### Running multiple Actions
@@ -152,6 +152,15 @@ Simply append the `--debug` flag to the CLI to run your action in debug mode.
 
 ```
 datahub actions -c <config.yaml> --debug
+```
+
+### Stopping an Action
+
+Just issue a Control-C as usual. You should see the Actions Pipeline shut down gracefully, with a small
+summary of processing results.
+
+```
+Actions Pipeline with name '<action-pipeline-name' has been stopped.
 ```
 
 

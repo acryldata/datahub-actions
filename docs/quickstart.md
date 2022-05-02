@@ -19,7 +19,6 @@ To install DataHub Actions, you need to install the `acryl-datahub-actions` pack
 
 ```shell
 python3 -m pip install --upgrade pip wheel setuptools
-python3 -m pip uninstall datahub acryl-datahub-actions || true  # sanity check - ok if it fails
 python3 -m pip install --upgrade acryl-datahub-actions
 
 # Verify the installation by checking the version.
