@@ -29,7 +29,7 @@ Next, simply install the `acryl-datahub-actions` package from PyPi:
 ```shell
 python3 -m pip install --upgrade pip wheel setuptools
 python3 -m pip install --upgrade acryl-datahub-actions
-datahub actions --version
+datahub actions version
 ```
 
 
