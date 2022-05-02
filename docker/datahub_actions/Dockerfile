@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Public Acryl-Actions Container. 
-
 # Defining environment
 ARG APP_ENV=prod
 

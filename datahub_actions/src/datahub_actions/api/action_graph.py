@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: John Clean this up.
-
 import json
 import time
 import urllib.parse
