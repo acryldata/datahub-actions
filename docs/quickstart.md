@@ -1,6 +1,17 @@
-## DataHub Actions Quickstart
+# DataHub Actions Quickstart
 
-### Installation
+## Installation
+
+### Prerequisites
+
+The DataHub Actions CLI commands are an extension of the base `datahub` CLI commands. We recommend
+first installing the `datahub` CLI:
+
+```shell
+python3 -m pip install --upgrade pip wheel setuptools
+python3 -m pip install --upgrade acryl-datahub
+datahub --version
+```
 
 To install DataHub Actions, you need to install the `acryl-datahub-actions` package from PyPi
 
@@ -156,14 +167,6 @@ action:
 ```
 *This filter only matches events representing "PII" tag additions to OR removals from an entity. How fancy!*
 
-
-#### Developing a custom action
-
-Printing events to the console is good and fun, but what if we actually want to do something useful
-when we receive an Event - for example, sending an email or creating a ticket. To do so, we can easily 
-plug in our own custom Action which does whatever we want. 
-
-To learn how to create a  custom Action, check out the [Developing an Action](./guides/developing-an-action.md) guide.
 
 ### FAQ
 

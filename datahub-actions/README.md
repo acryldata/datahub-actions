@@ -1,8 +1,13 @@
-# DataHub Actions Framework
+# ⚡ DataHub Actions Framework
 
-Welcome to DataHub Actions! This framework provides a mechanism to write custom code which is invoked when important things happen on DataHub. 
+Welcome to DataHub Actions! The Actions framework makes responding to changes to your Metadata Graph in
+realtime easy, enabling you to seamlessly integrate DataHub into a broader events-based architecture.
 
-For a detailed introduction, check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall. 
+For a detailed introduction, check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall. For a more in-depth look at use cases and concepts, check out [DataHub Actions Concepts](../docs/actions.md). 
+
+## Getting Started
+
+To get started right away, check out the [DataHub Actions Quickstart](../docs/quickstart.md) Guide.
 
 
 ## Installation
@@ -92,6 +97,7 @@ We can modify this configuration further to filter for specific events, by addin
 ```yml
 # 1. Action Pipeline Name
 name: "hello_world"
+
 # 2. Event Source - Where to source event from.
 source:
   type: "kafka"
@@ -148,10 +154,31 @@ datahub actions -c <config.yaml> --debug
 ```
 
 
-## Actions Library
+## Supported Events
+
+Two event types are currently supported. Read more about them below.
+
+- [Entity Change Event V1](../docs/events/entity-change-event.md)
+- [Metadata Change Log V1](../docs/events/metadata-change-log-event.md)
+
+
+## Supported Event Sources
+
+Currently, the only event source that is officially supported is `kafka`, which polls for events
+via a Kafka Consumer. 
+
+- [Kafka Event Source](../docs/sources/kafka-event-source.md)
+
+
+## Supported Actions
 
 By default, DataHub supports a set of standard actions plugins. These can be found inside the folder
 `src/datahub_actions/plugins`. 
+
+Some pre-included Actions include
+
+- [Hello World](../docs/actions/hello_world.md)
+- [Executor](../docs/actions/executor.md)
 
 
 ## Development
@@ -189,7 +216,7 @@ To develop a new Action, check out the [Developing an Action](../docs/guides/dev
 
 ## Contributing
 
-Contributing guidelines follow those of the [main DataHub project](https://github.com/datahub-project/datahub/blob/master/docs/CONTRIBUTING.md). We are accepting contributions for Actions, Transformers, and Framework improvements.
+Contributing guidelines follow those of the [main DataHub project](https://github.com/datahub-project/datahub/blob/master/docs/CONTRIBUTING.md). We are accepting contributions for Actions, Transformers, and general framework improvements (tests, error handling, etc).
 
 
 ## Resources
