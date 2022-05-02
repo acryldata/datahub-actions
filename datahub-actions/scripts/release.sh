@@ -1,6 +1,3 @@
-#!/bin/bash
-set -euxo pipefail
-
 # Copyright 2021 Acryl Data, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +31,6 @@ fi
 rm -rf build dist || true
 python -m build
 if [[ ! ${RELEASE_SKIP_UPLOAD:-} ]]; then
-    python -m twine upload 'dist/*'
+    python -m twine upload 'dist/*' --verbose
 fi
 git restore src/datahub_actions/__init__.py

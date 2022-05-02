@@ -1,7 +1,7 @@
 name: pypi-release datahub-actions
 on:
   release:
-    types: [published, edited]
+    types: [published]
 
 jobs:
   setup:
