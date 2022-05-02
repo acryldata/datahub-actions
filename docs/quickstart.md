@@ -166,16 +166,3 @@ action:
   type: "hello_world"
 ```
 *This filter only matches events representing "PII" tag additions to OR removals from an entity. How fancy!*
-
-
-### FAQ
-
-*Can I run multiple actions at once?*
-
-Yes! Simply provide multiple configuration files by repeating the `-c` argument to the `datahub actions` command.
-This will spin up multiple separate Actions consumers, each with their own Event Source, Filter, and Action in their own
-unique threads.
-
-```shell
-datahub actions -c <config-1.yml> -c <config-2.yml>
-```
