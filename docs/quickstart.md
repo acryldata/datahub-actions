@@ -1,8 +1,7 @@
 # DataHub Actions Quickstart
 
-## Installation
 
-### Prerequisites
+## Prerequisites
 
 The DataHub Actions CLI commands are an extension of the base `datahub` CLI commands. We recommend
 first installing the `datahub` CLI:
@@ -12,6 +11,9 @@ python3 -m pip install --upgrade pip wheel setuptools
 python3 -m pip install --upgrade acryl-datahub
 datahub --version
 ```
+
+
+## Installation
 
 To install DataHub Actions, you need to install the `acryl-datahub-actions` package from PyPi
 
