@@ -3,7 +3,7 @@
 Welcome to DataHub Actions! The Actions framework makes responding to changes to your Metadata Graph in
 realtime easy, enabling you to seamlessly integrate DataHub into a broader events-based architecture.
 
-For a detailed introduction, check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall. For a more in-depth look at use cases and concepts, check out [DataHub Actions Concepts](../docs/actions.md). 
+For a detailed introduction, check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall. For a more in-depth look at use cases and concepts, check out [DataHub Actions Concepts](../docs/concepts.md). 
 
 ## Getting Started
 
