@@ -11,6 +11,12 @@ docker build -f docker/datahub_actions/Dockerfile . --no-cache
 # Running the Docker Image
 
 ```
-docker run <image-id> --env-file <env-file>
+docker image ls # Grab the container id 
 docker run --env-file docker/actions.env --network datahub_network <image-id>
+```
+
+And to mount a custom Action configuration, you can do the following:
+
+```
+docker run --env-file docker/actions.env --network datahub_network --mount type=bind,source="$(pwd)"/examples/hello_world.yaml,target=/etc/datahub/actions/conf/hello_world.yaml <image-id>
 ```

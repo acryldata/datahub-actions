@@ -62,7 +62,10 @@ class EntityChangeEvent(EntityChangeEventClass, Event):
         return cls.from_obj(json_obj, True)
 
     def as_json(self) -> str:
-        return json.dumps(self.to_obj())
+        json_obj = self.to_obj()
+        # Insert parameters
+        json_obj["parameters"] = self._inner_dict["parameters"] if "parameters" in self._inner_dict else {}
+        return json.dumps(json_obj)
 
 
 # Standard Event Types for easy reference.

@@ -57,4 +57,4 @@ else
     echo "No user action configurations found. Not starting user actions."
 fi
 
-datahub_actions actions $config_files > /tmp/datahub/logs/actions/actions.out
+datahub_actions actions $config_files

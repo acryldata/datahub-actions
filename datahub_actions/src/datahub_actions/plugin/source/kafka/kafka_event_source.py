@@ -99,6 +99,7 @@ def build_entity_change_event(payload: GenericPayloadClass) -> EntityChangeEvent
     # to avoid validation at object creation time. This means the reader is responsible to understand the serialized JSON format, which
     # is simply PDL serialized to JSON.
     if "parameters" in json_payload:
+        print("YES!")
         event._inner_dict["parameters"] = json_payload["parameters"]
     return event
 
