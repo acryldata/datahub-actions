@@ -80,7 +80,7 @@ plugins: Dict[str, Set[str]] = {
     "kafka": kafka_common,
     # Action Plugins 
     "executor": { 
-        f"acryl-executor @ https://pypi.fury.io/acryl-data/-/ver_1WQ8gX/acryl-executor-0.0.2.3.tar.gz",
+        f"acryl-executor==0.0.3rc2",
     }
     # Transformer Plugins (None yet)
 }
