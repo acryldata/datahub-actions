@@ -63,8 +63,10 @@ class EntityChangeEvent(EntityChangeEventClass, Event):
 
     def as_json(self) -> str:
         json_obj = self.to_obj()
-        # Insert parameters
-        json_obj["parameters"] = self._inner_dict["parameters"] if "parameters" in self._inner_dict else {}
+        # Insert parameters, this hack exists because of the way EntityChangeLogClass does not support "Any Record"
+        json_obj["parameters"] = (
+            self._inner_dict["parameters"] if "parameters" in self._inner_dict else {}
+        )
         return json.dumps(json_obj)
 
 
