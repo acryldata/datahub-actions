@@ -15,13 +15,9 @@ import importlib
 import json
 import logging
 import sys
-import traceback
-from typing import Any, cast
-
-from pydantic import BaseModel
+from typing import Any, Optional, cast
 
 from acryl.executor.dispatcher.default_dispatcher import DefaultDispatcher
-from acryl.executor.execution.executor import Executor
 from acryl.executor.execution.reporting_executor import (
     ReportingExecutor,
     ReportingExecutorConfig,
@@ -30,11 +26,11 @@ from acryl.executor.execution.task import TaskConfig
 from acryl.executor.request.execution_request import (
     ExecutionRequest as ExecutionRequestObj,
 )
-
 from acryl.executor.request.signal_request import SignalRequest as SignalRequestObj
 from acryl.executor.secret.datahub_secret_store import DataHubSecretStoreConfig
 from acryl.executor.secret.secret_store import SecretStoreConfig
 from datahub.metadata.schema_classes import MetadataChangeLogClass
+from pydantic import BaseModel
 
 from datahub_actions.action.action import Action
 from datahub_actions.event.event import EventEnvelope

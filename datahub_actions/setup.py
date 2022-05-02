@@ -42,6 +42,9 @@ base_requirements = {
     "pydantic>=1.5.1",
     "acryl-datahub>=0.8.33.2rc2",
     "dictdiffer",
+}
+
+kafka_common = {
     "confluent-kafka>=1.5.0",
     "fastavro>=1.2.0",
 }
@@ -60,6 +63,7 @@ framework_common = {
     "stackprinter",
     "tabulate",
     "progressbar2",
+    *kafka_common,
 }
 
 aws_common = {
@@ -72,10 +76,13 @@ aws_common = {
 
 # Note: for all of these, framework_common will be added.
 plugins: Dict[str, Set[str]] = {
+    # Source Plugins
+    "kafka": kafka_common,
     # Action Plugins 
     "executor": { 
         f"acryl-executor @ https://pypi.fury.io/acryl-data/-/ver_1WQ8gX/acryl-executor-0.0.2.3.tar.gz",
     }
+    # Transformer Plugins (None yet)
 }
 
 mypy_stubs = {
@@ -120,7 +127,8 @@ base_dev_requirements = {
     *list(
         dependency
         for plugin in [
-            "datahub-stream",
+            "kafka",
+            "executor",
         ]
         for dependency in plugins[plugin]
     ),
@@ -134,7 +142,8 @@ full_test_dev_requirements = {
     *list(
         dependency
         for plugin in [
-            "datahub-stream",
+            "kafka",
+            "executor",
         ]
         for dependency in plugins[plugin]
     ),
