@@ -18,6 +18,8 @@ import sys
 import traceback
 from typing import Any, cast
 
+from pydantic import BaseModel
+
 from acryl.executor.dispatcher.default_dispatcher import DefaultDispatcher
 from acryl.executor.execution.executor import Executor
 from acryl.executor.execution.reporting_executor import (
@@ -28,6 +30,7 @@ from acryl.executor.execution.task import TaskConfig
 from acryl.executor.request.execution_request import (
     ExecutionRequest as ExecutionRequestObj,
 )
+
 from acryl.executor.request.signal_request import SignalRequest as SignalRequestObj
 from acryl.executor.secret.datahub_secret_store import DataHubSecretStoreConfig
 from acryl.executor.secret.secret_store import SecretStoreConfig
@@ -70,18 +73,23 @@ def import_path(path: str) -> Any:
     return item
 
 
+class ExecutorConfig(BaseModel):
+    executor_id: Optional[str]
+
+
 # Listens to new Execution Requests & dispatches them to the appropriate handler.
 class ExecutorAction(Action):
     @classmethod
     def create(cls, config_dict: dict, ctx: PipelineContext) -> "Action":
-        return cls(ctx)
+        config = ExecutorConfig.parse_obj(config_dict or {})
+        return cls(config, ctx)
 
-    def __init__(self, ctx: PipelineContext):
+    def __init__(self, config: ExecutorConfig, ctx: PipelineContext):
         self.ctx = ctx
 
         executors = []
 
-        executor_config = self._build_default_executor_config(ctx)
+        executor_config = self._build_executor_config(config, ctx)
         executors.append(ReportingExecutor(executor_config))
 
         # Construct execution request dispatcher
@@ -168,8 +176,8 @@ class ExecutorAction(Action):
             except Exception:
                 logger.error("ERROR", exc_info=sys.exc_info())
 
-    def _build_default_executor_config(
-        self, ctx: PipelineContext
+    def _build_executor_config(
+        self, config: ExecutorConfig, ctx: PipelineContext
     ) -> ReportingExecutorConfig:
 
         # Build default task config
@@ -188,7 +196,7 @@ class ExecutorAction(Action):
 
         # Build default executor config
         local_executor_config = ReportingExecutorConfig(
-            id="default",
+            id=config.executor_id or "default",
             task_configs=[local_task_config],
             secret_stores=[
                 SecretStoreConfig(type="env", config=dict({})),
@@ -201,16 +209,6 @@ class ExecutorAction(Action):
         )
 
         return local_executor_config
-
-    def _create_remote_executor(self, type: str, config: dict) -> Executor:
-        try:
-            executor_class = import_path(type)
-            executor_instance = executor_class.create(config=config)
-            return executor_instance
-        except Exception:
-            raise Exception(
-                f"Failed to create instance of executor with type {type}: {traceback.format_exc(limit=3)}"
-            )
 
     def close(self) -> None:
         # TODO: Handle closing action ingestion processing.

@@ -62,16 +62,6 @@ framework_common = {
     "progressbar2",
 }
 
-kafka_common = {
-    # We currently require both Avro libraries. The codegen uses avro-python3 (above)
-    # schema parsers at runtime for generating and reading JSON into Python objects.
-    # At the same time, we use Kafka's AvroSerializer, which internally relies on
-    # fastavro for serialization. We do not use confluent_kafka[avro], since it
-    # is incompatible with its own dep on avro-python3.
-    "confluent_kafka>=1.5.0",
-    "fastavro>=1.2.0",
-}
-
 aws_common = {
     # AWS Python SDK
     "boto3",
@@ -82,8 +72,6 @@ aws_common = {
 
 # Note: for all of these, framework_common will be added.
 plugins: Dict[str, Set[str]] = {
-    # Source plugins --> TODO: Remove this. 
-    "datahub-stream": kafka_common,
     # Action Plugins 
     "executor": { 
         f"acryl-executor @ https://pypi.fury.io/acryl-data/-/ver_1WQ8gX/acryl-executor-0.0.2.3.tar.gz",

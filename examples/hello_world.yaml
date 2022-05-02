@@ -7,16 +7,6 @@ source:
     connection:
       bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
       schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
-
-filter:
-  event_type: "EntityChangeEvent_v1"
-  event:
-    category: "TAG"
-    operation: ["ADD", "REMOVE"]
-    modifier: "urn:li:tag:pii"
-
 # 2. Action: What action to take on events. 
 action:
   type: "hello_world"
-  config:
-    to_upper: False

@@ -4,7 +4,7 @@
 
 `EntityChangeEvent_v1`
 
-## Descripion
+## Overview
 
 This Event is emitted when certain changes are made to an entity (dataset, dashboard, chart, etc) on DataHub.
 
