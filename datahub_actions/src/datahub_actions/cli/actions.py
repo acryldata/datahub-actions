@@ -99,8 +99,8 @@ def version() -> None:
 
 # Handle shutdown signal. (ctrl-c)
 def handle_shutdown(signum, frame):
-    logger.info("Terminating all running Action Pipelines...")
-    pipeline_manager.terminate_all()
+    logger.info("Stopping all running Action Pipelines...")
+    pipeline_manager.stop_all()
     exit(1)
 
 

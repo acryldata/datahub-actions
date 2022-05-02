@@ -4,30 +4,10 @@ import os
 import pytest
 from pydantic import ValidationError
 
-from datahub_actions.action.action_registry import action_registry
 from datahub_actions.pipeline.pipeline import Pipeline, PipelineException
 from datahub_actions.pipeline.pipeline_config import FailureMode
 from datahub_actions.plugin.transform.filter.filter_transformer import FilterTransformer
-from datahub_actions.source.event_source_registry import event_source_registry
-from datahub_actions.transform.transformer_registry import transformer_registry
-from tests.unit.test_helpers import (
-    StoppableEventSource,
-    TestAction,
-    TestEventSource,
-    TestTransformer,
-    ThrowingTestAction,
-    ThrowingTestTransformer,
-)
-
-# Register test components.
-event_source_registry.register("test_source", TestEventSource)
-event_source_registry.register("stoppable_event_source", StoppableEventSource)
-
-transformer_registry.register("test_transformer", TestTransformer)
-transformer_registry.register("throwing_test_transformer", ThrowingTestTransformer)
-
-action_registry.register("test_action", TestAction)
-action_registry.register("throwing_test_action", ThrowingTestAction)
+from tests.unit.test_helpers import TestAction, TestEventSource, TestTransformer
 
 
 def test_create():

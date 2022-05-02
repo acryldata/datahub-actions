@@ -28,10 +28,10 @@ def run_pipeline(pipeline: Pipeline) -> None:
         pipeline.run()
     except PipelineException:
         logger.error(
-            f"Caught exception while executing pipeline with name {pipeline.name}: {traceback.format_exc(limit=3)}"
+            f"Caught exception while running pipeline with name {pipeline.name}: {traceback.format_exc(limit=3)}"
         )
         pipeline.stop()
-    logger.debug(f"Thread for pipeline with name {pipeline.name} has terminated.")
+    logger.debug(f"Thread for pipeline with name {pipeline.name} has stopped.")
 
 
 # A manager of multiple Action Pipelines.
@@ -51,14 +51,14 @@ class PipelineManager:
             thread = Thread(target=run_pipeline, args=([pipeline]))
             thread.start()
             spec = PipelineSpec(name, pipeline, thread)
-            self.pipeline_registry[pipeline.name] = spec
+            self.pipeline_registry[name] = spec
             logger.debug(f"Started pipeline with name {name}.")
         else:
             raise Exception(f"Pipeline with name {name} is already running.")
 
-    # Terminate a running Action Pipeline.
-    def terminate_pipeline(self, name: str) -> None:
-        logger.debug(f"Attempting to terminate pipeline with name {name}...")
+    # Stop a running Action Pipeline.
+    def stop_pipeline(self, name: str) -> None:
+        logger.debug(f"Attempting to stop pipeline with name {name}...")
         if name in self.pipeline_registry:
             # First, stop the pipeline.
             try:
@@ -74,19 +74,19 @@ class PipelineManager:
                 # Failed to stop a pipeline - this is a critical issue, we should avoid starting another action of the same type
                 # until this pipeline is confirmed killed.
                 logger.error(
-                    f"Caught exception while attempting to terminate pipeline with name {name}: {traceback.format_exc(limit=3)}"
+                    f"Caught exception while attempting to stop pipeline with name {name}: {traceback.format_exc(limit=3)}"
                 )
                 raise Exception(
-                    f"Caught exception while attempting to terminate pipeline with name {name}."
+                    f"Caught exception while attempting to stop pipeline with name {name}."
                 )
         else:
             raise Exception(f"No pipeline with name {name} found.")
 
-    # Terminate all running pipelines.
-    def terminate_all(self) -> None:
-        logger.debug("Attempting to terminate all running pipelines...")
+    # Stop all running pipelines.
+    def stop_all(self) -> None:
+        logger.debug("Attempting to stop all running pipelines...")
         # Stop each running pipeline.
         names = list(self.pipeline_registry.keys()).copy()
         for name in names:
-            self.terminate_pipeline(name)
-        logger.debug("Successfully terminated all running pipelines.")
+            self.stop_pipeline(name)
+        logger.debug("Successfully stop all running pipelines.")

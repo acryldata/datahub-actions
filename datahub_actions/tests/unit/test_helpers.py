@@ -11,6 +11,7 @@ from datahub.metadata.schema_classes import (
 )
 
 from datahub_actions.action.action import Action
+from datahub_actions.action.action_registry import action_registry
 from datahub_actions.event.event import Event, EventEnvelope
 from datahub_actions.event.event_registry import (
     EntityChangeEvent,
@@ -18,7 +19,9 @@ from datahub_actions.event.event_registry import (
 )
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.source.event_source import EventSource
+from datahub_actions.source.event_source_registry import event_source_registry
 from datahub_actions.transform.transformer import Transformer
+from datahub_actions.transform.transformer_registry import transformer_registry
 
 # Mocked Metadata Change Log representing a Domain change for a Dataset.
 metadata_change_log_event = MetadataChangeLogEvent.from_class(
@@ -238,3 +241,14 @@ class ThrowingTestAction(Action):
 
     def close(self) -> None:
         pass
+
+
+# Register test components.
+event_source_registry.register("test_source", TestEventSource)
+event_source_registry.register("stoppable_event_source", StoppableEventSource)
+
+transformer_registry.register("test_transformer", TestTransformer)
+transformer_registry.register("throwing_test_transformer", ThrowingTestTransformer)
+
+action_registry.register("test_action", TestAction)
+action_registry.register("throwing_test_action", ThrowingTestAction)
