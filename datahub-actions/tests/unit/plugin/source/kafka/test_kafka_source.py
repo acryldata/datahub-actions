@@ -64,8 +64,8 @@ def test_handle_entity_event():
             "name": "entityChangeEvent",
             "payload": {
                 "contentType": "application/json",
-                "value": b'{"entityUrn": "urn:li:dataset:abc","entityType": "dataset","category": "TAG","operation": "ADD","modifier": "urn:li:tag:PII","auditStamp": {"actor": "urn:li:corpuser:jdoe","time": 1649953100653},"version":0}'
-            }
+                "value": b'{"entityUrn": "urn:li:dataset:abc","entityType": "dataset","category": "TAG","operation": "ADD","modifier": "urn:li:tag:PII","auditStamp": {"actor": "urn:li:corpuser:jdoe","time": 1649953100653},"version":0}',
+            },
         }
     )
     result = list(KafkaEventSource.handle_pe(msg))[0]
