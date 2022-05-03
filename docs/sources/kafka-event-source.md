@@ -37,14 +37,32 @@ The Kafka Event Source produces
 - [Entity Change Event V1](../events/entity-change-event.md)
 - [Metadata Change Log V1](../events/metadata-change-log-event.md)
 
+
 ## Configure the Event Source
 
-Use the following config(s) to get started with this Action. 
+Use the following config(s) to get started with the Kafka Event Source. 
 
 ```yml
 name: "pipeline-name"
 source:
-  # source configs
+  type: "kafka"
+  config:
+    # Connection-related configuration
+    connection:
+      bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
+      schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
+      # Dictionary of freeform consumer configs propagated to underlying Kafka Consumer 
+      consumer_config: 
+          #security.protocol: ${KAFKA_PROPERTIES_SECURITY_PROTOCOL:-PLAINTEXT}
+          #ssl.keystore.location: ${KAFKA_PROPERTIES_SSL_KEYSTORE_LOCATION:-/mnt/certs/keystore}
+          #ssl.truststore.location: ${KAFKA_PROPERTIES_SSL_TRUSTSTORE_LOCATION:-/mnt/certs/truststore}
+          #ssl.keystore.password: ${KAFKA_PROPERTIES_SSL_KEYSTORE_PASSWORD:-keystore_password}
+          #ssl.key.password: ${KAFKA_PROPERTIES_SSL_KEY_PASSWORD:-keystore_password}
+          #ssl.truststore.password: ${KAFKA_PROPERTIES_SSL_TRUSTSTORE_PASSWORD:-truststore_password}
+    # Topic Routing - which topics to read from.
+    topic_routes:
+      mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1} # Topic name for MetadataChangeLog_v1 events. 
+      pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1} # Topic name for PlatformEvent_v1 events. 
 action:
   # action configs
 ```
@@ -54,11 +72,13 @@ action:
   
   | Field | Required | Default | Description |
   | --- | :-: | :-: | --- |
-  | `field1` | ✅ | `default_value` | A required field with a default value |
-  | `field2` | ❌ | `default_value` | An optional field with a default value |
-  | `field3` | ❌ | | An optional field without a default value |
-  | ... | | |
+  | `connection.bootstrap` | ✅ | N/A | The Kafka bootstrap URI, e.g. `localhost:9092`. |
+  | `connection.schema_registry_url` | ✅ | N/A | The URL for the Kafka schema registry, e.g. `http://localhost:8081` |
+  | `connection.consumer_config` | ❌ | {} | A set of key-value pairs that represents arbitrary Kafka Consumer configs |
+  | `topic_routes.mcl` | ❌  | `MetadataChangeLog_v1` | The name of the topic containing MetadataChangeLog events |
+  | `topic_routes.pe` | ❌ | `PlatformEvent_v1` | The name of the topic containing PlatformEvent events |
 </details>
+
 
 ## FAQ
 
