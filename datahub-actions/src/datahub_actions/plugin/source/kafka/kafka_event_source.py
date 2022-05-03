@@ -32,7 +32,6 @@ from datahub.metadata.schema_classes import (
     EntityChangeEventClass,
     GenericPayloadClass,
     MetadataChangeLogClass,
-    ParametersClass,
 )
 
 from datahub_actions.event.event import EventEnvelope
@@ -91,15 +90,14 @@ def build_entity_change_event(payload: GenericPayloadClass) -> EntityChangeEvent
             AuditStampClass.from_obj(json_payload["auditStamp"]),
             json_payload["version"],
             json_payload["modifier"] if "modifier" in json_payload else None,
-            ParametersClass() if "parameters" in json_payload else None,
-            json_payload["source"] if "source" in json_payload else None,
+            None,
         )
     )
     # Hack: Since parameters is an "AnyRecord" (arbitrary json) we have to insert into the underlying map directly
     # to avoid validation at object creation time. This means the reader is responsible to understand the serialized JSON format, which
     # is simply PDL serialized to JSON.
-    if "__parameters_json" in json_payload:
-        event._inner_dict["__parameters_json"] = json_payload["__parameters_json"]
+    if "parameters" in json_payload:
+        event._inner_dict["__parameters_json"] = json_payload["parameters"]
     return event
 
 

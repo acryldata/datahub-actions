@@ -30,7 +30,7 @@ fail to be processed will simply be logged to a `failed_events.log` file for fur
 If you've configured your Action pipeline `failure_mode` to be `THROW`, then events which fail to be processed result in an Action Pipeline error. This in turn terminates the pipeline before committing offsets back to Kafka. Thus the message will not be marked as "processed" by the Action consumer.
 
 
-### Supported Events
+## Supported Events
 
 The Kafka Event Source produces
 
@@ -46,9 +46,7 @@ name: "pipeline-name"
 source:
   # source configs
 action:
-  type: "action-name"
-  config:
-    # action configs
+  # action configs
 ```
 
 <details>

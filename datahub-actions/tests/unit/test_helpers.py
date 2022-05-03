@@ -66,7 +66,6 @@ entity_change_event = EntityChangeEvent.from_class(
         0,
         "urn:li:tag:pii",
         ParametersClass(),
-        None,  # TODO: Get rid of source.
     )
 )
 
