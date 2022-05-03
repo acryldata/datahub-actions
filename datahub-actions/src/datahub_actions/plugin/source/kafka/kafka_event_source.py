@@ -98,7 +98,7 @@ def build_entity_change_event(payload: GenericPayloadClass) -> EntityChangeEvent
     # Hack: Since parameters is an "AnyRecord" (arbitrary json) we have to insert into the underlying map directly
     # to avoid validation at object creation time. This means the reader is responsible to understand the serialized JSON format, which
     # is simply PDL serialized to JSON.
-    if "parameters" in json_payload:
+    if "__parameters_json" in json_payload:
         event._inner_dict["__parameters_json"] = json_payload["__parameters_json"]
     return event
 
