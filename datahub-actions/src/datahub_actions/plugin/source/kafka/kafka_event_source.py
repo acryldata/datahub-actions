@@ -170,7 +170,7 @@ class KafkaEventSource(EventSource):
                 if "mcl" in topic_routes and msg.topic() == topic_routes["mcl"]:
                     yield from self.handle_mcl(msg)
                 elif "pe" in topic_routes and msg.topic() == topic_routes["pe"]:
-                    yield from self._handle_pe(msg)
+                    yield from self.handle_pe(msg)
 
     @staticmethod
     def handle_mcl(msg: Any) -> Iterable[EventEnvelope]:
@@ -180,7 +180,8 @@ class KafkaEventSource(EventSource):
             METADATA_CHANGE_LOG_EVENT_V1_TYPE, metadata_change_log_event, kafka_meta
         )
 
-    def _handle_pe(self, msg: Any) -> Iterable[EventEnvelope]:
+    @staticmethod
+    def handle_pe(msg: Any) -> Iterable[EventEnvelope]:
         value: dict = msg.value()
         payload: GenericPayloadClass = GenericPayloadClass.from_obj(
             post_json_transform(value["payload"])

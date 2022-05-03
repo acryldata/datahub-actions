@@ -17,13 +17,68 @@ from tests.unit.test_helpers import TestMessage
 
 
 def test_handle_mcl():
+    inp = {
+        "auditHeader": None,
+        "entityType": "dataset",
+        "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:hdfs,SampleHdfsDataset,PROD)",
+        "entityKeyAspect": None,
+        "changeType": "UPSERT",
+        "aspectName": "dataPlatformInstance",
+        "aspect": (
+            "com.linkedin.pegasus2avro.mxe.GenericAspect",
+            {
+                "value": b'{"platform":"urn:li:dataPlatform:hdfs"}',
+                "contentType": "application/json",
+            },
+        ),
+        "systemMetadata": (
+            "com.linkedin.pegasus2avro.mxe.SystemMetadata",
+            {
+                "lastObserved": 1651593943881,
+                "runId": "file-2022_05_03-21_35_43",
+                "registryName": None,
+                "registryVersion": None,
+                "properties": None,
+            },
+        ),
+        "previousAspectValue": None,
+        "previousSystemMetadata": None,
+        "created": (
+            "com.linkedin.pegasus2avro.common.AuditStamp",
+            {
+                "time": 1651593944068,
+                "actor": "urn:li:corpuser:UNKNOWN",
+                "impersonator": None,
+            },
+        ),
+    }
+    msg = TestMessage(inp)
+    result = list(KafkaEventSource.handle_mcl(msg))[0]
+    assert result is not None
+
+
+def test_handle_entity_event():
     msg = TestMessage(
         {
-            "value": {
-                "entityType": "dataset",
-                "changeType": "ADD",
-            },
+            "payload": {
+                "value": {
+                    "entityUrn": "urn:li:dataset:abc",
+                    "entityType": "dataset",
+                    "category": "TECHNICAL_SCHEMA",
+                    "operation": "ADD",
+                    "modifier": "urn:li:schemaField:(urn:li:dataset:abc,newFieldName)",
+                    "parameters": {
+                        "fieldUrn": "urn:li:schemaField:(urn:li:dataset:abc,newFieldName)",
+                        "fieldPath": "newFieldName",
+                        "nullable": False,
+                    },
+                    "auditStamp": {
+                        "actor": "urn:li:corpuser:jdoe",
+                        "time": 1649953100653,
+                    },
+                }
+            }
         }
     )
-    result = list(KafkaEventSource.handle_mcl(msg))[0]
+    result = list(KafkaEventSource.handle_pe(msg))[0]
     assert result is not None
