@@ -50,7 +50,7 @@ action:
 ```
 
 <details>
-  <summary>View All Configuartion Options</summary>
+  <summary>View All Configuration Options</summary>
   
   | Field | Required | Default | Description |
   | --- | :-: | :-: | --- |
