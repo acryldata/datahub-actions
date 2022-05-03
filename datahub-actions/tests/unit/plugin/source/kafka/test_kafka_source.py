@@ -55,30 +55,19 @@ def test_handle_mcl():
     msg = TestMessage(inp)
     result = list(KafkaEventSource.handle_mcl(msg))[0]
     assert result is not None
+    assert result.event_type == "MetadataChangeLogEvent_v1"
 
 
 def test_handle_entity_event():
     msg = TestMessage(
         {
+            "name": "entityChangeEvent",
             "payload": {
-                "value": {
-                    "entityUrn": "urn:li:dataset:abc",
-                    "entityType": "dataset",
-                    "category": "TECHNICAL_SCHEMA",
-                    "operation": "ADD",
-                    "modifier": "urn:li:schemaField:(urn:li:dataset:abc,newFieldName)",
-                    "parameters": {
-                        "fieldUrn": "urn:li:schemaField:(urn:li:dataset:abc,newFieldName)",
-                        "fieldPath": "newFieldName",
-                        "nullable": False,
-                    },
-                    "auditStamp": {
-                        "actor": "urn:li:corpuser:jdoe",
-                        "time": 1649953100653,
-                    },
-                }
+                "contentType": "application/json",
+                "value": b'{"entityUrn": "urn:li:dataset:abc","entityType": "dataset","category": "TAG","operation": "ADD","modifier": "urn:li:tag:PII","auditStamp": {"actor": "urn:li:corpuser:jdoe","time": 1649953100653},"version":0}'
             }
         }
     )
     result = list(KafkaEventSource.handle_pe(msg))[0]
     assert result is not None
+    assert result.event_type == "EntityChangeEvent_v1"
