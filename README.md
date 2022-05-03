@@ -3,11 +3,11 @@
 Welcome to DataHub Actions! The Actions framework makes responding to changes to your Metadata Graph in
 realtime easy, enabling you to seamlessly integrate DataHub into a broader events-based architecture.
 
-For a detailed introduction, check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall. For a more in-depth look at use cases and concepts, check out [DataHub Actions Concepts](../docs/concepts.md). 
+For a detailed introduction, check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall. For a more in-depth look at use cases and concepts, check out [DataHub Actions Concepts](./docs/concepts.md). 
 
 ## Quickstart
 
-To get started right away, check out the [DataHub Actions Quickstart](../docs/quickstart.md) Guide.
+To get started right away, check out the [DataHub Actions Quickstart](./docs/quickstart.md) Guide.
 
 
 ## Prerequisites
@@ -176,8 +176,8 @@ Actions Pipeline with name '<action-pipeline-name' has been stopped.
 
 Two event types are currently supported. Read more about them below.
 
-- [Entity Change Event V1](../docs/events/entity-change-event.md)
-- [Metadata Change Log V1](../docs/events/metadata-change-log-event.md)
+- [Entity Change Event V1](./docs/events/entity-change-event.md)
+- [Metadata Change Log V1](./docs/events/metadata-change-log-event.md)
 
 
 ## Supported Event Sources
@@ -185,7 +185,7 @@ Two event types are currently supported. Read more about them below.
 Currently, the only event source that is officially supported is `kafka`, which polls for events
 via a Kafka Consumer. 
 
-- [Kafka Event Source](../docs/sources/kafka-event-source.md)
+- [Kafka Event Source](./docs/sources/kafka-event-source.md)
 
 
 ## Supported Actions
@@ -195,8 +195,8 @@ By default, DataHub supports a set of standard actions plugins. These can be fou
 
 Some pre-included Actions include
 
-- [Hello World](../docs/actions/hello_world.md)
-- [Executor](../docs/actions/executor.md)
+- [Hello World](./docs/actions/hello_world.md)
+- [Executor](./docs/actions/executor.md)
 
 
 ## Development
@@ -225,11 +225,11 @@ datahub-actions actions -c ../examples/executor.yaml -c ../examples/hello_world.
 
 #### Developing a Transformer
 
-To develop a new Transformer, check out the [Developing a Transformer](../docs/guides/developing-a-transformer.md) guide. 
+To develop a new Transformer, check out the [Developing a Transformer](./docs/guides/developing-a-transformer.md) guide. 
 
 #### Developing an Action
 
-To develop a new Action, check out the [Developing an Action](../docs/guides/developing-an-action.md) guide. 
+To develop a new Action, check out the [Developing an Action](./docs/guides/developing-an-action.md) guide. 
 
 
 ## Contributing
