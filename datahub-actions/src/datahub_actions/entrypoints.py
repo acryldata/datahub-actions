@@ -120,5 +120,4 @@ def main(**kwargs):
         sys.exit(1)
 
 
-# Add "actions" command to datahub.
 datahub_actions.add_command(actions)
