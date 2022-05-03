@@ -42,7 +42,7 @@ This event is emitted when a Tag has been added to an entity on DataHub.
   "entityType": "dataset",
   "category": "TAG",
   "operation": "ADD",
-  "modifier": "urn:li:tag:PII"
+  "modifier": "urn:li:tag:PII",
   "parameters": {
     "tagUrn": "urn:li:tag:PII"
   },

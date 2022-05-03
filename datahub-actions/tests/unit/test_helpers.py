@@ -86,7 +86,7 @@ class TestMessage:
         self.msg: Dict = msg
 
     def value(self) -> Dict:
-        return self.msg.get("value", {})
+        return self.msg
 
     def topic(self) -> str:
         return self.msg.get("topic", "dummytopic")
