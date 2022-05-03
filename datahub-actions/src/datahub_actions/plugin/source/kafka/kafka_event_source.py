@@ -69,7 +69,6 @@ def build_kafka_meta(msg: Any) -> dict:
 
 # Converts a Kafka Message to a MetadataChangeLogEvent
 def build_metadata_change_log_event(msg: Any) -> MetadataChangeLogEvent:
-    # TODO: Map MCL to MetadataChangeLogClass
     value: dict = msg.value()
     return MetadataChangeLogEvent.from_class(
         MetadataChangeLogClass.from_obj(value, True)
@@ -151,7 +150,6 @@ class KafkaEventSource(EventSource):
             if msg is None:
                 continue
             else:
-                # TODO: Make this debug.
                 logger.debug(
                     f"Kafka msg received: {msg.topic()}, {msg.partition()}, {msg.offset()}"
                 )

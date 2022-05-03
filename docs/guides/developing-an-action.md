@@ -10,7 +10,7 @@ Action to make it visible to the framework, and then configuring the framework t
 
 ## Step 1: Defining an Action
 
-To implement an Action, we'll need to extend the [Action](TODO) base class and override the following functions:
+To implement an Action, we'll need to extend the `Action` base class and override the following functions:
 
 - `create()` - This function is invoked to instantiate the action, with a free-form configuration dictionary
   extracted from the Actions configuration file as input.
@@ -45,8 +45,6 @@ class CustomAction(Action):
     def close(self) -> None:
         pass
 ```
-
-Check out the [example](TODO) directory inside the [datahub-actions](TODO) repository for more samples.
 
 
 ## Step 2: Installing the Action
@@ -120,10 +118,10 @@ If all is well, your Action should now be receiving & printing Events.
 
 If your Action is generally applicable, you can raise a PR to include it in the core Action library
 provided by DataHub. All Actions will live under the `datahub_actions/plugin/action` directory inside the 
-[datahub-actions](TODO) repository.
+[datahub-actions](https://github.com/acryldata/datahub-actions) repository.
 
 Once you've added your new Action there, make sure that you make it discoverable by updating the `entry_points` section
-of the [setup.py](TODO) file. This allows you to assign a globally unique name for you Action, so that people can use
+of the `setup.py` file. This allows you to assign a globally unique name for you Action, so that people can use
 it without defining the full module path.
 
 ### Prerequisites:

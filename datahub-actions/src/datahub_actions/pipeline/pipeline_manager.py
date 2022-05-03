@@ -36,7 +36,7 @@ class PipelineSpec:
 
 
 # Run a pipeline in blocking fashion
-# TODO: Exit process on failure.
+# TODO: Exit process on failure of single pipeline.
 def run_pipeline(pipeline: Pipeline) -> None:
     try:
         pipeline.run()

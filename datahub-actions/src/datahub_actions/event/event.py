@@ -68,7 +68,7 @@ class EventEnvelope:
     # Convert a json event envelope back into the object.
     @classmethod
     def from_json(cls, json_str: str) -> "EventEnvelope":
-        pass
+        raise Exception("from_json not yet implemented.")
         # TODO: Deserialize a json event back to an Enveloped Event.
         # json_obj = json.loads(json)
         # event_type = json_obj["event_type"]

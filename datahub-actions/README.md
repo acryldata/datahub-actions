@@ -21,6 +21,8 @@ python3 -m pip install --upgrade acryl-datahub
 datahub --version
 ```
 
+> Note that the Actions Framework requires a version of `acryl-datahub` >= v0.8.34
+
 
 ## Installation
 

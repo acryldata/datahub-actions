@@ -12,6 +12,8 @@ python3 -m pip install --upgrade acryl-datahub
 datahub --version
 ```
 
+> Note that the Actions Framework requires a version of `acryl-datahub` >= v0.8.34
+
 
 ## Installation
 
@@ -116,8 +118,6 @@ action:
   type: "hello_world"
 ```
 *Filtering for events of type EntityChangeEvent_v1 only*
-
-To understand the events available to filter by, check out the [Events](TODO) guide.
 
 
 #### Advanced Filtering
