@@ -229,13 +229,13 @@ datahub-actions actions -c ../examples/executor.yaml
 datahub-actions actions -c ../examples/executor.yaml -c ../examples/hello_world.yaml
 ```
 
-### Developing a Transformer
-
-To develop a new Transformer, check out the [Developing a Transformer](../docs/guides/developing-a-transformer.md) guide. 
-
 ### Developing an Action
 
 To develop a new Action, check out the [Developing an Action](../docs/guides/developing-an-action.md) guide. 
+
+### Developing a Transformer
+
+To develop a new Transformer, check out the [Developing a Transformer](../docs/guides/developing-a-transformer.md) guide. 
 
 
 ## Contributing
