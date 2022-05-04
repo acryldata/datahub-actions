@@ -42,6 +42,8 @@ Actions are configured using a YAML file, much in the same way DataHub ingestion
 2. Source Configurations
 3. Transform + Filter Configurations
 4. Action Configuration
+5. Pipeline Options (Optional)
+6. DataHub API configs (Optional - required for select actions)
 
 With each component being independently pluggable and configurable. 
 
@@ -79,6 +81,11 @@ options:
   retry_count: 0 # The number of times to retry an Action with the same event. (If an exception is thrown). 0 by default. 
   failure_mode: "CONTINUE" # What to do when an event fails to be processed. Either 'CONTINUE' to make progress or 'THROW' to stop the pipeline. Either way, the failed event will be logged to a failed_events.log file. 
   failed_events_dir: "/tmp/datahub/actions"  # The directory in which to write a failed_events.log file that tracks events which fail to be processed. Defaults to "/tmp/logs/datahub/actions". 
+
+# 6. Optional: DataHub API configuration
+datahub:
+  server: "http://localhost:8080" # Location of DataHub API
+  # token: <your-access-token> # Required if Metadata Service Auth enabled
 ```
 
 ### Example: Hello World
@@ -130,13 +137,13 @@ action:
 
 ## Running an Action
 
-To run a new action, just use the datahub-actions CLI to start an actions listener. 
+To run a new Action, just use the `actions` CLI command
 
 ```
 datahub actions -c <config.yml>
 ```
-
-If successful, you'll see a message like the following in the CLI output:
+ 
+Once the Action is running, you will see
 
 ```
 Action Pipeline with name '<action-pipeline-name>' is now running.
@@ -190,7 +197,7 @@ via a Kafka Consumer.
 ## Supported Actions
 
 By default, DataHub supports a set of standard actions plugins. These can be found inside the folder
-`src/datahub_actions/plugins`. 
+`src/datahub-actions/plugins`. 
 
 Some pre-included Actions include
 
@@ -222,11 +229,11 @@ datahub-actions actions -c ../examples/executor.yaml
 datahub-actions actions -c ../examples/executor.yaml -c ../examples/hello_world.yaml
 ```
 
-#### Developing a Transformer
+### Developing a Transformer
 
 To develop a new Transformer, check out the [Developing a Transformer](../docs/guides/developing-a-transformer.md) guide. 
 
-#### Developing an Action
+### Developing an Action
 
 To develop a new Action, check out the [Developing an Action](../docs/guides/developing-an-action.md) guide. 
 
@@ -243,4 +250,4 @@ Check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxt
 
 ## License
 
-[Apache 2.0](../LICENSE)
+[Apache 2.0](./LICENSE)
