@@ -27,6 +27,8 @@ filter:
     changeType: "UPSERT"
 action:
   type: "executor"
+  config: 
+    executor_id: "${EXECUTOR_ID:-default}"
 datahub:
   server: "http://${GMS_HOST:-localhost}:${GMS_PORT:-8080}"
   extra_headers:
