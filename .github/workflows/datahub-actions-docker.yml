@@ -2,7 +2,7 @@ name: datahub-actions docker
 on:
   push:
     branches:
-      - master
+      - main
     paths-ignore:
       - 'build/**'
       - '**.md'
