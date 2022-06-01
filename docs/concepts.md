@@ -62,8 +62,8 @@ Importantly, each Action must have a unique name. This serves as a stable identi
 
 **Events** are data objects representing changes that have occurred on DataHub. Strictly speaking, the only requirement that the Actions framework imposes is that these objects must be 
 
-a. Convertable to JSON
-b. Convertable from JSON
+a. Convertible to JSON
+b. Convertible from JSON
 
 So that in the event of processing failures, events can be written and read from a failed events file. 
 
