@@ -26,7 +26,8 @@ from datahub.metadata.schema_classes import (
 
 from datahub_actions.action.action import Action
 from datahub_actions.action.action_registry import action_registry
-from datahub_actions.event.event import Event, EventEnvelope
+from datahub_actions.event.event import Event
+from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import (
     EntityChangeEvent,
     MetadataChangeLogEvent,

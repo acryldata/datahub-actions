@@ -40,7 +40,7 @@ class MetadataChangeLogEvent(MetadataChangeLogClass, Event):
     @classmethod
     def from_json(cls, json_str: str) -> "Event":
         json_obj = json.loads(json_str)
-        return cls.from_obj(json_obj, True)
+        return cls.from_obj(json_obj)
 
     def as_json(self) -> str:
         return json.dumps(self.to_obj())
@@ -60,7 +60,7 @@ class EntityChangeEvent(EntityChangeEventClass, Event):
     @classmethod
     def from_json(cls, json_str: str) -> "EntityChangeEvent":
         json_obj = json.loads(json_str)
-        return cls.from_obj(json_obj, True)
+        return cls.from_obj(json_obj)
 
     def as_json(self) -> str:
         json_obj = self.to_obj()

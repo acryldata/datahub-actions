@@ -34,7 +34,7 @@ from datahub.metadata.schema_classes import (
     MetadataChangeLogClass,
 )
 
-from datahub_actions.event.event import EventEnvelope
+from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import (
     ENTITY_CHANGE_EVENT_V1_TYPE,
     METADATA_CHANGE_LOG_EVENT_V1_TYPE,

@@ -15,7 +15,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Optional
 
-from datahub_actions.event.event import EventEnvelope
+from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 
 

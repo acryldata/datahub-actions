@@ -17,7 +17,7 @@ import os
 from typing import List, Optional
 
 from datahub_actions.action.action import Action
-from datahub_actions.event.event import EventEnvelope
+from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.pipeline.pipeline_config import FailureMode, PipelineConfig
 from datahub_actions.pipeline.pipeline_stats import PipelineStats
 from datahub_actions.pipeline.pipeline_util import (
