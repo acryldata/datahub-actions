@@ -23,10 +23,8 @@ from acryl.executor.execution.reporting_executor import (
     ReportingExecutorConfig,
 )
 from acryl.executor.execution.task import TaskConfig
-from acryl.executor.request.execution_request import (
-    ExecutionRequest as ExecutionRequestObj,
-)
-from acryl.executor.request.signal_request import SignalRequest as SignalRequestObj
+from acryl.executor.request.execution_request import ExecutionRequest
+from acryl.executor.request.signal_request import SignalRequest
 from acryl.executor.secret.datahub_secret_store import DataHubSecretStoreConfig
 from acryl.executor.secret.secret_store import SecretStoreConfig
 from datahub.metadata.schema_classes import MetadataChangeLogClass
@@ -71,6 +69,7 @@ def import_path(path: str) -> Any:
 
 class ExecutorConfig(BaseModel):
     executor_id: Optional[str]
+    task_config: Optional[TaskConfig]
 
 
 # Listens to new Execution Requests & dispatches them to the appropriate handler.
@@ -132,7 +131,7 @@ class ExecutorAction(Action):
         exec_request_input = json.loads(orig_event.get("aspect").get("value"))
 
         # Build an Execution Request
-        exec_request = ExecutionRequestObj(
+        exec_request = ExecutionRequest(
             executor_id=exec_request_input.get("executorId"),
             exec_id=exec_request_id,
             name=exec_request_input.get("task"),
@@ -160,7 +159,7 @@ class ExecutorAction(Action):
             # Build a Signal Request
             urn_parts = entity_urn.split(":")
             exec_id = urn_parts[len(urn_parts) - 1]
-            signal_request = SignalRequestObj(
+            signal_request = SignalRequest(
                 executor_id=signal_request_input.get("executorId"),
                 exec_id=exec_id,
                 signal=signal_request_input.get("signal"),
@@ -177,7 +176,7 @@ class ExecutorAction(Action):
     ) -> ReportingExecutorConfig:
 
         # Build default task config
-        local_task_config = TaskConfig(
+        local_task_config = config.task_config or TaskConfig(
             name="RUN_INGEST",
             type="acryl.executor.execution.sub_process_ingestion_task.SubProcessIngestionTask",
             configs=dict({}),

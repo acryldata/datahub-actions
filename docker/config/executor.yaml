@@ -31,6 +31,10 @@ action:
   type: "executor"
   config: 
     executor_id: "${EXECUTOR_ID:-default}"
+    task_config:
+      name: RUN_INGEST
+      type: acryl.executor.execution.sub_process_ingestion_task.SubProcessIngestionTask
+      configs: {}
 datahub:
   server: "http://${GMS_HOST:-localhost}:${GMS_PORT:-8080}"
   extra_headers:
