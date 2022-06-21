@@ -40,7 +40,7 @@ base_requirements = {
     # Actual dependencies.
     "typing-inspect",
     "pydantic>=1.5.1",
-    "acryl-datahub>=0.8.38",
+    "acryl-datahub>=0.8.34",
     "dictdiffer",
 }
 
@@ -57,7 +57,7 @@ framework_common = {
     "entrypoints",
     "docker",
     "expandvars>=0.6.5",
-    "avro-gen3==0.7.2",
+    "avro-gen3==0.7.4",
     "avro>=1.10.2",
     "python-dateutil>=2.8.0",
     "stackprinter",
