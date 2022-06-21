@@ -72,6 +72,11 @@ class FilterTransformer(Transformer):
         return False
 
     def _matches_dict(self, match_filters: Dict[str, Any], match_with: Any) -> bool:
+        if isinstance(match_with, str):
+            try:
+                match_with = json.loads(match_with)
+            except ValueError:
+                pass
         if not isinstance(match_with, dict):
             return False
         for key, val in match_filters.items():
