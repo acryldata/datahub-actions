@@ -45,7 +45,7 @@ base_requirements = {
 }
 
 kafka_common = {
-    "confluent_kafka>=1.5.0,<1.9.0",
+    "confluent-kafka>=1.5.0,<1.9.0",
     "fastavro>=1.2.0",
 }
 
