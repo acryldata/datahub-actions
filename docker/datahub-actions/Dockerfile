@@ -32,11 +32,21 @@ RUN apt-get update \
         libldap2-dev \
         libsasl2-dev \
         libsasl2-modules \
+        wget \
+        rpm \
+        alien \
         zip \
         unzip \
         ldap-utils \
     && curl -L https://github.com/treff7es/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-${DOCKERIZE_ARCH}-$DOCKERIZE_VERSION.tar.gz | tar -C /usr/local/bin -xzv \
     && python -m pip install --upgrade pip wheel setuptools==57.5.0
+
+RUN if [ $(arch) = "x86_64" ]; then \
+        wget -c https://download.oracle.com/otn_software/linux/instantclient/215000/oracle-instantclient-basic-21.5.0.0.0-1.el8.x86_64.rpm && \
+        alien -i oracle-instantclient-basic-21.5.0.0.0-1.el8.x86_64.rpm; \
+    else \
+        echo >&2 "Oracle client cannot be installed for $(arch)" ; exit 1; \
+    fi \
 
 FROM base as prod-install
 COPY datahub-actions /actions-src
