@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import logging
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Optional
@@ -27,12 +26,7 @@ from datahub.configuration.kafka import KafkaConsumerConnectionConfig
 from datahub.emitter.serialization_helper import post_json_transform
 
 # DataHub imports.
-from datahub.metadata.schema_classes import (
-    AuditStampClass,
-    EntityChangeEventClass,
-    GenericPayloadClass,
-    MetadataChangeLogClass,
-)
+from datahub.metadata.schema_classes import GenericPayloadClass, MetadataChangeLogClass
 
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import (
@@ -75,29 +69,9 @@ def build_metadata_change_log_event(msg: Any) -> MetadataChangeLogEvent:
     )
 
 
-# Converts a Kafka Message to an EntityChangeEventClass.
-# If this platform event were to contain unions, this type of conversion would not be
-# easy, since the underlying
+# Converts a Kafka Message to an EntityChangeEvent.
 def build_entity_change_event(payload: GenericPayloadClass) -> EntityChangeEvent:
-    json_payload = json.loads(payload.get("value"))
-    event = EntityChangeEvent.from_class(
-        EntityChangeEventClass(
-            json_payload["entityType"],
-            json_payload["entityUrn"],
-            json_payload["category"],
-            json_payload["operation"],
-            AuditStampClass.from_obj(json_payload["auditStamp"]),
-            json_payload["version"],
-            json_payload["modifier"] if "modifier" in json_payload else None,
-            None,
-        )
-    )
-    # Hack: Since parameters is an "AnyRecord" (arbitrary json) we have to insert into the underlying map directly
-    # to avoid validation at object creation time. This means the reader is responsible to understand the serialized JSON format, which
-    # is simply PDL serialized to JSON.
-    if "parameters" in json_payload:
-        event._inner_dict["__parameters_json"] = json_payload["parameters"]
-    return event
+    return EntityChangeEvent.from_json(payload.get("value"))
 
 
 class KafkaEventSourceConfig(ConfigModel):
