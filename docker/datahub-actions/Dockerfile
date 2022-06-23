@@ -32,9 +32,8 @@ RUN apt-get update \
         libldap2-dev \
         libsasl2-dev \
         libsasl2-modules \
+        libaio1 \
         wget \
-        rpm \
-        alien \
         zip \
         unzip \
         ldap-utils \
@@ -42,10 +41,21 @@ RUN apt-get update \
     && python -m pip install --upgrade pip wheel setuptools==57.5.0
 
 RUN if [ $(arch) = "x86_64" ]; then \
-        wget -c https://download.oracle.com/otn_software/linux/instantclient/215000/oracle-instantclient-basic-21.5.0.0.0-1.el8.x86_64.rpm; \
-        alien -i oracle-instantclient-basic-21.5.0.0.0-1.el8.x86_64.rpm; \
+        mkdir /opt/oracle && \
+        cd /opt/oracle && \
+        wget -c https://download.oracle.com/otn_software/linux/instantclient/216000/instantclient-basic-linux.x64-21.6.0.0.0dbru.zip && \
+        unzip instantclient-basic-linux.x64-21.6.0.0.0dbru.zip && \
+        rm instantclient-basic-linux.x64-21.6.0.0.0dbru.zip && \
+        sh -c "echo /opt/oracle/instantclient_21_6 > /etc/ld.so.conf.d/oracle-instantclient.conf" && \
+        ldconfig; \
     else \
-        echo >&2 "Oracle client cannot be installed for $(arch)"; \
+        mkdir /opt/oracle && \
+        cd /opt/oracle && \
+        wget -c https://download.oracle.com/otn_software/linux/instantclient/191000/instantclient-basic-linux.arm64-19.10.0.0.0dbru.zip && \
+        unzip instantclient-basic-linux.arm64-19.10.0.0.0dbru.zip && \
+        rm instantclient-basic-linux.arm64-19.10.0.0.0dbru.zip && \
+        sh -c "echo /opt/oracle/instantclient_19_10 > /etc/ld.so.conf.d/oracle-instantclient.conf" && \
+        ldconfig; \
     fi;
 
 FROM base as prod-install
