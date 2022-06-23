@@ -65,8 +65,7 @@ RUN mkdir -p /tmp/datahub/logs/actions/
 RUN mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
     pip install "." && \
-    pip install '.[executor]' && \
-    pip install 'acryl-datahub[oracle]'
+    pip install '.[executor]'
     
 COPY ./docker/datahub-actions/start.sh /start_datahub_actions.sh
 RUN chmod a+x /start_datahub_actions.sh
@@ -82,7 +81,6 @@ RUN chown -R datahub /tmp/datahub
 
 
 FROM ${APP_ENV}-install as final
-COPY recipe.yml recipe.yml
 USER datahub
 RUN curl -s "https://get.sdkman.io" | bash
 RUN /bin/bash -c "source /$HOME/.sdkman/bin/sdkman-init.sh; sdk version; sdk install java 8.0.332-zulu"
