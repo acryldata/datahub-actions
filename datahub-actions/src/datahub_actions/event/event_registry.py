@@ -40,7 +40,7 @@ class MetadataChangeLogEvent(MetadataChangeLogClass, Event):
     @classmethod
     def from_json(cls, json_str: str) -> "Event":
         json_obj = json.loads(json_str)
-        return cls.from_obj(json_obj, True)
+        return cls.from_class(cls.from_obj(json_obj))
 
     def as_json(self) -> str:
         return json.dumps(self.to_obj())
@@ -60,7 +60,19 @@ class EntityChangeEvent(EntityChangeEventClass, Event):
     @classmethod
     def from_json(cls, json_str: str) -> "EntityChangeEvent":
         json_obj = json.loads(json_str)
-        return cls.from_obj(json_obj, True)
+
+        # Remove parameters from json_obj and add it later to _inner_dict, this hack exists because of the way EntityChangeLogClass does not support "AnyRecord"
+        parameters = json_obj.pop("parameters", None)
+
+        event = cls.from_class(cls.from_obj(json_obj))
+
+        # Hack: Since parameters is an "AnyRecord" (arbitrary json) we have to insert into the underlying map directly
+        # to avoid validation at object creation time. This means the reader is responsible to understand the serialized JSON format, which
+        # is simply PDL serialized to JSON.
+        if parameters:
+            event._inner_dict["__parameters_json"] = parameters
+
+        return event
 
     def as_json(self) -> str:
         json_obj = self.to_obj()

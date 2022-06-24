@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from datahub.configuration import ConfigModel
 
-from datahub_actions.event.event import EventEnvelope
+from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.transform.transformer import Transformer
 

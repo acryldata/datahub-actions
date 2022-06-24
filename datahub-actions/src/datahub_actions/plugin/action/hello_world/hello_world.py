@@ -18,7 +18,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from datahub_actions.action.action import Action
-from datahub_actions.event.event import EventEnvelope
+from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 
 logger = logging.getLogger(__name__)

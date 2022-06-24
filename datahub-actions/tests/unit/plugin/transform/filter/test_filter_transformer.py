@@ -17,7 +17,8 @@ from typing import Any
 
 from datahub.metadata.schema_classes import DictWrapper
 
-from datahub_actions.event.event import Event, EventEnvelope
+from datahub_actions.event.event import Event
+from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import (
     ENTITY_CHANGE_EVENT_V1_TYPE,
     METADATA_CHANGE_LOG_EVENT_V1_TYPE,

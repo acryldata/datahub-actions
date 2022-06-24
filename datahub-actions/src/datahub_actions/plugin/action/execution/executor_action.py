@@ -31,7 +31,7 @@ from datahub.metadata.schema_classes import MetadataChangeLogClass
 from pydantic import BaseModel
 
 from datahub_actions.action.action import Action
-from datahub_actions.event.event import EventEnvelope
+from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import METADATA_CHANGE_LOG_EVENT_V1_TYPE
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 

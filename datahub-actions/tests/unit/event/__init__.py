@@ -11,24 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from abc import ABCMeta, abstractmethod
-
-
-class Event(metaclass=ABCMeta):
-    """
-    A DataHub Event.
-    """
-
-    @classmethod
-    @abstractmethod
-    def from_json(cls, json_str: str) -> "Event":
-        """
-        Convert from json format into the event object.
-        """
-
-    @abstractmethod
-    def as_json(self) -> str:
-        """
-        Convert the event into its JSON representation.
-        """
