@@ -176,10 +176,16 @@ class ExecutorAction(Action):
     ) -> ReportingExecutorConfig:
 
         # Build default task config
-        local_task_config = config.task_config or TaskConfig(
+        ingest_task_config = config.task_config or TaskConfig(
             name="RUN_INGEST",
             type="acryl.executor.execution.sub_process_ingestion_task.SubProcessIngestionTask",
             configs=dict({}),
+        )
+
+        test_connection_task_config = TaskConfig(
+            name="TEST_CONNECTION",
+            type="acryl.executor.execution.sub_process_test_connection_task.SubProcessTestConnectionTask",
+            configs={}
         )
 
         if not ctx.graph:
@@ -192,7 +198,7 @@ class ExecutorAction(Action):
         # Build default executor config
         local_executor_config = ReportingExecutorConfig(
             id=config.executor_id or "default",
-            task_configs=[local_task_config],
+            task_configs=[ingest_task_config, test_connection_task_config],
             secret_stores=[
                 SecretStoreConfig(type="env", config=dict({})),
                 SecretStoreConfig(
