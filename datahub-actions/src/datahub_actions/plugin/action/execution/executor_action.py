@@ -185,7 +185,7 @@ class ExecutorAction(Action):
         test_connection_task_config = TaskConfig(
             name="TEST_CONNECTION",
             type="acryl.executor.execution.sub_process_test_connection_task.SubProcessTestConnectionTask",
-            configs={}
+            configs={},
         )
 
         if not ctx.graph:
