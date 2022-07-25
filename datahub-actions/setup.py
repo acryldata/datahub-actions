@@ -80,7 +80,7 @@ plugins: Dict[str, Set[str]] = {
     "kafka": kafka_common,
     # Action Plugins 
     "executor": { 
-        f"acryl-executor>=0.0.3rc2",
+        f"acryl-executor>=0.0.3rc3",
     }
     # Transformer Plugins (None yet)
 }
