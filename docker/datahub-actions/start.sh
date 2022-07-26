@@ -38,7 +38,7 @@ else
 fi
 
 # Deploy User Actions
-if [ "$(ls -A /etc/datahub/actions/system/conf/)" ]; then
+if [ "$(ls -A /etc/datahub/actions/conf/)" ]; then
     # .yml
     for file in /etc/datahub/actions/conf/*.yml;
     do
