@@ -59,21 +59,23 @@ RUN if [ $(arch) = "x86_64" ]; then \
     fi;
 
 FROM base as prod-install
-COPY datahub-actions /actions-src
+COPY datahub-actions/datahub-actions /actions-src
+COPY acryl-executor /acryl-executor
 RUN mkdir -p /etc/datahub/actions
 RUN mkdir -p /tmp/datahub/logs/actions/
 RUN mkdir -p /tmp/datahub/logs/actions/system
+RUN pip install "/acryl-executor/dist/acryl-executor-0.0.4.tar.gz"
 RUN cd /actions-src && \
-    pip install "." && \
-    pip install '.[executor]'
+    pip install "."
+#    pip install '.[executor]'
     
-COPY ./docker/datahub-actions/start.sh /start_datahub_actions.sh
+COPY datahub-actions/docker/datahub-actions/start.sh /start_datahub_actions.sh
 RUN chmod a+x /start_datahub_actions.sh
 
 # Add other default configurations into this! 
 RUN mkdir -p /etc/datahub/actions/conf
 RUN mkdir -p /etc/datahub/actions/system/conf
-COPY ./docker/config/executor.yaml /etc/datahub/actions/system/conf
+COPY datahub-actions/docker/config/executor.yaml /etc/datahub/actions/system/conf
 
 RUN addgroup --system datahub && adduser --system datahub --ingroup datahub
 RUN chown datahub /etc/datahub

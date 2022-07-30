@@ -81,6 +81,7 @@ plugins: Dict[str, Set[str]] = {
     # Action Plugins 
     "executor": { 
         f"acryl-executor>=0.0.3rc6",
+        # "./../acryl-executor/dist/acryl-executor-0.0.4-py3-none-any.whl"
     }
     # Transformer Plugins (None yet)
 }
@@ -128,7 +129,7 @@ base_dev_requirements = {
         dependency
         for plugin in [
             "kafka",
-            "executor",
+          #  "executor",
         ]
         for dependency in plugins[plugin]
     ),
@@ -143,7 +144,7 @@ full_test_dev_requirements = {
         dependency
         for plugin in [
             "kafka",
-            "executor",
+       #     "executor",
         ]
         for dependency in plugins[plugin]
     ),
