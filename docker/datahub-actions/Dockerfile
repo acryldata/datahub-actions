@@ -58,6 +58,10 @@ RUN if [ $(arch) = "x86_64" ]; then \
         ldconfig; \
     fi;
 
+RUN addgroup --system datahub && adduser --system datahub --ingroup datahub
+RUN curl -s "https://get.sdkman.io" | bash
+RUN /bin/bash -c "source /$HOME/.sdkman/bin/sdkman-init.sh; sdk version; sdk install java 8.0.332-zulu"
+
 FROM base as prod-install
 COPY datahub-actions/datahub-actions /actions-src
 COPY acryl-executor /acryl-executor
@@ -77,13 +81,10 @@ RUN mkdir -p /etc/datahub/actions/conf
 RUN mkdir -p /etc/datahub/actions/system/conf
 COPY datahub-actions/docker/config/executor.yaml /etc/datahub/actions/system/conf
 
-RUN addgroup --system datahub && adduser --system datahub --ingroup datahub
 RUN chown datahub /etc/datahub
 RUN chown -R datahub /tmp/datahub
 
 
 FROM ${APP_ENV}-install as final
 USER datahub
-RUN curl -s "https://get.sdkman.io" | bash
-RUN /bin/bash -c "source /$HOME/.sdkman/bin/sdkman-init.sh; sdk version; sdk install java 8.0.332-zulu"
 CMD dockerize -wait http://$DATAHUB_GMS_HOST:$DATAHUB_GMS_PORT/health -timeout 240s /start_datahub_actions.sh
