@@ -111,9 +111,9 @@ aws_common = {
 plugins: Dict[str, Set[str]] = {
     # Source Plugins
     "kafka": kafka_common,
-    # Action Plugins 
-    "executor": { 
-        f"acryl-executor>=0.0.3rc7",
+    # Action Plugins
+    "executor": {
+        "acryl-executor>=0.0.3",
     }
     # Transformer Plugins (None yet)
 }
