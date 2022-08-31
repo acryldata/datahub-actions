@@ -64,19 +64,18 @@ RUN /bin/bash -c "source /$HOME/.sdkman/bin/sdkman-init.sh; sdk version; sdk ins
 
 FROM base as prod-install
 COPY datahub-actions/datahub-actions /actions-src
-COPY acryl-executor /acryl-executor
 RUN mkdir -p /etc/datahub/actions
 RUN mkdir -p /tmp/datahub/logs/actions/
 RUN mkdir -p /tmp/datahub/logs/actions/system
-RUN pip install "/acryl-executor/dist/acryl-executor-0.0.4.tar.gz"
 RUN cd /actions-src && \
-    pip install "."
-#    pip install '.[executor]'
-    
+    pip install '.[executor]'
+COPY acryl-executor /acryl-executor
+RUN pip install "/acryl-executor/dist/acryl-executor-0.0.0.dev0.tar.gz"
+
 COPY datahub-actions/docker/datahub-actions/start.sh /start_datahub_actions.sh
 RUN chmod a+x /start_datahub_actions.sh
 
-# Add other default configurations into this! 
+# Add other default configurations into this!
 RUN mkdir -p /etc/datahub/actions/conf
 RUN mkdir -p /etc/datahub/actions/system/conf
 COPY datahub-actions/docker/config/executor.yaml /etc/datahub/actions/system/conf
