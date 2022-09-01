@@ -85,6 +85,7 @@ kafka_common = {
 framework_common = {
     "click>=6.0.0",
     "click-default-group",
+    "prometheus-client",
     "PyYAML",
     "toml>=0.10.0",
     "entrypoints",
