@@ -49,7 +49,7 @@ MAX_CONTENT_WIDTH = 120
     is_flag=True,
     default=False,
     help="Enable prometheus monitoring endpoint. You can set the portnumber with --monitoring-port.",
-    )
+)
 @click.option(
     "--monitoring-port",
     type=int,
@@ -57,7 +57,7 @@ MAX_CONTENT_WIDTH = 120
     help="""Prometheus monitoring endpoint will be available on :<PORT>/metrics.
     To enable monitoring use the --enable-monitoring flag
     """,
-    )
+)
 @click.option("--debug/--no-debug", default=False)
 @click.version_option(
     version=datahub_package.nice_version_name(),
@@ -72,7 +72,13 @@ MAX_CONTENT_WIDTH = 120
     help="Run memory leak detection.",
 )
 @click.pass_context
-def datahub_actions(ctx: click.Context, enable_monitoring: bool, monitoring_port: int, debug: bool, detect_memory_leaks: bool) -> None:
+def datahub_actions(
+    ctx: click.Context,
+    enable_monitoring: bool,
+    monitoring_port: int,
+    debug: bool,
+    detect_memory_leaks: bool,
+) -> None:
     # Insulate 'datahub_actions' and all child loggers from inadvertent changes to the
     # root logger by the external site packages that we import.
     # (Eg: https://github.com/reata/sqllineage/commit/2df027c77ea0a8ea4909e471dcd1ecbf4b8aeb2f#diff-30685ea717322cd1e79c33ed8d37903eea388e1750aa00833c33c0c5b89448b3R11
