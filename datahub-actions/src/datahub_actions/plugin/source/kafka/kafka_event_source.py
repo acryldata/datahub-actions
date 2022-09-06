@@ -14,7 +14,8 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Optional
+from pyclbr import Function
+from typing import Any, Dict, Iterable, Optional, Callable
 
 # Confluent important
 import confluent_kafka
@@ -24,6 +25,7 @@ from confluent_kafka.schema_registry.schema_registry_client import SchemaRegistr
 from datahub.configuration import ConfigModel
 from datahub.configuration.kafka import KafkaConsumerConnectionConfig
 from datahub.emitter.serialization_helper import post_json_transform
+from prometheus_client import Gauge, Counter
 
 # DataHub imports.
 from datahub.metadata.schema_classes import GenericPayloadClass, MetadataChangeLogClass
@@ -79,6 +81,25 @@ class KafkaEventSourceConfig(ConfigModel):
     topic_routes: Optional[Dict[str, str]]
 
 
+def kafka_messages_observer(labels: Dict[str, str] = {}):
+    print(["topic", "partition", *labels.keys()])
+    offset_metric = Gauge(name="kafka_offset",
+            documentation="Kafka offsets per topic, partition",
+            labelnames=["topic", "partition", *labels.keys()])
+    counter = Counter(name="kafka_messages_count",
+        documentation="Number of kafka messages",
+        labelnames=[*labels.keys(), "error"])
+    def _observe(message):
+        if message is not None:
+            topic = message.topic()
+            partition = message.partition()
+            offset = message.offset()
+            logger.debug(
+                f"Kafka msg received: {topic}, {partition}, {offset}")
+            offset_metric.labels(topic=topic, partition=partition, **labels).set(offset)
+            counter.labels(error=message.error() is not None, **labels).inc()
+    return _observe
+
 # This is the default Kafka-based Event Source.
 @dataclass
 class KafkaEventSource(EventSource):
@@ -107,6 +128,7 @@ class KafkaEventSource(EventSource):
                 **self.source_config.connection.consumer_config,
             }
         )
+        self._observe_message: Callable = kafka_messages_observer({"pipeline_name": ctx.pipeline_name})
 
     @classmethod
     def create(cls, config_dict: dict, ctx: PipelineContext) -> "EventSource":
@@ -123,10 +145,7 @@ class KafkaEventSource(EventSource):
             msg = self.consumer.poll(timeout=2.0)
             if msg is None:
                 continue
-            else:
-                logger.debug(
-                    f"Kafka msg received: {msg.topic()}, {msg.partition()}, {msg.offset()}"
-                )
+            self._observe_message(msg)
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
                     # End of partition event
