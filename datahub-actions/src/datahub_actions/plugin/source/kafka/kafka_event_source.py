@@ -83,22 +83,28 @@ class KafkaEventSourceConfig(ConfigModel):
 
 def kafka_messages_observer(labels: Dict[str, str] = {}):
     print(["topic", "partition", *labels.keys()])
-    offset_metric = Gauge(name="kafka_offset",
-            documentation="Kafka offsets per topic, partition",
-            labelnames=["topic", "partition", *labels.keys()])
-    counter = Counter(name="kafka_messages_count",
+    offset_metric = Gauge(
+        name="kafka_offset",
+        documentation="Kafka offsets per topic, partition",
+        labelnames=["topic", "partition", *labels.keys()],
+    )
+    counter = Counter(
+        name="kafka_messages_count",
         documentation="Number of kafka messages",
-        labelnames=[*labels.keys(), "error"])
+        labelnames=[*labels.keys(), "error"],
+    )
+
     def _observe(message):
         if message is not None:
             topic = message.topic()
             partition = message.partition()
             offset = message.offset()
-            logger.debug(
-                f"Kafka msg received: {topic}, {partition}, {offset}")
+            logger.debug(f"Kafka msg received: {topic}, {partition}, {offset}")
             offset_metric.labels(topic=topic, partition=partition, **labels).set(offset)
             counter.labels(error=message.error() is not None, **labels).inc()
+
     return _observe
+
 
 # This is the default Kafka-based Event Source.
 @dataclass
@@ -128,7 +134,9 @@ class KafkaEventSource(EventSource):
                 **self.source_config.connection.consumer_config,
             }
         )
-        self._observe_message: Callable = kafka_messages_observer({"pipeline_name": ctx.pipeline_name})
+        self._observe_message: Callable = kafka_messages_observer(
+            {"pipeline_name": ctx.pipeline_name}
+        )
 
     @classmethod
     def create(cls, config_dict: dict, ctx: PipelineContext) -> "EventSource":
