@@ -85,6 +85,7 @@ kafka_common = {
 framework_common = {
     "click>=6.0.0",
     "click-default-group",
+    "prometheus-client",
     "PyYAML",
     "toml>=0.10.0",
     "entrypoints",
@@ -183,7 +184,7 @@ full_test_dev_requirements = {
 }
 
 entry_points = {
-    "console_scripts": ["datahub-actions = datahub_actions.entrypoints:main"], 
+    "console_scripts": ["datahub-actions = datahub_actions.entrypoints:main"],
     "datahub_actions.action.plugins": [
         "executor = datahub_actions.plugin.action.execution.executor_action:ExecutorAction",
     ],
@@ -245,10 +246,7 @@ setuptools.setup(
         },
         "all": list(
             framework_common.union(
-                *[
-                    requirements
-                    for plugin, requirements in plugins.items()
-                ]
+                *[requirements for plugin, requirements in plugins.items()]
             )
         ),
         "dev": list(dev_requirements),
