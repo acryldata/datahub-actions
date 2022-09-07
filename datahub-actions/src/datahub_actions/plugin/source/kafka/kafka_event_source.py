@@ -14,7 +14,6 @@
 
 import logging
 from dataclasses import dataclass
-from pyclbr import Function
 from typing import Any, Callable, Dict, Iterable, Optional
 
 # Confluent important
@@ -81,7 +80,7 @@ class KafkaEventSourceConfig(ConfigModel):
     topic_routes: Optional[Dict[str, str]]
 
 
-def kafka_messages_observer(labels: Dict[str, str] = {}):
+def kafka_messages_observer(labels: Dict[str, str] = {}) -> Callable:
     print(["topic", "partition", *labels.keys()])
     offset_metric = Gauge(
         name="kafka_offset",
