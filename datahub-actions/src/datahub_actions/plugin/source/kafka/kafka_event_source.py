@@ -15,7 +15,7 @@
 import logging
 from dataclasses import dataclass
 from pyclbr import Function
-from typing import Any, Dict, Iterable, Optional, Callable
+from typing import Any, Callable, Dict, Iterable, Optional
 
 # Confluent important
 import confluent_kafka
@@ -25,10 +25,10 @@ from confluent_kafka.schema_registry.schema_registry_client import SchemaRegistr
 from datahub.configuration import ConfigModel
 from datahub.configuration.kafka import KafkaConsumerConnectionConfig
 from datahub.emitter.serialization_helper import post_json_transform
-from prometheus_client import Gauge, Counter
 
 # DataHub imports.
 from datahub.metadata.schema_classes import GenericPayloadClass, MetadataChangeLogClass
+from prometheus_client import Counter, Gauge
 
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import (
