@@ -114,9 +114,9 @@ class KafkaEventSource(EventSource):
 
     def __init__(self, config: KafkaEventSourceConfig, ctx: PipelineContext):
         self.source_config = config
-        self.schema_registry_client = SchemaRegistryClient(
-            {"url": self.source_config.connection.schema_registry_url}
-        )
+        schema_client_config = config.connection.schema_registry_config.copy()
+        schema_client_config["url"] = self.source_config.connection.schema_registry_url
+        self.schema_registry_client = SchemaRegistryClient(schema_client_config)
         self.consumer: confluent_kafka.Consumer = confluent_kafka.DeserializingConsumer(
             {
                 # Provide a custom group id to subcribe to multiple partitions via separate actions pods.
