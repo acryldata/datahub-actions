@@ -86,11 +86,13 @@ def kafka_messages_observer(labels: Dict[str, str] = {}) -> Callable:
         name="kafka_offset",
         documentation="Kafka offsets per topic, partition",
         labelnames=["topic", "partition", *labels.keys()],
+        namespace=labels.get('pipeline_name')
     )
     counter = Counter(
         name="kafka_messages_count",
         documentation="Number of kafka messages",
         labelnames=[*labels.keys(), "error"],
+        namespace=labels.get('pipeline_name')
     )
 
     def _observe(message):
