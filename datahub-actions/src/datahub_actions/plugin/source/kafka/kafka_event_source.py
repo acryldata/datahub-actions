@@ -50,6 +50,17 @@ DEFAULT_TOPIC_ROUTES = {
     "pe": "PlatformEvent_v1",
 }
 
+OFFSET_METRIC = Gauge(
+    name="kafka_offset",
+    documentation="Kafka offsets per topic, partition",
+    labelnames=["topic", "partition", "pipeline_name"],
+)
+
+MESSAGE_COUNTER_METRIC = Counter(
+    name="kafka_messages",
+    documentation="Number of kafka messages",
+    labelnames=["pipeline_name", "error"],
+)
 
 # Converts a Kafka Message to a Kafka Metadata Dictionary.
 def build_kafka_meta(msg: Any) -> dict:
@@ -80,29 +91,19 @@ class KafkaEventSourceConfig(ConfigModel):
     topic_routes: Optional[Dict[str, str]]
 
 
-def kafka_messages_observer(labels: Dict[str, str] = {}) -> Callable:
-    print(["topic", "partition", *labels.keys()])
-    offset_metric = Gauge(
-        name="kafka_offset",
-        documentation="Kafka offsets per topic, partition",
-        labelnames=["topic", "partition", *labels.keys()],
-        namespace=labels.get('pipeline_name')
-    )
-    counter = Counter(
-        name="kafka_messages_count",
-        documentation="Number of kafka messages",
-        labelnames=[*labels.keys(), "error"],
-        namespace=labels.get('pipeline_name')
-    )
-
+def kafka_messages_observer(pipeline_name: str) -> Callable:
     def _observe(message):
         if message is not None:
             topic = message.topic()
             partition = message.partition()
             offset = message.offset()
             logger.debug(f"Kafka msg received: {topic}, {partition}, {offset}")
-            offset_metric.labels(topic=topic, partition=partition, **labels).set(offset)
-            counter.labels(error=message.error() is not None, **labels).inc()
+            OFFSET_METRIC.labels(
+                topic=topic, partition=partition, pipeline_name=pipeline_name
+            ).set(offset)
+            MESSAGE_COUNTER_METRIC.labels(
+                error=message.error() is not None, pipeline_name=pipeline_name
+            ).inc()
 
     return _observe
 
@@ -135,9 +136,7 @@ class KafkaEventSource(EventSource):
                 **self.source_config.connection.consumer_config,
             }
         )
-        self._observe_message: Callable = kafka_messages_observer(
-            {"pipeline_name": ctx.pipeline_name}
-        )
+        self._observe_message: Callable = kafka_messages_observer(ctx.pipeline_name)
 
     @classmethod
     def create(cls, config_dict: dict, ctx: PipelineContext) -> "EventSource":
