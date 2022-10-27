@@ -62,6 +62,7 @@ MESSAGE_COUNTER_METRIC = Counter(
     labelnames=["pipeline_name", "error"],
 )
 
+
 # Converts a Kafka Message to a Kafka Metadata Dictionary.
 def build_kafka_meta(msg: Any) -> dict:
     return {

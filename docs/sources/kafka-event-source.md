@@ -5,7 +5,7 @@
 The Kafka Event Source is the default Event Source used within the DataHub Actions Framework.
 
 Under the hood, the Kafka Event Source uses a Kafka Consumer to subscribe to the topics streaming
-out of DataHub (MetadataChangeLog_v1, PlatformEvent_v1). Each Action is automatically placed into a unique
+out of DataHub (MetadataChangeLogEvent_v1, PlatformEvent_v1). Each Action is automatically placed into a unique
 [consumer group](https://docs.confluent.io/platform/current/clients/consumer.html#consumer-groups) based on
 the unique `name` provided inside the Action configuration file.
 
@@ -61,7 +61,7 @@ source:
           #ssl.truststore.password: ${KAFKA_PROPERTIES_SSL_TRUSTSTORE_PASSWORD:-truststore_password}
     # Topic Routing - which topics to read from.
     topic_routes:
-      mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1} # Topic name for MetadataChangeLog_v1 events. 
+      mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1} # Topic name for MetadataChangeLogEvent_v1 events. 
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1} # Topic name for PlatformEvent_v1 events. 
 action:
   # action configs
@@ -75,7 +75,7 @@ action:
   | `connection.bootstrap` | ✅ | N/A | The Kafka bootstrap URI, e.g. `localhost:9092`. |
   | `connection.schema_registry_url` | ✅ | N/A | The URL for the Kafka schema registry, e.g. `http://localhost:8081` |
   | `connection.consumer_config` | ❌ | {} | A set of key-value pairs that represents arbitrary Kafka Consumer configs |
-  | `topic_routes.mcl` | ❌  | `MetadataChangeLog_v1` | The name of the topic containing MetadataChangeLog events |
+  | `topic_routes.mcl` | ❌  | `MetadataChangeLogEvent_v1` | The name of the topic containing MetadataChangeLog events |
   | `topic_routes.pe` | ❌ | `PlatformEvent_v1` | The name of the topic containing PlatformEvent events |
 </details>
 
