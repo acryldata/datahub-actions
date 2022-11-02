@@ -219,12 +219,9 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
     def add_tags_to_dataset(
         self, entity_urn: str, dataset_tags: List[str], field_tags: Dict = {}
     ) -> None:
-        aspect = "globalTags"
         global_tags = (
             self.graph.get_aspect(
                 entity_urn,
-                aspect,
-                aspect_type_name="com.linkedin.common.GlobalTags",
                 aspect_type=GlobalTagsClass,
             )
             or GlobalTagsClass.construct_with_defaults()
@@ -268,12 +265,8 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
     def add_terms_to_dataset(
         self, entity_urn: str, dataset_terms: List[str], field_terms: Dict = {}
     ) -> None:
-        aspect = "glossaryTerms"
-
         glossary_terms = self.graph.get_aspect(
             entity_urn,
-            aspect,
-            aspect_type_name="com.linkedin.common.GlossaryTerms",
             aspect_type=GlossaryTermsClass,
         )
 
