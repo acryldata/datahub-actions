@@ -19,7 +19,6 @@ FROM acryldata/datahub-ingestion-base:latest as prod-install
 COPY datahub-actions /actions-src
 RUN mkdir -p /etc/datahub/actions && mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
-    pip install --no-binary :all: "confluent_kafka==${CONFLUENT_KAFKA_VERSION}" && \
     pip install "." && \
     pip install '.[executor]'
 
