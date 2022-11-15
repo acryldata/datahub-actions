@@ -19,7 +19,6 @@ import sys
 
 import click
 import stackprinter
-from datahub.configuration import SensitiveError
 from prometheus_client import start_http_server
 
 import datahub_actions as datahub_package
@@ -120,19 +119,13 @@ def main(**kwargs):
         error.show()
         sys.exit(1)
     except Exception as exc:
-        kwargs = {}
-        sensitive_cause = SensitiveError.get_sensitive_cause(exc)
-        if sensitive_cause:
-            kwargs = {"show_vals": None}
-            exc = sensitive_cause
-
         logger.error(
             stackprinter.format(
                 exc,
                 line_wrap=MAX_CONTENT_WIDTH,
                 truncate_vals=10 * MAX_CONTENT_WIDTH,
                 suppressed_paths=[r"lib/python.*/site-packages/click/"],
-                **kwargs,
+                show_vals=False,
             )
         )
         logger.info(
