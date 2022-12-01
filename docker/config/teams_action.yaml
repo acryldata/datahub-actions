@@ -26,6 +26,7 @@ action:
   type: teams
   config:
     # Action-specific configs (map)
+    base_url: ${DATAHUB_ACTIONS_TEAMS_DATAHUB_BASE_URL:-http://localhost:9002}
     webhook_url: ${DATAHUB_ACTIONS_TEAMS_WEBHOOK_URL}
     suppress_system_activity: ${DATAHUB_ACTIONS_TEAMS_SUPPRESS_SYSTEM_ACTIVITY:-true}
 
