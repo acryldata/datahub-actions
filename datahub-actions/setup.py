@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import os
-import sys
 from typing import Dict, Set
+
 import setuptools
 
 package_metadata: dict = {}
@@ -39,6 +39,7 @@ base_requirements = {
     "typing-inspect",
     "pydantic>=1.5.1",
     "dictdiffer",
+    "ratelimit",
 }
 
 framework_common = {
@@ -71,7 +72,13 @@ plugins: Dict[str, Set[str]] = {
     # Action Plugins
     "executor": {
         "acryl-executor>=0.0.3.6",
-    }
+    },
+    "slack": {
+        "slack-bolt>=1.15.5",
+    },
+    "teams": {
+        "pymsteams >=0.2.2",
+    },
     # Transformer Plugins (None yet)
 }
 
@@ -116,10 +123,7 @@ base_dev_requirements = {
     "twine",
     *list(
         dependency
-        for plugin in [
-            "kafka",
-            "executor",
-        ]
+        for plugin in ["kafka", "executor", "slack", "teams"]
         for dependency in plugins[plugin]
     ),
 }
@@ -131,10 +135,7 @@ dev_requirements = {
 full_test_dev_requirements = {
     *list(
         dependency
-        for plugin in [
-            "kafka",
-            "executor",
-        ]
+        for plugin in ["kafka", "executor", "slack", "teams"]
         for dependency in plugins[plugin]
     ),
 }
@@ -143,6 +144,8 @@ entry_points = {
     "console_scripts": ["datahub-actions = datahub_actions.entrypoints:main"],
     "datahub_actions.action.plugins": [
         "executor = datahub_actions.plugin.action.execution.executor_action:ExecutorAction",
+        "slack = datahub_actions.plugin.action.slack.slack:SlackNotificationAction",
+        "teams = datahub_actions.plugin.action.teams.teams:TeamsNotificationAction",
     ],
     "datahub_actions.transformer.plugins": [],
     "datahub_actions.source.plugins": [],

@@ -20,14 +20,14 @@ COPY datahub-actions /actions-src
 RUN mkdir -p /etc/datahub/actions && mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
     pip install "." && \
-    pip install '.[executor]'
+    pip install '.[all]'
 
 COPY ./docker/datahub-actions/start.sh /start_datahub_actions.sh
 RUN chmod a+x /start_datahub_actions.sh
 
 # Add other default configurations into this!
 RUN mkdir -p /etc/datahub/actions/conf && mkdir -p /etc/datahub/actions/system/conf
-COPY ./docker/config/executor.yaml /etc/datahub/actions/system/conf
+COPY ./docker/config/*.yaml /etc/datahub/actions/system/conf
 
 RUN addgroup --system datahub && adduser --system datahub --ingroup datahub \
     && chown datahub /etc/datahub \

@@ -65,6 +65,7 @@ class PipelineConfig(ConfigModel):
     """
 
     name: str
+    enabled: bool = True
     source: SourceConfig
     filter: Optional[FilterConfig]
     transform: Optional[List[TransformConfig]]

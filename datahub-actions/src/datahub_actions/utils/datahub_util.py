@@ -15,6 +15,7 @@
 import logging
 import re
 
+DATAHUB_SYSTEM_ACTOR_URN = "urn:li:corpuser:__datahub_system"
 ENTITY_TYPE_TO_URL_PATH_MAP = {
     "glossaryTerm": "glossary",
     "dataset": "dataset",
