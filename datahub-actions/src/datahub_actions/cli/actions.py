@@ -44,13 +44,13 @@ def best_effort_resolve_element(x: str) -> str:
 
 def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
     logger.debug(
-        f"Attempting to create Actions Pipeline using config {pipeline_config}"
+        f"Attempting to create Actions Pipeline using config {pipeline_config.get('name')}"
     )
     try:
         return Pipeline.create(pipeline_config)
     except Exception as e:
         raise Exception(
-            f"Failed to instantiate Actions Pipeline using config {pipeline_config}"
+            f"Failed to instantiate Actions Pipeline using config {pipeline_config.get('name')}: {e}"
         ) from e
 
 
