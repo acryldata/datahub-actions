@@ -34,9 +34,9 @@ filter:
         executorId: "${EXECUTOR_ID:-default}"
 action:
   type: "executor"
-  config: 
+  config:
     executor_id: "${EXECUTOR_ID:-default}"
 datahub:
-  server: "http://${DATAHUB_GMS_HOST:-localhost}:${DATAHUB_GMS_PORT:-8080}"
+  server: "${DATAHUB_GMS_PROTOCOL:-http}://${DATAHUB_GMS_HOST:-localhost}:${DATAHUB_GMS_PORT:-8080}"
   extra_headers:
     Authorization: "Basic ${DATAHUB_SYSTEM_CLIENT_ID:-__datahub_system}:${DATAHUB_SYSTEM_CLIENT_SECRET:-JohnSnowKnowsNothing}"

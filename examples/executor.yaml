@@ -15,5 +15,5 @@ filter:
 action:
   type: "executor"
 datahub:
-  server: "http://${DATAHUB_GMS_HOST:-localhost}:${DATAHUB_GMS_PORT:-8080}"
+  server: "${DATAHUB_GMS_PROTOCOL:-http}://${DATAHUB_GMS_HOST:-localhost}:${DATAHUB_GMS_PORT:-8080}"
   # token: <your-access-token # Requires 'Manage Secrets' platform privilege.
