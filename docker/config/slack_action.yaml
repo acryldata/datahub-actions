@@ -26,6 +26,7 @@ action:
   type: slack
   config:
     # Action-specific configs (map)
+    base_url: ${DATAHUB_ACTIONS_SLACK_DATAHUB_BASE_URL:-http://localhost:9002}
     bot_token: ${DATAHUB_ACTIONS_SLACK_BOT_TOKEN}
     signing_secret: ${DATAHUB_ACTIONS_SLACK_SIGNING_SECRET}
     default_channel: ${DATAHUB_ACTIONS_SLACK_CHANNEL}
