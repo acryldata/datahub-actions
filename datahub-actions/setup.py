@@ -79,7 +79,6 @@ plugins: Dict[str, Set[str]] = {
     "teams": {
         "pymsteams >=0.2.2",
     },
-    # TODO: Add slack and teams here
     # Transformer Plugins (None yet)
 }
 

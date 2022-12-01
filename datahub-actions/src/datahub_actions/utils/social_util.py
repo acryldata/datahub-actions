@@ -41,7 +41,7 @@ def make_bold(text: str, channel: str) -> str:
 
 @dataclass
 class StructuredMessage:
-    main_message: str
+    title: str
     properties: Dict[str, str]
     text: Optional[str]
 
@@ -59,7 +59,7 @@ def get_welcome_message(datahub_home_url: str) -> StructuredMessage:
     current_time: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     current_timezone: str = str(datetime.datetime.now().astimezone().tzinfo)
     return StructuredMessage(
-        main_message="DataHub Bot 🌟",
+        title="DataHub Bot 🌟",
         properties={
             "Home 🏠": datahub_home_url,
             "Host 🖥️": hostname,

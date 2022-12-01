@@ -55,7 +55,7 @@ class SlackNotification:
         return [
             {
                 "type": "section",
-                "text": {"type": "mrkdwn", "text": message.main_message},
+                "text": {"type": "mrkdwn", "text": message.title},
             },
             {"type": "divider"},
             {
@@ -72,15 +72,6 @@ class SlackNotification:
             },
             {"type": "divider"},
         ]
-
-
-def make_datahub_url(urn: str, base_url: str) -> str:
-    return f"{base_url}/{urn}"
-
-
-def make_link(text: str, urn: str, base_url: str) -> str:
-    url = make_datahub_url(urn, base_url)
-    return f"<{url}|{text}>"
 
 
 class SlackNotificationConfig(ConfigModel):

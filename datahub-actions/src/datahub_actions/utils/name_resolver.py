@@ -5,6 +5,7 @@ from datahub.ingestion.graph.client import DataHubGraph
 from datahub.metadata.schema_classes import (
     ChartInfoClass,
     ContainerPropertiesClass,
+    CorpUserEditableInfoClass,
     CorpUserInfoClass,
     DashboardInfoClass,
     DatasetPropertiesClass,
@@ -190,15 +191,22 @@ class CorpUserNameResolver(DefaultNameResolver):
     def get_entity_name(
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
+        entity_name = super().get_entity_name(entity_urn, datahub_graph)
+
         if datahub_graph:
             user_properties: Optional[CorpUserInfoClass] = datahub_graph.get_aspect(
                 str(entity_urn), CorpUserInfoClass
             )
             if user_properties and user_properties.displayName:
-                return user_properties.displayName
+                entity_name = user_properties.displayName
 
-        # fall-through to default
-        return super().get_entity_name(entity_urn, datahub_graph)
+            editable_properties: Optional[
+                CorpUserEditableInfoClass
+            ] = datahub_graph.get_aspect(str(entity_urn), CorpUserEditableInfoClass)
+            if editable_properties and editable_properties.displayName:
+                entity_name = editable_properties.displayName
+
+        return entity_name
 
 
 class ChartNameResolver(DefaultNameResolver):

@@ -34,17 +34,8 @@ from datahub_actions.utils.social_util import (
 logger = logging.getLogger(__name__)
 
 
-def make_datahub_url(urn: str, base_url: str) -> str:
-    return f"{base_url}/{urn}"
-
-
-def make_link(text: str, urn: str, base_url: str) -> str:
-    url = make_datahub_url(urn, base_url)
-    return f"<{url}|{text}>"
-
-
 @sleep_and_retry
-@limits(calls=1, period=1)
+@limits(calls=1, period=1)  # 1 call per second
 def post_message(message_card, message):
     message_card.text(message)
     message_card.send()
@@ -79,13 +70,12 @@ class TeamsNotificationAction(Action):
         self.ctx = ctx
         welcome_card = self._new_card()
         structured_message = get_welcome_message(self.action_config.base_url)
-        welcome_card.title(structured_message.main_message)
+        welcome_card.title(structured_message.title)
         message_section = pymsteams.cardsection()
         for k, v in structured_message.properties.items():
             message_section.addFact(k, pretty_any_text(v, channel="teams"))
         welcome_card.addSection(message_section)
-        welcome_card.text(structured_message.text)
-        welcome_card.send()
+        post_message(welcome_card, structured_message.text)
 
     def act(self, event: EventEnvelope) -> None:
         try:
@@ -106,8 +96,7 @@ class TeamsNotificationAction(Action):
                     channel="teams",
                 )
                 message_card = self._new_card()
-                message_card.text(semantic_message)
-                message_card.send()
+                post_message(message_card, semantic_message)
             else:
                 logger.debug("Skipping message because it didn't match our filter")
         except Exception as e:
