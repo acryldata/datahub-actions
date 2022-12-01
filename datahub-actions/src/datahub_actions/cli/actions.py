@@ -42,7 +42,7 @@ def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
         return Pipeline.create(pipeline_config)
     except Exception as e:
         raise Exception(
-            f"Failed to instantiate Actions Pipeline using config {pipeline_config.get('name')}"
+            f"Failed to instantiate Actions Pipeline using config {pipeline_config.get('name')}: {e}"
         ) from e
 
 
