@@ -203,6 +203,8 @@ Some pre-included Actions include
 
 - [Hello World](./docs/actions/hello_world.md)
 - [Executor](./docs/actions/executor.md)
+- [Slack](./docs/actions/slack.md)
+- [Microsoft Teams](./docs/actions/teams.md)
 
 
 ## Development
