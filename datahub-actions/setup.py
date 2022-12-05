@@ -31,7 +31,7 @@ def get_long_description():
 
 
 base_requirements = {
-    "acryl-datahub[kafka]>=0.9.0",
+    "acryl-datahub[kafka]>=0.9.4",
     # Compatibility.
     "typing_extensions>=3.7.4; python_version < '3.8'",
     "mypy_extensions>=0.4.3",
