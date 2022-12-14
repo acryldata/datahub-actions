@@ -62,7 +62,7 @@ All you need to do is export a few environment variables to activate and configu
 | --- | --- | --- |
 | DATAHUB_ACTIONS_TEAMS_ENABLED | ✅ | Set to "true" to enable the Teams action |
 | DATAHUB_ACTIONS_TEAMS_WEBHOOK_URL | ✅ | Set to the incoming webhook url that you configured in the [pre-requisites step](#prerequisites) above |
-| DATAHUB_ACTIONS_DATAHUB_BASE_URL | ❌ | Defaults to "http://localhost:9002". Set to the location where your DataHub UI is running. On a local quickstart this is usually "http://localhost:9002", so you shouldn't need to modify this |
+| DATAHUB_ACTIONS_TEAMS_DATAHUB_BASE_URL | ❌ | Defaults to "http://localhost:9002". Set to the location where your DataHub UI is running. On a local quickstart this is usually "http://localhost:9002", so you shouldn't need to modify this |
 
 :::note
 
@@ -87,7 +87,7 @@ Similar to the quickstart scenario, there are no specific software installation 
 | --- | --- | --- |
 | DATAHUB_ACTIONS_TEAMS_ENABLED | ✅ | Set to "true" to enable the Teams action |
 | DATAHUB_ACTIONS_TEAMS_WEBHOOK_URL | ✅ | Set to the incoming webhook url that you configured in the [pre-requisites step](#prerequisites) above |
-| DATAHUB_ACTIONS_DATAHUB_BASE_URL | ✅| Set to the location where your DataHub UI is running. For example, if your DataHub UI is hosted at "https://datahub.my-company.biz", set this to "https://datahub.my-company.biz"|
+| DATAHUB_ACTIONS_TEAMS_DATAHUB_BASE_URL | ✅| Set to the location where your DataHub UI is running. For example, if your DataHub UI is hosted at "https://datahub.my-company.biz", set this to "https://datahub.my-company.biz"|
 
 
 #### Bare Metal - CLI or Python-based
