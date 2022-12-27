@@ -23,6 +23,7 @@ RUN cd /actions-src && \
     pip install '.[all]'
 
 COPY ./docker/datahub-actions/start.sh /start_datahub_actions.sh
+COPY ./docker/datahub-actions/readiness-check.sh /readiness-check.sh
 RUN chmod a+x /start_datahub_actions.sh
 
 # Add other default configurations into this!
@@ -43,4 +44,4 @@ FROM ${APP_ENV}-install as final
 USER datahub
 RUN curl -s "https://get.sdkman.io" | bash
 RUN /bin/bash -c "source /$HOME/.sdkman/bin/sdkman-init.sh; sdk version; sdk install java 8.0.332-zulu"
-CMD dockerize -wait ${DATAHUB_GMS_PROTOCOL:-http}://$DATAHUB_GMS_HOST:$DATAHUB_GMS_PORT/health -timeout 240s /start_datahub_actions.sh
+CMD ["/usr/local/bin/dockerize", "-wait", "${DATAHUB_GMS_PROTOCOL:-http}://$DATAHUB_GMS_HOST:$DATAHUB_GMS_PORT/health" "-timeout", 240s /start_datahub_actions.sh"
