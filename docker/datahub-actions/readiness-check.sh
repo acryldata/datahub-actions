@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# checking for zombie processes
 if ps -Ao stat= | grep -q '^[Zz]'; then
   exit 1
 else
