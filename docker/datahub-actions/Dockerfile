@@ -23,6 +23,7 @@ RUN cd /actions-src && \
     pip install '.[all]'
 
 COPY ./docker/datahub-actions/start.sh /start_datahub_actions.sh
+COPY ./docker/datahub-actions/readiness-check.sh /readiness-check.sh
 RUN chmod a+x /start_datahub_actions.sh
 
 # Add other default configurations into this!
