@@ -153,7 +153,7 @@ All you need to do is export a few environment variables to activate and configu
 | DATAHUB_ACTIONS_SLACK_SIGNING_SECRET | ✅ | Set to the [Slack Signing Secret](#1-the-signing-secret) that you configured in the pre-requisites step above |
 | DATAHUB_ACTIONS_SLACK_BOT_TOKEN | ✅ | Set to the [Bot User OAuth Token](#2-the-bot-token) that you configured in the pre-requisites step above |
 | DATAHUB_ACTIONS_SLACK_CHANNEL | ✅ | Set to the [Slack Channel ID](#3-the-slack-channel) that you want the action to send messages to |
-| DATAHUB_ACTIONS_DATAHUB_BASE_URL | ❌ | Defaults to "http://localhost:9002". Set to the location where your DataHub UI is running. On a local quickstart this is usually "http://localhost:9002", so you shouldn't need to modify this |
+| DATAHUB_ACTIONS_SLACK_DATAHUB_BASE_URL | ❌ | Defaults to "http://localhost:9002". Set to the location where your DataHub UI is running. On a local quickstart this is usually "http://localhost:9002", so you shouldn't need to modify this |
 
 :::note
 
@@ -182,7 +182,7 @@ Similar to the quickstart scenario, there are no specific software installation 
 | DATAHUB_ACTIONS_SLACK_SIGNING_SECRET | ✅ | Set to the [Slack Signing Secret](#1-the-signing-secret) that you configured in the pre-requisites step above |
 | DATAHUB_ACTIONS_SLACK_BOT_TOKEN | ✅ | Set to the [Bot User OAuth Token](#2-the-bot-token) that you configured in the pre-requisites step above |
 | DATAHUB_ACTIONS_SLACK_CHANNEL | ✅ | Set to the [Slack Channel ID](#3-the-slack-channel) that you want the action to send messages to |
-| DATAHUB_ACTIONS_DATAHUB_BASE_URL | ✅| Set to the location where your DataHub UI is running. For example, if your DataHub UI is hosted at "https://datahub.my-company.biz", set this to "https://datahub.my-company.biz"|
+| DATAHUB_ACTIONS_SLACK_DATAHUB_BASE_URL | ✅| Set to the location where your DataHub UI is running. For example, if your DataHub UI is hosted at "https://datahub.my-company.biz", set this to "https://datahub.my-company.biz"|
 
 
 #### Bare Metal - CLI or Python-based
