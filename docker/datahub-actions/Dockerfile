@@ -17,9 +17,6 @@ ARG APP_ENV=prod
 
 FROM acryldata/datahub-ingestion-base:latest as prod-install
 
-RUN addgroup --system datahub && adduser --system datahub --ingroup datahub \
-    && chown datahub /etc/datahub \
-    && chown -R datahub /tmp/datahub
 RUN curl -s "https://get.sdkman.io" | bash
 RUN /bin/bash -c "source /$HOME/.sdkman/bin/sdkman-init.sh; sdk version; sdk install java 8.0.332-zulu"
 
@@ -29,6 +26,9 @@ RUN cd /actions-src && \
     pip install "." && \
     pip install '.[all]'
 
+COPY acryl-executor /acryl-executor
+RUN pip install "/acryl-executor/dist/acryl-executor-0.0.0.dev0.tar.gz"
+
 COPY datahub-actions/docker/datahub-actions/start.sh /start_datahub_actions.sh
 COPY datahub-actions/docker/datahub-actions/readiness-check.sh /readiness-check.sh
 RUN chmod a+x /start_datahub_actions.sh
@@ -36,6 +36,10 @@ RUN chmod a+x /start_datahub_actions.sh
 # Add other default configurations into this!
 RUN mkdir -p /etc/datahub/actions/conf && mkdir -p /etc/datahub/actions/system/conf
 COPY datahub-actions/docker/config/*.yaml /etc/datahub/actions/system/conf
+
+RUN addgroup --system datahub && adduser --system datahub --ingroup datahub \
+    && chown datahub /etc/datahub \
+    && chown -R datahub /tmp/datahub
 
 # By transferring the root user's pip cache directory to the datahub
 # user, we can avoid the need for some redundant dependency downloads.

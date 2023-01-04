@@ -125,7 +125,7 @@ base_dev_requirements = {
         dependency
         for plugin in [
             "kafka",
-            # "executor",
+            "executor",
             "slack",
             "teams",
         ]
@@ -140,12 +140,7 @@ dev_requirements = {
 full_test_dev_requirements = {
     *list(
         dependency
-        for plugin in [
-            "kafka",
-            # "executor",
-            "slack",
-            "teams",
-        ]
+        for plugin in ["kafka", "executor", "slack", "teams"]
         for dependency in plugins[plugin]
     ),
 }
@@ -215,7 +210,11 @@ setuptools.setup(
         },
         "all": list(
             framework_common.union(
-                *[requirements for plugin, requirements in plugins.items()]
+                *[
+                    requirements
+                    for plugin, requirements in plugins.items()
+                    if plugin != "executor"
+                ]
             )
         ),
         "dev": list(dev_requirements),
