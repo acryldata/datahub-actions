@@ -123,12 +123,7 @@ base_dev_requirements = {
     "twine",
     *list(
         dependency
-        for plugin in [
-            "kafka",
-            "executor",
-            "slack",
-            "teams",
-        ]
+        for plugin in ["kafka", "executor", "slack", "teams"]
         for dependency in plugins[plugin]
     ),
 }
