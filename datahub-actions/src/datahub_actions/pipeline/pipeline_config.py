@@ -56,7 +56,7 @@ class PipelineOptions(BaseModel):
         use_enum_values = True
 
 
-class PipelineConfig(BaseModel):
+class PipelineConfig(ConfigModel):
     """
     Configuration required to create a new Actions Pipeline.
 
@@ -65,12 +65,10 @@ class PipelineConfig(BaseModel):
     """
 
     name: str
+    enabled: bool = True
     source: SourceConfig
     filter: Optional[FilterConfig]
     transform: Optional[List[TransformConfig]]
     action: ActionConfig
     datahub: Optional[DatahubClientConfig]
     options: Optional[PipelineOptions]
-
-    class Config:
-        extra = "allow"

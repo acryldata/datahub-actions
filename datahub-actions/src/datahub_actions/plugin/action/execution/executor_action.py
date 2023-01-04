@@ -15,7 +15,7 @@ import importlib
 import json
 import logging
 import sys
-from typing import Any, Optional, cast
+from typing import Any, List, Optional, cast
 
 from acryl.executor.dispatcher.default_dispatcher import DefaultDispatcher
 from acryl.executor.execution.reporting_executor import (
@@ -69,7 +69,7 @@ def import_path(path: str) -> Any:
 
 class ExecutorConfig(BaseModel):
     executor_id: Optional[str]
-    task_config: Optional[TaskConfig]
+    task_configs: Optional[List[TaskConfig]]
 
 
 # Listens to new Execution Requests & dispatches them to the appropriate handler.
@@ -174,19 +174,22 @@ class ExecutorAction(Action):
     def _build_executor_config(
         self, config: ExecutorConfig, ctx: PipelineContext
     ) -> ReportingExecutorConfig:
-
-        # Build default task config
-        ingest_task_config = config.task_config or TaskConfig(
-            name="RUN_INGEST",
-            type="acryl.executor.execution.sub_process_ingestion_task.SubProcessIngestionTask",
-            configs=dict({}),
-        )
-
-        test_connection_task_config = TaskConfig(
-            name="TEST_CONNECTION",
-            type="acryl.executor.execution.sub_process_test_connection_task.SubProcessTestConnectionTask",
-            configs={},
-        )
+        if config.task_configs:
+            task_configs = config.task_configs
+        else:
+            # Build default task config
+            task_configs = [
+                TaskConfig(
+                    name="RUN_INGEST",
+                    type="acryl.executor.execution.sub_process_ingestion_task.SubProcessIngestionTask",
+                    configs=dict({}),
+                ),
+                TaskConfig(
+                    name="TEST_CONNECTION",
+                    type="acryl.executor.execution.sub_process_test_connection_task.SubProcessTestConnectionTask",
+                    configs={},
+                ),
+            ]
 
         if not ctx.graph:
             raise Exception(
@@ -198,7 +201,7 @@ class ExecutorAction(Action):
         # Build default executor config
         local_executor_config = ReportingExecutorConfig(
             id=config.executor_id or "default",
-            task_configs=[ingest_task_config, test_connection_task_config],
+            task_configs=task_configs,
             secret_stores=[
                 SecretStoreConfig(type="env", config=dict({})),
                 SecretStoreConfig(

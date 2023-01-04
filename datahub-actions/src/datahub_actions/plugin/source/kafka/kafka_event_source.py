@@ -14,7 +14,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Callable, Dict, Iterable, Optional
 
 # Confluent important
 import confluent_kafka
@@ -27,6 +27,7 @@ from datahub.emitter.serialization_helper import post_json_transform
 
 # DataHub imports.
 from datahub.metadata.schema_classes import GenericPayloadClass, MetadataChangeLogClass
+from prometheus_client import Counter, Gauge
 
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import (
@@ -48,6 +49,18 @@ DEFAULT_TOPIC_ROUTES = {
     "mcl": "MetadataChangeLog_Versioned_v1",
     "pe": "PlatformEvent_v1",
 }
+
+OFFSET_METRIC = Gauge(
+    name="kafka_offset",
+    documentation="Kafka offsets per topic, partition",
+    labelnames=["topic", "partition", "pipeline_name"],
+)
+
+MESSAGE_COUNTER_METRIC = Counter(
+    name="kafka_messages",
+    documentation="Number of kafka messages",
+    labelnames=["pipeline_name", "error"],
+)
 
 
 # Converts a Kafka Message to a Kafka Metadata Dictionary.
@@ -79,6 +92,23 @@ class KafkaEventSourceConfig(ConfigModel):
     topic_routes: Optional[Dict[str, str]]
 
 
+def kafka_messages_observer(pipeline_name: str) -> Callable:
+    def _observe(message):
+        if message is not None:
+            topic = message.topic()
+            partition = message.partition()
+            offset = message.offset()
+            logger.debug(f"Kafka msg received: {topic}, {partition}, {offset}")
+            OFFSET_METRIC.labels(
+                topic=topic, partition=partition, pipeline_name=pipeline_name
+            ).set(offset)
+            MESSAGE_COUNTER_METRIC.labels(
+                error=message.error() is not None, pipeline_name=pipeline_name
+            ).inc()
+
+    return _observe
+
+
 # This is the default Kafka-based Event Source.
 @dataclass
 class KafkaEventSource(EventSource):
@@ -88,9 +118,9 @@ class KafkaEventSource(EventSource):
 
     def __init__(self, config: KafkaEventSourceConfig, ctx: PipelineContext):
         self.source_config = config
-        self.schema_registry_client = SchemaRegistryClient(
-            {"url": self.source_config.connection.schema_registry_url}
-        )
+        schema_client_config = config.connection.schema_registry_config.copy()
+        schema_client_config["url"] = self.source_config.connection.schema_registry_url
+        self.schema_registry_client = SchemaRegistryClient(schema_client_config)
         self.consumer: confluent_kafka.Consumer = confluent_kafka.DeserializingConsumer(
             {
                 # Provide a custom group id to subcribe to multiple partitions via separate actions pods.
@@ -107,6 +137,7 @@ class KafkaEventSource(EventSource):
                 **self.source_config.connection.consumer_config,
             }
         )
+        self._observe_message: Callable = kafka_messages_observer(ctx.pipeline_name)
 
     @classmethod
     def create(cls, config_dict: dict, ctx: PipelineContext) -> "EventSource":
@@ -123,10 +154,7 @@ class KafkaEventSource(EventSource):
             msg = self.consumer.poll(timeout=2.0)
             if msg is None:
                 continue
-            else:
-                logger.debug(
-                    f"Kafka msg received: {msg.topic()}, {msg.partition()}, {msg.offset()}"
-                )
+            self._observe_message(msg)
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
                     # End of partition event

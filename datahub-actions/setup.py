@@ -13,11 +13,9 @@
 # limitations under the License.
 
 import os
-import sys
 from typing import Dict, Set
-import setuptools
 
-is_py37_or_newer = sys.version_info >= (3, 7)
+import setuptools
 
 package_metadata: dict = {}
 with open("./src/datahub_actions/__init__.py") as fp:
@@ -33,37 +31,30 @@ def get_long_description():
 
 
 base_requirements = {
+    "acryl-datahub[kafka]>=0.9.4",
     # Compatibility.
-    "dataclasses>=0.6; python_version < '3.7'",
     "typing_extensions>=3.7.4; python_version < '3.8'",
     "mypy_extensions>=0.4.3",
     # Actual dependencies.
     "typing-inspect",
     "pydantic>=1.5.1",
-    "acryl-datahub>=0.8.34",
     "dictdiffer",
-}
-
-kafka_common = {
-    "confluent-kafka>=1.5.0,<1.9.0",
-    "fastavro>=1.2.0",
+    "ratelimit",
 }
 
 framework_common = {
     "click>=6.0.0",
     "click-default-group",
+    "prometheus-client",
     "PyYAML",
     "toml>=0.10.0",
     "entrypoints",
     "docker",
     "expandvars>=0.6.5",
-    "avro-gen3==0.7.4",
-    "avro>=1.10.2",
     "python-dateutil>=2.8.0",
     "stackprinter",
     "tabulate",
     "progressbar2",
-    *kafka_common,
 }
 
 aws_common = {
@@ -77,12 +68,17 @@ aws_common = {
 # Note: for all of these, framework_common will be added.
 plugins: Dict[str, Set[str]] = {
     # Source Plugins
-    "kafka": kafka_common,
-    # Action Plugins 
-    "executor": { 
-        f"acryl-executor>=0.0.3rc6",
-        # "./../acryl-executor/dist/acryl-executor-0.0.4-py3-none-any.whl"
-    }
+    "kafka": set(),  # included by default
+    # Action Plugins
+    "executor": {
+        "acryl-executor>=0.0.3.6",
+    },
+    "slack": {
+        "slack-bolt>=1.15.5",
+    },
+    "teams": {
+        "pymsteams >=0.2.2",
+    },
     # Transformer Plugins (None yet)
 }
 
@@ -129,7 +125,9 @@ base_dev_requirements = {
         dependency
         for plugin in [
             "kafka",
-          #  "executor",
+            # "executor",
+            "slack",
+            "teams",
         ]
         for dependency in plugins[plugin]
     ),
@@ -144,16 +142,20 @@ full_test_dev_requirements = {
         dependency
         for plugin in [
             "kafka",
-       #     "executor",
+            # "executor",
+            "slack",
+            "teams",
         ]
         for dependency in plugins[plugin]
     ),
 }
 
 entry_points = {
-    "console_scripts": ["datahub-actions = datahub_actions.entrypoints:main"], 
+    "console_scripts": ["datahub-actions = datahub_actions.entrypoints:main"],
     "datahub_actions.action.plugins": [
         "executor = datahub_actions.plugin.action.execution.executor_action:ExecutorAction",
+        "slack = datahub_actions.plugin.action.slack.slack:SlackNotificationAction",
+        "teams = datahub_actions.plugin.action.teams.teams:TeamsNotificationAction",
     ],
     "datahub_actions.transformer.plugins": [],
     "datahub_actions.source.plugins": [],
@@ -179,10 +181,10 @@ setuptools.setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
         "Intended Audience :: System Administrators",
@@ -196,7 +198,7 @@ setuptools.setup(
     ],
     # Package info.
     zip_safe=False,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     package_dir={"": "src"},
     packages=setuptools.find_namespace_packages(where="./src"),
     package_data={
@@ -213,10 +215,7 @@ setuptools.setup(
         },
         "all": list(
             framework_common.union(
-                *[
-                    requirements
-                    for plugin, requirements in plugins.items()
-                ]
+                *[requirements for plugin, requirements in plugins.items()]
             )
         ),
         "dev": list(dev_requirements),

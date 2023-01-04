@@ -13,13 +13,13 @@
 # limitations under the License.
 
 import logging
-import os
 import platform
 import sys
 
 import click
 import stackprinter
-from datahub.configuration import SensitiveError
+from datahub.cli.cli_utils import get_boolean_env_variable
+from prometheus_client import start_http_server
 
 import datahub_actions as datahub_package
 from datahub_actions.cli.actions import actions
@@ -42,6 +42,21 @@ MAX_CONTENT_WIDTH = 120
         max_content_width=MAX_CONTENT_WIDTH,
     )
 )
+@click.option(
+    "--enable-monitoring",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Enable prometheus monitoring endpoint. You can set the portnumber with --monitoring-port.",
+)
+@click.option(
+    "--monitoring-port",
+    type=int,
+    default=8000,
+    help="""Prometheus monitoring endpoint will be available on :<PORT>/metrics.
+    To enable monitoring use the --enable-monitoring flag
+    """,
+)
 @click.option("--debug/--no-debug", default=False)
 @click.version_option(
     version=datahub_package.nice_version_name(),
@@ -56,7 +71,13 @@ MAX_CONTENT_WIDTH = 120
     help="Run memory leak detection.",
 )
 @click.pass_context
-def datahub_actions(ctx: click.Context, debug: bool, detect_memory_leaks: bool) -> None:
+def datahub_actions(
+    ctx: click.Context,
+    enable_monitoring: bool,
+    monitoring_port: int,
+    debug: bool,
+    detect_memory_leaks: bool,
+) -> None:
     # Insulate 'datahub_actions' and all child loggers from inadvertent changes to the
     # root logger by the external site packages that we import.
     # (Eg: https://github.com/reata/sqllineage/commit/2df027c77ea0a8ea4909e471dcd1ecbf4b8aeb2f#diff-30685ea717322cd1e79c33ed8d37903eea388e1750aa00833c33c0c5b89448b3R11
@@ -74,12 +95,14 @@ def datahub_actions(ctx: click.Context, debug: bool, detect_memory_leaks: bool) 
     # 3. Turn off propagation to the root handler.
     datahub_logger.propagate = False
     # 4. Adjust log-levels.
-    if debug or os.getenv("DATAHUB_DEBUG", False):
+    if debug or get_boolean_env_variable("DATAHUB_DEBUG", False):
         logging.getLogger().setLevel(logging.INFO)
         datahub_logger.setLevel(logging.DEBUG)
     else:
         logging.getLogger().setLevel(logging.WARNING)
         datahub_logger.setLevel(logging.INFO)
+    if enable_monitoring:
+        start_http_server(monitoring_port)
     # Setup the context for the memory_leak_detector decorator.
     ctx.ensure_object(dict)
     ctx.obj["detect_memory_leaks"] = detect_memory_leaks
@@ -96,19 +119,13 @@ def main(**kwargs):
         error.show()
         sys.exit(1)
     except Exception as exc:
-        kwargs = {}
-        sensitive_cause = SensitiveError.get_sensitive_cause(exc)
-        if sensitive_cause:
-            kwargs = {"show_vals": None}
-            exc = sensitive_cause
-
         logger.error(
             stackprinter.format(
                 exc,
                 line_wrap=MAX_CONTENT_WIDTH,
                 truncate_vals=10 * MAX_CONTENT_WIDTH,
                 suppressed_paths=[r"lib/python.*/site-packages/click/"],
-                **kwargs,
+                show_vals=False,
             )
         )
         logger.info(

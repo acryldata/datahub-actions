@@ -17,11 +17,12 @@ import pathlib
 import signal
 import sys
 import time
+import unittest
 from typing import Any, List
 
 import click
 from click_default_group import DefaultGroup
-from datahub.configuration.config_loader import load_config_file
+from datahub.configuration.config_loader import load_config_file, resolve_element
 
 import datahub_actions as datahub_actions_package
 from datahub_actions.pipeline.pipeline import Pipeline
@@ -34,15 +35,22 @@ logger = logging.getLogger(__name__)
 pipeline_manager = PipelineManager()
 
 
+def best_effort_resolve_element(x: str) -> str:
+    try:
+        return resolve_element(x)
+    except Exception:
+        return x
+
+
 def pipeline_config_to_pipeline(pipeline_config: dict) -> Pipeline:
     logger.debug(
-        f"Attempting to create Actions Pipeline using config {pipeline_config}"
+        f"Attempting to create Actions Pipeline using config {pipeline_config.get('name')}"
     )
     try:
         return Pipeline.create(pipeline_config)
     except Exception as e:
         raise Exception(
-            f"Failed to instantiate Actions Pipeline using config {pipeline_config}"
+            f"Failed to instantiate Actions Pipeline using config {pipeline_config.get('name')}: {e}"
         ) from e
 
 
@@ -85,6 +93,19 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
     if config is not None:
         for pipeline_config in config:
             pipeline_config_file = pathlib.Path(pipeline_config)
+            with unittest.mock.patch(
+                "datahub.configuration.config_loader.resolve_element"
+            ) as mock_resolve_element:
+                mock_resolve_element.side_effect = best_effort_resolve_element
+                pipeline_config_dict = load_config_file(pipeline_config_file)
+                enabled = pipeline_config_dict.get("enabled", True)
+                if enabled == "false" or enabled is False:
+                    logger.warning(
+                        f"Skipping pipeline {pipeline_config_dict.get('name')} as it is not enabled"
+                    )
+                    continue
+
+            # now load the config with variable expansion
             pipeline_config_dict = load_config_file(pipeline_config_file)
             pipelines.append(
                 pipeline_config_to_pipeline(pipeline_config_dict)

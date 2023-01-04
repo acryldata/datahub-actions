@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: "ingestion_executor" 
+name: datahub_slack_action
+enabled: ${DATAHUB_ACTIONS_SLACK_ENABLED:-false}
 source:
   type: "kafka"
   config:
@@ -21,22 +22,17 @@ source:
     topic_routes:
       mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
-filter: 
-  event_type: "MetadataChangeLogEvent_v1"
-  event:
-    entityType: "dataHubExecutionRequest"
-    changeType: "UPSERT"
-    aspectName:
-      - "dataHubExecutionRequestInput"
-      - "dataHubExecutionRequestSignal"
-    aspect:
-      value:
-        executorId: "${EXECUTOR_ID:-default}"
 action:
-  type: "executor"
+  type: slack
   config:
-    executor_id: "${EXECUTOR_ID:-default}"
+    # Action-specific configs (map)
+    base_url: ${DATAHUB_ACTIONS_SLACK_DATAHUB_BASE_URL:-http://localhost:9002}
+    bot_token: ${DATAHUB_ACTIONS_SLACK_BOT_TOKEN}
+    signing_secret: ${DATAHUB_ACTIONS_SLACK_SIGNING_SECRET}
+    default_channel: ${DATAHUB_ACTIONS_SLACK_CHANNEL}
+    suppress_system_activity: ${DATAHUB_ACTIONS_SLACK_SUPPRESS_SYSTEM_ACTIVITY:-true}
+
 datahub:
-  server: "${DATAHUB_GMS_PROTOCOL:-http}://${DATAHUB_GMS_HOST:-localhost}:${DATAHUB_GMS_PORT:-8080}"
+  server: "http://${DATAHUB_GMS_HOST:-localhost}:${DATAHUB_GMS_PORT:-8080}"
   extra_headers:
     Authorization: "Basic ${DATAHUB_SYSTEM_CLIENT_ID:-__datahub_system}:${DATAHUB_SYSTEM_CLIENT_SECRET:-JohnSnowKnowsNothing}"

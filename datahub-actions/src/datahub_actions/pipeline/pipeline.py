@@ -114,6 +114,11 @@ class Pipeline:
         # Bind config
         config = PipelineConfig.parse_obj(config_dict)
 
+        if not config.enabled:
+            raise Exception(
+                "Pipeline is disabled, but create method was called unexpectedly."
+            )
+
         # Create Context
         ctx = create_action_context(config.name, config.datahub)
 
