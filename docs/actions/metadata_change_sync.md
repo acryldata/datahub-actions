@@ -6,7 +6,7 @@
 
 ## Overview
 
-This Action is a custom action that can convert the incoming MetadataChangeLogEvent_v1 event to MetadataChangeProposal and emit to another datahub instance, the goal of this action is to keep the data of the two datahub instances in sync.
+This Action is a custom action that can convert the incoming MetadataChangeLogEvent_v1 event to MetadataChangeProposal and emit to another datahub instance, the goal of this action is to keep the data of the two datahub instances in sync. This action is a one-way sync and should be run by the source datahub instance.
 
 ### Capabilities
 
@@ -48,7 +48,7 @@ type: "metadata_change_sync"
   | --- | :-: | :-: | --- |
   | `gms_server` | ✅ | null | Destination GMS server endpoint. |
   | `gms_auth_token` | ❌ | null | Destination GMS server auth token if the server has METADATA_SERVICE_AUTH_ENABLED enabled. |
-  | `aspects_to_exclude` | ❌ | null | A list of aspects user would like to exclude. |
+  | `aspects_to_exclude` | ❌ | null | A list of aspects to exclude from the sync. |
   | `extra_headers` | ❌ | null | Extra headers in the emit request with key value format user would like to include. |
 
 </details>
