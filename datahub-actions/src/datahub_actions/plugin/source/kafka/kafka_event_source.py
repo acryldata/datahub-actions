@@ -151,9 +151,15 @@ class KafkaEventSource(EventSource):
         self.consumer.subscribe(topics_to_subscribe)
         self.running = True
         while self.running:
-            msg = self.consumer.poll(timeout=2.0)
+            try:
+                msg = self.consumer.poll(timeout=2.0)
+            except confluent_kafka.error.ConsumeError as e:
+                logger.exception(f"Kafka consume error: {e}")
+                continue
+
             if msg is None:
                 continue
+
             self._observe_message(msg)
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
@@ -169,6 +175,8 @@ class KafkaEventSource(EventSource):
                     yield from self.handle_mcl(msg)
                 elif "pe" in topic_routes and msg.topic() == topic_routes["pe"]:
                     yield from self.handle_pe(msg)
+
+        logger.info("Kafka consumer exiting main loop")
 
     @staticmethod
     def handle_mcl(msg: Any) -> Iterable[EventEnvelope]:
