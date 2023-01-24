@@ -32,7 +32,7 @@ jobs:
           echo "GITHUB_REF: $GITHUB_REF"
           SHORT_SHA=$(git rev-parse --short "$GITHUB_SHA")
           TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/main,head\,${SHORT_SHA},g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "tag=$TAG,sha=$SHORT_SHA" >> $GITHUB_OUTPUT
       - name: Check whether publishing enabled
         id: publish
         env:
@@ -89,13 +89,13 @@ jobs:
         uses: ishworkh/docker-image-artifact-download@v1
         if: ${{ needs.setup.outputs.publish != 'true' }}
         with:
-          image: acryldata/datahub-actions:${{ needs.setup.outputs.tag }}
+          image: acryldata/datahub-actions:${{ needs.setup.outputs.sha }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         env:
           TRIVY_OFFLINE_SCAN: true
         with:
-          image-ref: acryldata/datahub-actions:${{ needs.setup.outputs.tag }}
+          image-ref: acryldata/datahub-actions:${{ needs.setup.outputs.sha }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results.sarif'
