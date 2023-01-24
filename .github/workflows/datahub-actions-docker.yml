@@ -35,6 +35,7 @@ jobs:
           UNIQUE_TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/master,${SHORT_SHA},g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "unique_tag=$UNIQUE_TAG" >> $GITHUB_OUTPUT
+          env
       - name: Check whether publishing enabled
         id: publish
         env:
