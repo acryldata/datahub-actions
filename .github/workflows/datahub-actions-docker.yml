@@ -23,7 +23,7 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       publish: ${{ steps.publish.outputs.publish }}
-      unique_tag: ${{ steps.publish.outputs.unique_tag }}
+      unique_tag: ${{ steps.tag.outputs.unique_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
