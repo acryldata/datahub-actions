@@ -23,6 +23,7 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       publish: ${{ steps.publish.outputs.publish }}
+      unique_tag: ${{ steps.publish.outputs.unique_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -35,7 +36,6 @@ jobs:
           UNIQUE_TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/master,${SHORT_SHA},g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "unique_tag=$UNIQUE_TAG" >> $GITHUB_OUTPUT
-          env
       - name: Check whether publishing enabled
         id: publish
         env:
