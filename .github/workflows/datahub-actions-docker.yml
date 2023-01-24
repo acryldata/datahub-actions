@@ -33,7 +33,7 @@ jobs:
           SHORT_SHA=$(git rev-parse --short "$GITHUB_SHA")
           TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/main,head\,${SHORT_SHA},g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "::set-output sha=$SHORT_SHA"
+          echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
       - name: Check whether publishing enabled
         id: publish
         env:
