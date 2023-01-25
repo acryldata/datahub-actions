@@ -20,7 +20,9 @@ COPY datahub-actions /actions-src
 RUN mkdir -p /etc/datahub/actions && mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
     pip install "." && \
-    pip install '.[all]'
+    pip install '.[all]' && \
+    # This is required to fix security vulnerability in htrace-core4
+    rm -f /usr/local/lib/python3.10/site-packages/pyspark/jars/htrace-core4-4.1.0-incubating.jar
 
 COPY ./docker/datahub-actions/start.sh /start_datahub_actions.sh
 COPY ./docker/datahub-actions/readiness-check.sh /readiness-check.sh
