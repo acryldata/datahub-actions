@@ -77,6 +77,21 @@ jobs:
           push: ${{ needs.setup.outputs.publish == 'true' }}
           build-args: 
             "GEM_FURY_TOKEN=${{ secrets.GEMFURY_PULL_TOKEN }}"
+      - name: Docker meta
+        id: docker_meta_slim
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: |
+            acryldata/datahub-actions-slim
+          tag-custom: ${{ needs.setup.outputs.tag }}
+          tag-custom-only: true
+      - name: Build and Push Image (slim)
+        uses: docker/build-push-action@v3
+        with:
+          file: ./docker/datahub-actions/Dockerfile.slim
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.docker_meta_slim.outputs.tags }}
+          push: ${{ needs.setup.outputs.publish == 'true' }}
   image_scan:
     permissions:
       contents: read # for actions/checkout to fetch code
@@ -105,6 +120,27 @@ jobs:
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
           vuln-type: "os,library"          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+      - name: Download image (slim)
+        uses: ishworkh/docker-image-artifact-download@v1
+        if: ${{ needs.setup.outputs.publish != 'true' }}
+        with:
+          image: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
+      - name: Run Trivy vulnerability scanner (slim)
+        uses: aquasecurity/trivy-action@master
+        env:
+          TRIVY_OFFLINE_SCAN: true
+        with:
+          image-ref: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          vuln-type: "os,library"
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         with:
