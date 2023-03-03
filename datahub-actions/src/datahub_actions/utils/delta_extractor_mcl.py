@@ -117,7 +117,6 @@ def get_delta_from_mcl_editable_schemametadata_aspect(
         ("editableSchemaFieldInfo/*/glossaryTerms/terms", "urn"),
         ("editableSchemaFieldInfo/*/globalTags/tags", "tag"),
     ]:
-
         try:
             added_objs, removed_objs, changed_objs = get_added_removed_objs_from_aspect(
                 aspect, prev_aspect, path_key, item_key

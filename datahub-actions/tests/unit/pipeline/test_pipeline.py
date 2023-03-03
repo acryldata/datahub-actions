@@ -25,7 +25,6 @@ from tests.unit.test_helpers import TestAction, TestEventSource, TestTransformer
 
 
 def test_create():
-
     # Test successfully pipeline creation.
     valid_config = _build_valid_pipeline_config()
     valid_pipeline = Pipeline.create(valid_config)

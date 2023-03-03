@@ -25,7 +25,6 @@ from datahub_actions.utils.delta_extractor_mcl import (
 
 
 def test_get_nested_key():
-
     assert get_nested_key(
         {
             "owners": [
