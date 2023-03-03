@@ -92,6 +92,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.docker_meta_slim.outputs.tags }}
           push: ${{ needs.setup.outputs.publish == 'true' }}
+          build-args:
+            "DOCKER_VERSION=${{ needs.setup.outputs.tag }}"
   image_scan:
     permissions:
       contents: read # for actions/checkout to fetch code
