@@ -31,7 +31,7 @@ from datahub_actions.event.event import Event
 class MetadataChangeLogEvent(MetadataChangeLogClass, Event):
     @classmethod
     def from_class(cls, clazz: MetadataChangeLogClass) -> "MetadataChangeLogEvent":
-        instance = cls.construct({})
+        instance = cls._construct({})
         instance._restore_defaults()
         # Shallow map inner dictionaries.
         instance._inner_dict = clazz._inner_dict
@@ -51,7 +51,7 @@ class MetadataChangeLogEvent(MetadataChangeLogClass, Event):
 class EntityChangeEvent(EntityChangeEventClass, Event):
     @classmethod
     def from_class(cls, clazz: EntityChangeEventClass) -> "EntityChangeEvent":
-        instance = cls.construct({})
+        instance = cls._construct({})
         instance._restore_defaults()
         # Shallow map inner dictionaries.
         instance._inner_dict = clazz._inner_dict
