@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG DOCKER_VERSION=latest
+ARG DOCKER_BASE_IMAGE=acryldata/datahub-actions:head
 
-FROM acryldata/datahub-actions:$DOCKER_VERSION as prod-install
+FROM $DOCKER_BASE_IMAGE as prod-install
 
 USER 0
 RUN pip uninstall -y pyspark

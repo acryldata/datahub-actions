@@ -224,7 +224,7 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
                 entity_urn,
                 aspect_type=GlobalTagsClass,
             )
-            or GlobalTagsClass.construct_with_defaults()
+            or GlobalTagsClass._construct_with_defaults()
         )
 
         tag_map = {}
