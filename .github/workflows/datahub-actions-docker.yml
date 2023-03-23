@@ -85,6 +85,9 @@ jobs:
             acryldata/datahub-actions-slim
           tag-custom: ${{ needs.setup.outputs.tag }}
           tag-custom-only: true
+      - name: Actions Docker Tag
+        id: action_tag
+        run: echo "tag=$(cut -d',' -f1 <<<'${{ steps.docker_meta.outputs.tags }}')" >> $GITHUB_OUTPUT
       - name: Build and Push Image (slim)
         uses: docker/build-push-action@v3
         with:
@@ -93,7 +96,7 @@ jobs:
           tags: ${{ steps.docker_meta_slim.outputs.tags }}
           push: ${{ needs.setup.outputs.publish == 'true' }}
           build-args:
-            "DOCKER_VERSION=${{ needs.setup.outputs.tag }}"
+            "DOCKER_BASE_IMAGE=${{ steps.action_tag.outputs.tag }}"
   image_scan:
     permissions:
       contents: read # for actions/checkout to fetch code
