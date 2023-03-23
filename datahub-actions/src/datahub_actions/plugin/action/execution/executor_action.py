@@ -112,7 +112,6 @@ class ExecutorAction(Action):
                     self._handle_execution_request_signal(orig_event)
 
     def _handle_execution_request_input(self, orig_event):
-
         entity_urn = orig_event.get("entityUrn")
         entity_key = orig_event.get("entityKeyAspect")
 
@@ -145,14 +144,12 @@ class ExecutorAction(Action):
             logger.error("ERROR", exc_info=sys.exc_info())
 
     def _handle_execution_request_signal(self, orig_event):
-
         entity_urn = orig_event.get("entityUrn")
 
         if (
             orig_event.get("aspect").get("contentType") == APPLICATION_JSON_CONTENT_TYPE
             and entity_urn is not None
         ):
-
             # Decode the aspect json into something more readable :)
             signal_request_input = json.loads(orig_event.get("aspect").get("value"))
 

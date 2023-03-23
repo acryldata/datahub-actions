@@ -8,7 +8,6 @@ from tests.unit.test_helpers import pipeline_context
 
 
 def test_create():
-
     # Create with gms server
     MetadataChangeSyncAction.create(
         {"gms_server": "https://demo.datahubproject.io/"}, pipeline_context
