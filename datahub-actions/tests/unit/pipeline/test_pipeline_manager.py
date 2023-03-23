@@ -22,7 +22,6 @@ pipeline_manager = PipelineManager()
 
 @pytest.mark.dependency()
 def test_start_pipeline():
-
     # Create test pipeline
     config = _build_valid_pipeline_config()
     pipeline = Pipeline.create(config)
@@ -50,7 +49,6 @@ def test_stop_pipeline():
 
 @pytest.mark.dependency(depends=["test_stop_pipeline"])
 def test_stop_all():
-
     # Create test pipeline
     config = _build_valid_pipeline_config()
     pipeline_1 = Pipeline.create(config)

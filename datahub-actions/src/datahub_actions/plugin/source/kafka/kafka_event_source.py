@@ -112,7 +112,6 @@ def kafka_messages_observer(pipeline_name: str) -> Callable:
 # This is the default Kafka-based Event Source.
 @dataclass
 class KafkaEventSource(EventSource):
-
     running = False
     source_config: KafkaEventSourceConfig
 
