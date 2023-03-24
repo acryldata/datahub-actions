@@ -77,6 +77,15 @@ jobs:
           push: ${{ needs.setup.outputs.publish == 'true' }}
           build-args: 
             "GEM_FURY_TOKEN=${{ secrets.GEMFURY_PULL_TOKEN }}"
+      - name: Docker meta command separated
+        id: docker_meta_comma_sep
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: |
+            acryldata/datahub-actions
+          tag-custom: ${{ needs.setup.outputs.tag }}
+          tag-custom-only: true
+          sep-tags: ,
       - name: Docker meta
         id: docker_meta_slim
         uses: crazy-max/ghaction-docker-meta@v1
@@ -87,7 +96,7 @@ jobs:
           tag-custom-only: true
       - name: Actions Docker Tag
         id: action_tag
-        run: echo "tag=$(cut -d',' -f1 <<<'${{ steps.docker_meta.outputs.tags }}')" >> $GITHUB_OUTPUT
+        run: echo "tag=$(cut -d',' -f1 <<<'${{ steps.docker_meta_comma_sep.outputs.tags }}')" >> $GITHUB_OUTPUT
       - name: Build and Push Image (slim)
         uses: docker/build-push-action@v3
         with:
