@@ -85,7 +85,7 @@ jobs:
             acryldata/datahub-actions
           tag-custom: ${{ needs.setup.outputs.tag }}
           tag-custom-only: true
-          sep-tags: ,
+          sep-tags: ','
       - name: Docker meta
         id: docker_meta_slim
         uses: crazy-max/ghaction-docker-meta@v1
