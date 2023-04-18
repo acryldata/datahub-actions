@@ -51,7 +51,6 @@ def run_pipeline(pipeline: Pipeline) -> None:
 # A manager of multiple Action Pipelines.
 # This class manages 1 thread per pipeline registered.
 class PipelineManager:
-
     # A catalog of all the currently executing Action Pipelines.
     pipeline_registry: Dict[str, PipelineSpec] = {}
 

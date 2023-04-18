@@ -40,7 +40,6 @@ class FilterTransformer(Transformer):
         return cls(config)
 
     def transform(self, env_event: EventEnvelope) -> Optional[EventEnvelope]:
-
         logger.debug(f"Preparing to filter event {env_event}")
 
         # Match Event Type.

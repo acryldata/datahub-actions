@@ -24,7 +24,9 @@ COPY datahub-actions/datahub-actions /actions-src
 RUN mkdir -p /etc/datahub/actions && mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
     pip install "." && \
-    pip install '.[all]'
+    pip install '.[all]' && \
+    # This is required to fix security vulnerability in htrace-core4
+    rm -f /usr/local/lib/python3.10/site-packages/pyspark/jars/htrace-core4-4.1.0-incubating.jar
 
 COPY acryl-executor /acryl-executor
 RUN pip install "/acryl-executor/dist/acryl-executor-0.0.0.dev0.tar.gz"
