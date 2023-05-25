@@ -71,7 +71,7 @@ plugins: Dict[str, Set[str]] = {
     "kafka": set(),  # included by default
     # Action Plugins
     "executor": {
-        "acryl-executor>=0.0.3.6",
+        "acryl-executor==0.0.3.10",
     },
     "slack": {
         "slack-bolt>=1.15.5",
