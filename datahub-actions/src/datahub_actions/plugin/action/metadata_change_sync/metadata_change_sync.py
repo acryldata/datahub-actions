@@ -58,6 +58,9 @@ class MetadataChangeSyncAction(Action):
             self.aspects_exclude_set = self.DEFAULT_ASPECTS_EXCLUDE_SET.union(
                 set(self.config.aspects_to_exclude)
             )
+        logger.info(
+            f"MetadataChangeSyncAction configured to emit mcp to gms server {self.config.gms_server} with extra headers {self.config.extra_headers}"
+        )
 
     def act(self, event: EventEnvelope) -> None:
         """
@@ -67,6 +70,7 @@ class MetadataChangeSyncAction(Action):
         # MetadataChangeProposal only supports UPSERT type for now
         if event.event_type is METADATA_CHANGE_LOG_EVENT_V1_TYPE:
             orig_event = cast(MetadataChangeLogClass, event.event)
+            logger.debug(f"received orig_event {orig_event}")
             if orig_event.get("aspectName") not in self.aspects_exclude_set:
                 mcp = self.buildMcp(orig_event)
                 if mcp is not None:
@@ -99,9 +103,11 @@ class MetadataChangeSyncAction(Action):
             # if rest_emitter.server_config is empty, that means test_connection() has not been called before
             if not self.rest_emitter.server_config:
                 self.rest_emitter.test_connection()
-
+            logger.info(
+                f"emitting the mcp: entityType {mcp.entityType}, changeType {mcp.changeType}, urn {mcp.entityUrn}, aspect name {mcp.aspectName}"
+            )
             self.rest_emitter.emit_mcp(mcp)
-            logger.debug("finish emitting an event")
+            logger.info("successfully emit the mcp")
         except Exception as ex:
             logger.error(
                 f"error when emitting mcp, {json.dumps(mcp.to_obj(), indent=4)}"
