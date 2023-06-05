@@ -38,16 +38,14 @@ MAX_CONTENT_WIDTH = 120
 
 
 class LogFilter(logging.Filter):
-    """Filters (lets through) all messages with level < LEVEL"""
+    """Filters (lets through) all messages with level <= LEVEL"""
 
     # https://stackoverflow.com/questions/1383254/logging-streamhandler-and-standard-streams
     def __init__(self, level):
         self.level = level
 
     def filter(self, record):
-        # "<" instead of "<=": since logger.setLevel is inclusive, this should
-        # be exclusive
-        return record.levelno < self.level
+        return record.levelno <= self.level
 
 
 @click.group(
@@ -105,7 +103,7 @@ def datahub_actions(
     # 2. Setup the stream handler with formatter. By default, stream handler will log everything to stderr, we want to separate the info level and below to stdout and above to stderr
     formatter = logging.Formatter(BASE_LOGGING_FORMAT)
     info_handler = logging.StreamHandler(sys.stdout)
-    info_handler.addFilter(LogFilter(logging.WARNING))
+    info_handler.addFilter(LogFilter(logging.INFO))
     info_handler.setLevel(logging.INFO)
     info_handler.setFormatter(formatter)
     error_handler = logging.StreamHandler(sys.stderr)
