@@ -15,7 +15,6 @@
 import logging
 import platform
 import sys
-from logging.handlers import TimedRotatingFileHandler
 
 import click
 import stackprinter
@@ -31,21 +30,9 @@ logger = logging.getLogger(__name__)
 BASE_LOGGING_FORMAT = (
     "[%(asctime)s] %(levelname)-8s {%(name)s:%(lineno)d} - %(message)s"
 )
-LOGGING_FILE_LOCATION = "/tmp/datahub/logs/actions/actions.out"
 logging.basicConfig(format=BASE_LOGGING_FORMAT)
 
 MAX_CONTENT_WIDTH = 120
-
-
-class LogFilter(logging.Filter):
-    """Filters (lets through) all messages with level <= LEVEL"""
-
-    # https://stackoverflow.com/questions/1383254/logging-streamhandler-and-standard-streams
-    def __init__(self, level):
-        self.level = level
-
-    def filter(self, record):
-        return record.levelno <= self.level
 
 
 @click.group(
@@ -100,31 +87,16 @@ def datahub_actions(
 
     # 1. Create 'datahub' parent logger.
     datahub_logger = logging.getLogger("datahub_actions")
-    # 2. Setup the stream handler with formatter. By default, stream handler will log everything to stderr, we want to separate the info level and below to stdout and above to stderr
+    # 2. Setup the stream handler with formatter.
+    stream_handler = logging.StreamHandler()
     formatter = logging.Formatter(BASE_LOGGING_FORMAT)
-    info_handler = logging.StreamHandler(sys.stdout)
-    info_handler.addFilter(LogFilter(logging.INFO))
-    info_handler.setLevel(logging.INFO)
-    info_handler.setFormatter(formatter)
-    error_handler = logging.StreamHandler(sys.stderr)
-    error_handler.setLevel(logging.WARNING)
-    error_handler.setFormatter(formatter)
-    # Create a handler for the log file
-    file_handler = TimedRotatingFileHandler(
-        LOGGING_FILE_LOCATION, when="midnight", interval=1, backupCount=10
-    )
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
-    datahub_logger.addHandler(info_handler)
-    datahub_logger.addHandler(error_handler)
-    datahub_logger.addHandler(file_handler)
+    stream_handler.setFormatter(formatter)
+    datahub_logger.addHandler(stream_handler)
     # 3. Turn off propagation to the root handler.
     datahub_logger.propagate = False
     # 4. Adjust log-levels.
     if debug or get_boolean_env_variable("DATAHUB_DEBUG", False):
         logging.getLogger().setLevel(logging.INFO)
-        info_handler.setLevel(logging.DEBUG)
-        file_handler.setLevel(logging.DEBUG)
         datahub_logger.setLevel(logging.DEBUG)
     else:
         logging.getLogger().setLevel(logging.WARNING)
