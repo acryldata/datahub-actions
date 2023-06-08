@@ -58,8 +58,13 @@ class MetadataChangeSyncAction(Action):
             self.aspects_exclude_set = self.DEFAULT_ASPECTS_EXCLUDE_SET.union(
                 set(self.config.aspects_to_exclude)
             )
+        extra_headers_keys = (
+            list(self.config.extra_headers.keys())
+            if self.config.extra_headers
+            else None
+        )
         logger.info(
-            f"MetadataChangeSyncAction configured to emit mcp to gms server {self.config.gms_server} with extra headers {list(self.config.extra_headers.keys())} and aspects to exclude {self.aspects_exclude_set}"
+            f"MetadataChangeSyncAction configured to emit mcp to gms server {self.config.gms_server} with extra headers {extra_headers_keys} and aspects to exclude {self.aspects_exclude_set}"
         )
 
     def act(self, event: EventEnvelope) -> None:
