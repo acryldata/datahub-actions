@@ -54,10 +54,11 @@ class MetadataChangeSyncAction(Action):
             token=self.config.gms_auth_token,
             extra_headers=self.config.extra_headers,
         )
-        if self.config.aspects_to_exclude is not None:
-            self.aspects_exclude_set = self.DEFAULT_ASPECTS_EXCLUDE_SET.union(
-                set(self.config.aspects_to_exclude)
-            )
+        self.aspects_exclude_set = (
+            self.DEFAULT_ASPECTS_EXCLUDE_SET.union(set(self.config.aspects_to_exclude))
+            if self.config.aspects_to_exclude
+            else self.DEFAULT_ASPECTS_EXCLUDE_SET
+        )
         extra_headers_keys = (
             list(self.config.extra_headers.keys())
             if self.config.extra_headers
