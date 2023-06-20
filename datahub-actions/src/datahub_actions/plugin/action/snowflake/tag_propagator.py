@@ -17,39 +17,55 @@ from typing import Optional
 
 from datahub.configuration.common import ConfigModel
 from datahub.ingestion.source.snowflake.snowflake_config import SnowflakeV2Config
-from pydantic import validator
 
 from datahub_actions.action.action import Action
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import EntityChangeEvent
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.plugin.action.snowflake.snowflake_util import SnowflakeTagHelper
+from datahub_actions.plugin.action.tag.tag_propagation_action import (
+    TagPropagationAction,
+    TagPropagationConfig,
+)
+from datahub_actions.plugin.action.term.term_propagation_action import (
+    TermPropagationAction,
+    TermPropagationConfig,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class SnowflakeTagPropagatorConfig(ConfigModel):
     snowflake: SnowflakeV2Config
-    tag_prefix: Optional[str] = None
-    target_term: Optional[str] = None
-
-    @validator("tag_prefix")
-    def tag_prefix_should_start_with_urn(cls, v: str) -> str:
-        if v and not v.startswith("urn:li:tag:"):
-            return "urn:li:tag:" + v
-        else:
-            return v
+    tag_propagation: Optional[TagPropagationConfig] = None
+    term_propagation: Optional[TermPropagationConfig] = None
 
 
 class SnowflakeTagPropagatorAction(Action):
     def __init__(self, config: SnowflakeTagPropagatorConfig, ctx: PipelineContext):
         self.config: SnowflakeTagPropagatorConfig = config
         self.ctx = ctx
-        logger.info("Snowflake tag sync enabled")
         self.snowflake_tag_helper = SnowflakeTagHelper(self.config.snowflake)
+        logger.info("[Config] Snowflake tag sync enabled")
+        if self.config.tag_propagation:
+            logger.info("[Config] Will propagate DataHub Tags")
+            if self.config.tag_propagation.tag_prefixes:
+                logger.info(
+                    f"[Config] Tag prefixes: {self.config.tag_propagation.tag_prefixes}"
+                )
+            self.tag_propagator = TagPropagationAction(self.config.tag_propagation, ctx)
+        if self.config.term_propagation:
+            logger.info("[Config] Will propagate Glossary Terms")
+            self.term_propagator = TermPropagationAction(
+                self.config.term_propagation, ctx
+            )
+
+    def close(self) -> None:
+        self.snowflake_tag_helper.close()
+        return super().close()
 
     @classmethod
-    def create(cls, config_dict, ctx):
+    def create(cls, config_dict: dict, ctx: PipelineContext) -> "Action":
         config = SnowflakeTagPropagatorConfig.parse_obj(config_dict or {})
         return cls(config, ctx)
 
@@ -65,41 +81,43 @@ class SnowflakeTagPropagatorAction(Action):
             assert isinstance(event.event, EntityChangeEvent)
             assert self.ctx.graph is not None
             semantic_event = event.event
-            if (
-                semantic_event.category == "GLOSSARY_TERM"
-                or semantic_event.category == "TAG"
-            ) and semantic_event.operation == "ADD":
-                if not self.is_snowflake_urn(semantic_event.entityUrn):
-                    return
-                assert semantic_event.modifier is not None
-
-                entity_to_apply = None
-                if semantic_event.category == "TAG" and self.config.tag_prefix:
-                    logger.info(
-                        f"Only looking for tags with prefix {self.config.tag_prefix}"
-                    )
-                    if semantic_event.modifier.startswith(self.config.tag_prefix):
-                        entity_to_apply = semantic_event.modifier
-
+            if not self.is_snowflake_urn(semantic_event.entityUrn):
+                return
+            entity_to_apply = None
+            tag_to_apply = None
+            if self.tag_propagator is not None:
+                tag_propagation_directive = self.tag_propagator.should_propagate(
+                    event=event
+                )
                 if (
-                    semantic_event.category == "GLOSSARY_TERM"
-                    and self.config.target_term
+                    tag_propagation_directive is not None
+                    and tag_propagation_directive.propagate
                 ):
-                    # Check which terms have connectivity to the target term
-                    if (
-                        semantic_event.modifier == self.config.target_term
-                        or self.ctx.graph.check_relationship(  # term has been directly applied  # term is indirectly associated
-                            self.config.target_term,
-                            semantic_event.modifier,
-                            "IsA",
-                        )
-                    ):
-                        entity_to_apply = semantic_event.modifier
+                    entity_to_apply = tag_propagation_directive.entity
+                    tag_to_apply = tag_propagation_directive.tag
 
-                if entity_to_apply is not None:
-                    logger.info(
-                        f"Will add {entity_to_apply} to Snowflake {semantic_event.entityUrn}"
-                    )
+            if self.term_propagator is not None:
+                term_propagation_directive = self.term_propagator.should_propagate(
+                    event=event
+                )
+                if (
+                    term_propagation_directive is not None
+                    and term_propagation_directive.propagate
+                ):
+                    entity_to_apply = term_propagation_directive.entity
+                    tag_to_apply = term_propagation_directive.term
+
+            if entity_to_apply is not None:
+                assert tag_to_apply
+                logger.info(
+                    f"Will {semantic_event.operation.lower()} {tag_to_apply} on Snowflake {entity_to_apply}"
+                )
+                # breakpoint()
+                if semantic_event.operation == "ADD":
                     self.snowflake_tag_helper.apply_tag_or_term(
-                        semantic_event.entityUrn, entity_to_apply
+                        entity_to_apply, tag_to_apply, self.ctx.graph
+                    )
+                else:
+                    self.snowflake_tag_helper.remove_tag_or_term(
+                        entity_to_apply, tag_to_apply, self.ctx.graph
                     )

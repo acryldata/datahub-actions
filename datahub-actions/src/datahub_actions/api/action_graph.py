@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import logging
 import time
 import urllib.parse
 from dataclasses import dataclass
@@ -29,6 +30,8 @@ from datahub.metadata.schema_classes import (
     MetadataChangeEventClass,
     TagAssociationClass,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -338,3 +341,39 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
             raise OperationalError(
                 f"Failed to find {aspect_type_name} in response {response_json}"
             )
+
+    def get_glossary_term_urn_by_name(self, term_name: str) -> Optional[str]:
+        """Retrieve a glossary term urn based on its name. Returns None if there is no match found"""
+
+        filters = []
+        filter_criteria = [
+            {
+                "field": "name",
+                "value": term_name,
+                "condition": "EQUAL",
+            }
+        ]
+
+        filters.append({"and": filter_criteria})
+        search_body = {
+            "input": "*",
+            "entity": "glossaryTerm",
+            "start": 0,
+            "count": 10,
+            "filter": {"or": filters},
+        }
+        results: Dict = self.graph._post_generic(
+            self.graph._search_endpoint, search_body
+        )
+        num_entities = results.get("value", {}).get("numEntities", 0)
+        if num_entities > 1:
+            logger.warning(
+                f"Got {num_entities} results for term name {term_name}. Will return the first match."
+            )
+        entities_yielded: int = 0
+        entities = []
+        for x in results["value"]["entities"]:
+            entities_yielded += 1
+            logger.debug(f"yielding {x['entity']}")
+            entities.append(x["entity"])
+        return entities[0] if entities_yielded else None

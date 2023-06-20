@@ -31,7 +31,7 @@ def get_long_description():
 
 
 base_requirements = {
-    "acryl-datahub[kafka]>=0.9.4",
+    "acryl-datahub[kafka]>=0.10.3",
     # Compatibility.
     "typing_extensions>=3.7.4; python_version < '3.8'",
     "mypy_extensions>=0.4.3",
@@ -81,9 +81,7 @@ plugins: Dict[str, Set[str]] = {
     },
     "tag_sync": set(),
     "term_sync": set(),
-    "snowflake_tag_sync": {
-        "acryl-datahub[snowflake]>=0.10.0"
-    }
+    "snowflake_tag_sync": {"acryl-datahub[snowflake]>=0.10.3"}
     # Transformer Plugins (None yet)
 }
 
@@ -128,7 +126,15 @@ base_dev_requirements = {
     "twine",
     *list(
         dependency
-        for plugin in ["kafka", "executor", "slack", "teams", "tag_sync", "term_sync", "snowflake_tag_sync"]
+        for plugin in [
+            "kafka",
+            "executor",
+            "slack",
+            "teams",
+            "tag_sync",
+            "term_sync",
+            "snowflake_tag_sync",
+        ]
         for dependency in plugins[plugin]
     ),
 }
@@ -140,7 +146,15 @@ dev_requirements = {
 full_test_dev_requirements = {
     *list(
         dependency
-        for plugin in ["kafka", "executor", "slack", "teams", "tag_sync", "term_sync", "snowflake_tag_sync"]
+        for plugin in [
+            "kafka",
+            "executor",
+            "slack",
+            "teams",
+            "tag_sync",
+            "term_sync",
+            "snowflake_tag_sync",
+        ]
         for dependency in plugins[plugin]
     ),
 }
@@ -154,7 +168,7 @@ entry_points = {
         "metadata_change_sync = datahub_actions.plugin.action.metadata_change_sync.metadata_change_sync:MetadataChangeSyncAction",
         "tag_sync = datahub_actions.plugin.action.tag.tag_propagation_action:TagPropagationAction",
         "term_sync = datahub_actions.plugin.action.term.term_propagation_action:GlossaryTermPropagationAction",
-        "snowflake_tag_sync = datahub_actions.plugin.action.snowflake.tag_propagator:SnowflakeTagPropagatorAction"
+        "snowflake_tag_sync = datahub_actions.plugin.action.snowflake.tag_propagator:SnowflakeTagPropagatorAction",
     ],
     "datahub_actions.transformer.plugins": [],
     "datahub_actions.source.plugins": [],
