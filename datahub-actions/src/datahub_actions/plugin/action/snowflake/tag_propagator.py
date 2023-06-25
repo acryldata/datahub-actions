@@ -112,7 +112,6 @@ class SnowflakeTagPropagatorAction(Action):
                 logger.info(
                     f"Will {semantic_event.operation.lower()} {tag_to_apply} on Snowflake {entity_to_apply}"
                 )
-                # breakpoint()
                 if semantic_event.operation == "ADD":
                     self.snowflake_tag_helper.apply_tag_or_term(
                         entity_to_apply, tag_to_apply, self.ctx.graph

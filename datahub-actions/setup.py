@@ -167,7 +167,7 @@ entry_points = {
         "teams = datahub_actions.plugin.action.teams.teams:TeamsNotificationAction",
         "metadata_change_sync = datahub_actions.plugin.action.metadata_change_sync.metadata_change_sync:MetadataChangeSyncAction",
         "tag_sync = datahub_actions.plugin.action.tag.tag_propagation_action:TagPropagationAction",
-        "term_sync = datahub_actions.plugin.action.term.term_propagation_action:GlossaryTermPropagationAction",
+        "term_sync = datahub_actions.plugin.action.term.term_propagation_action:TermPropagationAction",
         "snowflake_tag_sync = datahub_actions.plugin.action.snowflake.tag_propagator:SnowflakeTagPropagatorAction",
     ],
     "datahub_actions.transformer.plugins": [],

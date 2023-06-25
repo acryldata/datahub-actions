@@ -14,7 +14,6 @@
 
 import json
 import logging
-import time
 import urllib.parse
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -22,14 +21,10 @@ from typing import Any, Dict, List, Optional
 from datahub.configuration.common import OperationalError
 from datahub.ingestion.graph.client import DataHubGraph
 from datahub.metadata.schema_classes import (
-    AuditStampClass,
-    DatasetSnapshotClass,
-    GlobalTagsClass,
     GlossaryTermAssociationClass,
-    GlossaryTermsClass,
-    MetadataChangeEventClass,
     TagAssociationClass,
 )
+from datahub.specific.dataset import DatasetPatchBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -220,101 +215,59 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
         return False
 
     def add_tags_to_dataset(
-        self, entity_urn: str, dataset_tags: List[str], field_tags: Dict = {}
+        self,
+        entity_urn: str,
+        dataset_tags: List[str],
+        field_tags: Dict = {},
+        context: Optional[dict] = None,
     ) -> None:
-        global_tags = (
-            self.graph.get_aspect(
-                entity_urn,
-                aspect_type=GlobalTagsClass,
-            )
-            or GlobalTagsClass._construct_with_defaults()
-        )
-
-        tag_map = {}
-        for tag_assoc in global_tags.tags:
-            tag_map[tag_assoc.tag] = tag_assoc
-
-        will_write = False
-        if len(tag_map.keys()) != len(global_tags.tags):
-            # we have dups
-            will_write = True
-            global_tags.tags = [tag_assoc for tag_assoc in tag_map.values()]
-
-        for tag in dataset_tags:
-            if tag not in tag_map:
-                global_tags.tags.append(TagAssociationClass(tag))
-                will_write = True
-
-        if will_write:
-            # TODO: Return mcp-s back to caller instead of performing the write ourselves
-            self.graph.emit_mce(
-                MetadataChangeEventClass(
-                    proposedSnapshot=DatasetSnapshotClass(
-                        urn=entity_urn,
-                        aspects=[global_tags],
-                    )
+        dataset = DatasetPatchBuilder(entity_urn)
+        for t in dataset_tags:
+            dataset.add_tag(
+                tag=TagAssociationClass(
+                    tag=t, context=json.dumps(context) if context else None
                 )
             )
-            # self.emit_mcp(
-            #    MetadataChangeProposalWrapper(
-            #        entityType="dataset",
-            #        changeType=ChangeTypeClass.UPSERT,
-            #        entityUrn=entity_urn,
-            #        aspectName=aspect,
-            #        aspect=global_tags,
-            #    )
-            # )
+
+        for field_path, tags in field_tags.items():
+            field_builder = dataset.for_field(field_path=field_path)
+            for tag in tags:
+                field_builder.add_tag(
+                    tag=TagAssociationClass(
+                        tag=tag, context=json.dumps(context) if context else None
+                    )
+                )
+
+        for mcp in dataset.build():
+            self.graph.emit(mcp)
 
     def add_terms_to_dataset(
-        self, entity_urn: str, dataset_terms: List[str], field_terms: Dict = {}
+        self,
+        entity_urn: str,
+        dataset_terms: List[str],
+        field_terms: Dict = {},
+        context: Optional[dict] = None,
     ) -> None:
-        glossary_terms = self.graph.get_aspect(
-            entity_urn,
-            aspect_type=GlossaryTermsClass,
-        )
+        dataset = DatasetPatchBuilder(urn=entity_urn)
 
-        if not glossary_terms:
-            glossary_terms = GlossaryTermsClass(
-                terms=[],
-                auditStamp=AuditStampClass(
-                    time=int(time.time() * 1000.0), actor="urn:li:corpUser:datahub"
-                ),
-            )
-
-        tag_map = {}
-        for term in glossary_terms.terms:
-            tag_map[term.urn] = term
-
-        will_write = False
-        if len(tag_map.keys()) != len(glossary_terms.terms):
-            # we have dups
-            will_write = True
-            glossary_terms.terms = [tag_assoc for tag_assoc in tag_map.values()]
-
-        for tag in dataset_terms:
-            if tag not in tag_map:
-                glossary_terms.terms.append(GlossaryTermAssociationClass(tag))
-                will_write = True
-
-        if will_write:
-            # TODO: Should return mcp-s to caller instead of performing the write ourselves
-            self.graph.emit_mce(
-                MetadataChangeEventClass(
-                    proposedSnapshot=DatasetSnapshotClass(
-                        urn=entity_urn,
-                        aspects=[glossary_terms],
-                    )
+        for term in dataset_terms:
+            dataset.add_term(
+                GlossaryTermAssociationClass(
+                    term, context=json.dumps(context) if context else None
                 )
             )
-            # self.emit_mcp(
-            #    MetadataChangeProposalWrapper(
-            #        entityType="dataset",
-            #        changeType=ChangeTypeClass.UPSERT,
-            #        entityUrn=entity_urn,
-            #        aspectName=aspect,
-            #        aspect=global_tags,
-            #    )
-            # )
+
+        for field_path, terms in field_terms.items():
+            field_builder = dataset.for_field(field_path=field_path)
+            for term in terms:
+                field_builder.add_term(
+                    GlossaryTermAssociationClass(
+                        term, context=json.dumps(context) if context else None
+                    )
+                )
+
+        for mcp in dataset.build():
+            self.graph.emit(mcp)
 
     def get_corpuser_info(self, urn: str) -> Any:
         return self.get_untyped_aspect(
@@ -342,25 +295,30 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
                 f"Failed to find {aspect_type_name} in response {response_json}"
             )
 
-    def get_glossary_term_urn_by_name(self, term_name: str) -> Optional[str]:
-        """Retrieve a glossary term urn based on its name. Returns None if there is no match found"""
+    def _get_entity_by_name(
+        self,
+        name: str,
+        entity_type: str,
+        indexed_fields: List[str] = ["name", "displayName"],
+    ) -> Optional[str]:
+        """Retrieve an entity urn based on its name and type. Returns None if there is no match found"""
 
         filters = []
-        filter_criteria = [
-            {
-                "field": "name",
-                "value": term_name,
-                "condition": "EQUAL",
-            }
-        ]
-
-        filters.append({"and": filter_criteria})
+        for indexed_field in indexed_fields:
+            filter_criteria = [
+                {
+                    "field": indexed_field,
+                    "value": name,
+                    "condition": "EQUAL",
+                }
+            ]
+            filters.append({"and": filter_criteria})
         search_body = {
             "input": "*",
-            "entity": "glossaryTerm",
+            "entity": entity_type,
             "start": 0,
             "count": 10,
-            "filter": {"or": filters},
+            "orFilters": [filters],
         }
         results: Dict = self.graph._post_generic(
             self.graph._search_endpoint, search_body
@@ -368,7 +326,7 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
         num_entities = results.get("value", {}).get("numEntities", 0)
         if num_entities > 1:
             logger.warning(
-                f"Got {num_entities} results for term name {term_name}. Will return the first match."
+                f"Got {num_entities} results for {entity_type} {name}. Will return the first match."
             )
         entities_yielded: int = 0
         entities = []
@@ -377,3 +335,13 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
             logger.debug(f"yielding {x['entity']}")
             entities.append(x["entity"])
         return entities[0] if entities_yielded else None
+
+    def get_glossary_term_urn_by_name(self, term_name: str) -> Optional[str]:
+        """Retrieve a glossary term urn based on its name. Returns None if there is no match found"""
+
+        return self._get_entity_by_name(term_name, "glossaryTerm")
+
+    def get_glossary_node_urn_by_name(self, node_name: str) -> Optional[str]:
+        """Retrieve a glossary node urn based on its name. Returns None if there is no match found"""
+
+        return self._get_entity_by_name(node_name, "glossaryNode")

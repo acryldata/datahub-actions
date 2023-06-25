@@ -147,7 +147,12 @@ class TagPropagationAction(Action):
                 # apply tags to downstreams
                 for d in downstreams:
                     self.ctx.graph.add_tags_to_dataset(
-                        d, [tag_propagation_directive.tag]
+                        d,
+                        [tag_propagation_directive.tag],
+                        context={
+                            "propagated": True,
+                            "origin": tag_propagation_directive.entity,
+                        },
                     )
             else:
                 logger.debug(f"Not propagating {tag_propagation_directive.tag}")

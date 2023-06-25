@@ -98,7 +98,7 @@ class TermPropagationAction(Action):
             resolved_terms = [
                 t
                 if t.startswith("urn:li:glossaryNode")
-                else self.term_resolver.get_glossary_term_urn(t)
+                else self.term_resolver.get_glossary_node_urn(t)
                 for t in self.config.term_groups
             ]
             self.config.term_groups = resolved_terms
@@ -167,7 +167,12 @@ class TermPropagationAction(Action):
             # apply terms to downstreams
             for dataset in downstreams:
                 self.ctx.graph.add_terms_to_dataset(
-                    dataset, [term_propagation_directive.term]
+                    dataset,
+                    [term_propagation_directive.term],
+                    context={
+                        "propagated": True,
+                        "origin": term_propagation_directive.entity,
+                    },
                 )
                 logger.info(
                     f"Will add term {term_propagation_directive.term} to {dataset}"

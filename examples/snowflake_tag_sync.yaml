@@ -16,6 +16,8 @@ action:
     term_propagation:
       target_terms:
         - Classification
+      term_groups:
+        - "Personal Information"
     snowflake:
       account_id: ${SNOWFLAKE_ACCOUNT_ID}
       warehouse: COMPUTE_WH
