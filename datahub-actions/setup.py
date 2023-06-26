@@ -31,6 +31,8 @@ def get_long_description():
 
 acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION", "0.9.4")
 
+acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION") or "0.10.3"
+
 base_requirements = {
     f"acryl-datahub[kafka]>={acryl_datahub_min_version}",
     # Compatibility.
@@ -80,6 +82,9 @@ plugins: Dict[str, Set[str]] = {
     "teams": {
         "pymsteams >=0.2.2",
     },
+    "tag_propagation": set(),
+    "term_propagation": set(),
+    "snowflake_tag_propagation": {f"acryl-datahub[snowflake]>={acryl_datahub_min_version}"}
     # Transformer Plugins (None yet)
 }
 
@@ -111,7 +116,7 @@ base_dev_requirements = {
     "flake8>=3.8.3",
     "flake8-tidy-imports>=4.3.0",
     "isort>=5.7.0",
-    "mypy>=0.901,<0.920",
+    "mypy==1.0.0",
     "pytest>=6.2.2",
     "pytest-cov>=2.8.1",
     "pytest-docker>=0.10.3",
@@ -124,7 +129,15 @@ base_dev_requirements = {
     "twine",
     *list(
         dependency
-        for plugin in ["kafka", "executor", "slack", "teams"]
+        for plugin in [
+            "kafka",
+            "executor",
+            "slack",
+            "teams",
+            "tag_propagation",
+            "term_propagation",
+            "snowflake_tag_propagation",
+        ]
         for dependency in plugins[plugin]
     ),
 }
@@ -136,7 +149,15 @@ dev_requirements = {
 full_test_dev_requirements = {
     *list(
         dependency
-        for plugin in ["kafka", "executor", "slack", "teams"]
+        for plugin in [
+            "kafka",
+            "executor",
+            "slack",
+            "teams",
+            "tag_propagation",
+            "term_propagation",
+            "snowflake_tag_propagation",
+        ]
         for dependency in plugins[plugin]
     ),
 }
@@ -148,6 +169,9 @@ entry_points = {
         "slack = datahub_actions.plugin.action.slack.slack:SlackNotificationAction",
         "teams = datahub_actions.plugin.action.teams.teams:TeamsNotificationAction",
         "metadata_change_sync = datahub_actions.plugin.action.metadata_change_sync.metadata_change_sync:MetadataChangeSyncAction",
+        "tag_propagation = datahub_actions.plugin.action.tag.tag_propagation_action:TagPropagationAction",
+        "term_propagation = datahub_actions.plugin.action.term.term_propagation_action:TermPropagationAction",
+        "snowflake_tag_propagation = datahub_actions.plugin.action.snowflake.tag_propagator:SnowflakeTagPropagatorAction",
     ],
     "datahub_actions.transformer.plugins": [],
     "datahub_actions.source.plugins": [],
