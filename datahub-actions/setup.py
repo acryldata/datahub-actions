@@ -29,6 +29,7 @@ def get_long_description():
 
     return description
 
+acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION", "0.9.4")
 
 acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION") or "0.10.3"
 
@@ -73,7 +74,7 @@ plugins: Dict[str, Set[str]] = {
     "kafka": set(),  # included by default
     # Action Plugins
     "executor": {
-        "acryl-executor>=0.0.3.6",
+        "acryl-executor==0.0.3.9",
     },
     "slack": {
         "slack-bolt>=1.15.5",
