@@ -27,6 +27,30 @@ The action supports propagation of term additions and removals.
 
 You can control what the target term should be. Linkage to the target term is controlled through your business glossary which is completely under your control.
 
+### Example Config
+
+```yaml
+name: "term_propagation"
+source:
+  type: "kafka"
+  config:
+    connection:
+      bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
+      schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
+filter:
+  event_type: "EntityChangeEvent_v1"
+action:
+  type: "term_propagation"
+  config:
+    target_terms:
+      - Classification
+    term_groups:
+      - "Personal Information"
+
+datahub:
+  server: "http://localhost:8080"
+```
+
 ## Caveats
 
 - Term Propagation is currently only supported for downstream datasets. Terms will not propagate to downstream dashboards or charts. Let us know if this is an important feature for you.

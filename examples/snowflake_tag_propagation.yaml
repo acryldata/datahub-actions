@@ -1,4 +1,4 @@
-name: "snowflake_tag_sync"
+name: "snowflake_tag_propagation"
 source:
   type: "kafka"
   config:
@@ -8,7 +8,7 @@ source:
 filter:
   event_type: "EntityChangeEvent_v1"
 action:
-  type: "snowflake_tag_sync"
+  type: "snowflake_tag_propagation"
   config:
     tag_propagation:
       tag_prefixes: 

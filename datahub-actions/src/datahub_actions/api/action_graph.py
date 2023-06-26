@@ -304,27 +304,49 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
         """Retrieve an entity urn based on its name and type. Returns None if there is no match found"""
 
         filters = []
-        for indexed_field in indexed_fields:
-            filter_criteria = [
-                {
-                    "field": indexed_field,
-                    "value": name,
-                    "condition": "EQUAL",
-                }
-            ]
-            filters.append({"and": filter_criteria})
-        search_body = {
-            "input": "*",
-            "entity": entity_type,
-            "start": 0,
-            "count": 10,
-            "orFilters": [filters],
-        }
+        if len(indexed_fields) > 1:
+            for indexed_field in indexed_fields:
+                filter_criteria = [
+                    {
+                        "field": indexed_field,
+                        "value": name,
+                        "condition": "EQUAL",
+                    }
+                ]
+                filters.append({"and": filter_criteria})
+            search_body = {
+                "input": "*",
+                "entity": entity_type,
+                "start": 0,
+                "count": 10,
+                "orFilters": [filters],
+            }
+        else:
+            search_body = {
+                "input": "*",
+                "entity": entity_type,
+                "start": 0,
+                "count": 10,
+                "filter": {
+                    "or": [
+                        {
+                            "and": [
+                                {
+                                    "field": indexed_fields[0],
+                                    "value": name,
+                                    "condition": "EQUAL",
+                                }
+                            ]
+                        }
+                    ]
+                },
+            }
         results: Dict = self.graph._post_generic(
             self.graph._search_endpoint, search_body
         )
         num_entities = results.get("value", {}).get("numEntities", 0)
         if num_entities > 1:
+            breakpoint()
             logger.warning(
                 f"Got {num_entities} results for {entity_type} {name}. Will return the first match."
             )
@@ -339,7 +361,9 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
     def get_glossary_term_urn_by_name(self, term_name: str) -> Optional[str]:
         """Retrieve a glossary term urn based on its name. Returns None if there is no match found"""
 
-        return self._get_entity_by_name(term_name, "glossaryTerm")
+        return self._get_entity_by_name(
+            term_name, "glossaryTerm", indexed_fields=["name"]
+        )
 
     def get_glossary_node_urn_by_name(self, node_name: str) -> Optional[str]:
         """Retrieve a glossary node urn based on its name. Returns None if there is no match found"""

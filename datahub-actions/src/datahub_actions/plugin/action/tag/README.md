@@ -11,6 +11,28 @@ You can control which tags should be propagated downstream using a prefix system
 
 The action supports both additions and removals of tags.
 
+### Example Config
+
+```yaml
+name: "tag_propagation"
+source:
+  type: "kafka"
+  config:
+    connection:
+      bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
+      schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
+filter:
+  event_type: "EntityChangeEvent_v1"
+action:
+  type: "tag_propagation"
+  config:
+    tag_prefixes:
+    - classification
+
+datahub:
+  server: "http://localhost:8080"
+```
+
 ## Caveats
 
 - Tag Propagation is currently only supported for downstream datasets. Tags will not propagate to downstream dashboards or charts. Let us know if this is an important feature for you.

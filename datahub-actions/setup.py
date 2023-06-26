@@ -82,9 +82,9 @@ plugins: Dict[str, Set[str]] = {
     "teams": {
         "pymsteams >=0.2.2",
     },
-    "tag_sync": set(),
-    "term_sync": set(),
-    "snowflake_tag_sync": {f"acryl-datahub[snowflake]>={acryl_datahub_min_version}"}
+    "tag_propagation": set(),
+    "term_propagation": set(),
+    "snowflake_tag_propagation": {f"acryl-datahub[snowflake]>={acryl_datahub_min_version}"}
     # Transformer Plugins (None yet)
 }
 
@@ -134,9 +134,9 @@ base_dev_requirements = {
             "executor",
             "slack",
             "teams",
-            "tag_sync",
-            "term_sync",
-            "snowflake_tag_sync",
+            "tag_propagation",
+            "term_propagation",
+            "snowflake_tag_propagation",
         ]
         for dependency in plugins[plugin]
     ),
@@ -154,9 +154,9 @@ full_test_dev_requirements = {
             "executor",
             "slack",
             "teams",
-            "tag_sync",
-            "term_sync",
-            "snowflake_tag_sync",
+            "tag_propagation",
+            "term_propagation",
+            "snowflake_tag_propagation",
         ]
         for dependency in plugins[plugin]
     ),
@@ -169,9 +169,9 @@ entry_points = {
         "slack = datahub_actions.plugin.action.slack.slack:SlackNotificationAction",
         "teams = datahub_actions.plugin.action.teams.teams:TeamsNotificationAction",
         "metadata_change_sync = datahub_actions.plugin.action.metadata_change_sync.metadata_change_sync:MetadataChangeSyncAction",
-        "tag_sync = datahub_actions.plugin.action.tag.tag_propagation_action:TagPropagationAction",
-        "term_sync = datahub_actions.plugin.action.term.term_propagation_action:TermPropagationAction",
-        "snowflake_tag_sync = datahub_actions.plugin.action.snowflake.tag_propagator:SnowflakeTagPropagatorAction",
+        "tag_propagation = datahub_actions.plugin.action.tag.tag_propagation_action:TagPropagationAction",
+        "term_propagation = datahub_actions.plugin.action.term.term_propagation_action:TermPropagationAction",
+        "snowflake_tag_propagation = datahub_actions.plugin.action.snowflake.tag_propagator:SnowflakeTagPropagatorAction",
     ],
     "datahub_actions.transformer.plugins": [],
     "datahub_actions.source.plugins": [],
