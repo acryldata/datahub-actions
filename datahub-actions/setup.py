@@ -29,9 +29,10 @@ def get_long_description():
 
     return description
 
+acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION", "0.9.4")
 
 base_requirements = {
-    "acryl-datahub[kafka]>=0.9.4",
+    f"acryl-datahub[kafka]>={acryl_datahub_min_version}",
     # Compatibility.
     "typing_extensions>=3.7.4; python_version < '3.8'",
     "mypy_extensions>=0.4.3",
