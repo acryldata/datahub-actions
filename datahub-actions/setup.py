@@ -30,8 +30,10 @@ def get_long_description():
     return description
 
 
+acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION") or "0.10.3"
+
 base_requirements = {
-    "acryl-datahub[kafka]>=0.10.3",
+    f"acryl-datahub[kafka]>={acryl_datahub_min_version}",
     # Compatibility.
     "typing_extensions>=3.7.4; python_version < '3.8'",
     "mypy_extensions>=0.4.3",
@@ -81,7 +83,7 @@ plugins: Dict[str, Set[str]] = {
     },
     "tag_sync": set(),
     "term_sync": set(),
-    "snowflake_tag_sync": {"acryl-datahub[snowflake]>=0.10.3"}
+    "snowflake_tag_sync": {f"acryl-datahub[snowflake]>={acryl_datahub_min_version}"}
     # Transformer Plugins (None yet)
 }
 
@@ -113,7 +115,7 @@ base_dev_requirements = {
     "flake8>=3.8.3",
     "flake8-tidy-imports>=4.3.0",
     "isort>=5.7.0",
-    "mypy>=0.901,<0.920",
+    "mypy==1.0.0",
     "pytest>=6.2.2",
     "pytest-cov>=2.8.1",
     "pytest-docker>=0.10.3",

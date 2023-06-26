@@ -83,25 +83,31 @@ class TermPropagationAction(Action):
             logger.info(
                 f"[Config] Will propagate terms that inherit from terms {self.config.target_terms}"
             )
-            resolved_terms = [
-                t
-                if t.startswith("urn:li:glossaryTerm")
-                else self.term_resolver.get_glossary_term_urn(t)
-                for t in self.config.target_terms
-            ]
+            resolved_terms = []
+            for t in self.config.target_terms:
+                if t.startswith("urn:li:glossaryTerm"):
+                    resolved_terms.append(t)
+                else:
+                    resolved_term = self.term_resolver.get_glossary_term_urn(t)
+                    if not resolved_term:
+                        raise Exception(f"Failed to resolve term by name {t}")
+                    resolved_terms.append(resolved_term)
             self.config.target_terms = resolved_terms
             logger.info(
                 f"[Config] Will propagate terms that inherit from terms {self.config.target_terms}"
             )
 
         if self.config.term_groups:
-            resolved_terms = [
-                t
-                if t.startswith("urn:li:glossaryNode")
-                else self.term_resolver.get_glossary_node_urn(t)
-                for t in self.config.term_groups
-            ]
-            self.config.term_groups = resolved_terms
+            resolved_nodes = []
+            for node in self.config.term_groups:
+                if node.startswith("urn:li:glossaryNode"):
+                    resolved_nodes.append(node)
+                else:
+                    resolved_node = self.term_resolver.get_glossary_node_urn(node)
+                    if not resolved_node:
+                        raise Exception(f"Failed to resolve node by name {node}")
+                    resolved_nodes.append(resolved_node)
+            self.config.term_groups = resolved_nodes
             logger.info(
                 f"[Config] Will propagate all terms in groups {self.config.term_groups}"
             )
