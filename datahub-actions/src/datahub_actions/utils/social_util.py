@@ -3,14 +3,13 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, Optional
 
+from telebot.formatting import hlink, hbold 
 from datahub.ingestion.graph.client import DataHubGraph
-from datahub.metadata.schema_classes import EntityChangeEventClass as EntityChangeEvent
+from datahub.metadata.schema_classes import \
+    EntityChangeEventClass as EntityChangeEvent
 from datahub.utilities.urns.urn import Urn
-
-from datahub_actions.utils.name_resolver import (
-    get_entity_name_from_urn,
-    get_entity_qualifier_from_urn,
-)
+from datahub_actions.utils.name_resolver import (get_entity_name_from_urn,
+                                                 get_entity_qualifier_from_urn)
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +25,8 @@ def make_url_with_title(title: str, url: str, channel: str) -> str:
     if channel == "slack":
         # slack uses mrkdwn format
         return f"<{url}|{title}>"
+    elif channel == 'telegram':
+        return hlink(title, url)
     else:
         return f"[{title}]({url})"
 
@@ -35,6 +36,8 @@ def make_bold(text: str, channel: str) -> str:
         return text
     if channel == "slack":
         return f"*{text}*"
+    elif channel == 'telegram':
+        return hbold(text)
     else:
         return f"**{text}**"
 
@@ -44,6 +47,22 @@ class StructuredMessage:
     title: str
     properties: Dict[str, str]
     text: Optional[str]
+
+
+def get_telegram_welcome_message(datahub_home_url: str):
+    hostname = "unknown-host"
+    try:
+        import os
+
+        hostname = os.uname()[1]
+    except Exception as e:
+        logger.warn(f"Failed to acquire hostname with {e}")
+        pass
+
+    current_time: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_timezone: str = str(datetime.datetime.now().astimezone().tzinfo)
+    
+    return f"👀 I'll be watching for interesting events on {hlink('DataHub', datahub_home_url)} and keep you updated when anything changes. ⚡"
 
 
 def get_welcome_message(datahub_home_url: str) -> StructuredMessage:
@@ -58,6 +77,7 @@ def get_welcome_message(datahub_home_url: str) -> StructuredMessage:
 
     current_time: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     current_timezone: str = str(datetime.datetime.now().astimezone().tzinfo)
+
     return StructuredMessage(
         title="DataHub Bot 🌟",
         properties={
@@ -127,12 +147,12 @@ def get_message_from_entity_change_event(
         )
 
     if category == "lifecycle":
-        message = f">✏️ {make_bold(actor_name,channel)} has {operation} {entity_specialized_type} {entity_message_trailer}."
+        message = f"✏️ {make_bold(actor_name,channel)} has {operation} {entity_specialized_type} {entity_message_trailer}."
     elif category == "technical_schema":
         if event.modifier and event.modifier.startswith("urn:li:schemaField"):
-            message = f">✏️ {make_bold(actor_name,channel)} has {operation} field {make_bold(modifier_name,channel)} in schema for {entity_specialized_type} {entity_message_trailer}."
+            message = f"✏️ {make_bold(actor_name,channel)} has {operation} field {make_bold(modifier_name,channel)} in schema for {entity_specialized_type} {entity_message_trailer}."
         else:
-            message = f">✏️ {make_bold(actor_name,channel)} has {operation} {make_bold(modifier_name,channel)} schema for {entity_specialized_type} {entity_message_trailer}."
+            message = f"✏️ {make_bold(actor_name,channel)} has {operation} {make_bold(modifier_name,channel)} schema for {entity_specialized_type} {entity_message_trailer}."
     else:
-        message = f">✏️ {make_bold(actor_name,channel)} has {operation} {category} {make_bold(modifier_name,channel)} for {entity_specialized_type} {entity_message_trailer}."
+        message = f"✏️ {make_bold(actor_name,channel)} has {operation} {category} {make_bold(modifier_name,channel)} for {entity_specialized_type} {entity_message_trailer}."
     return message

@@ -84,7 +84,10 @@ plugins: Dict[str, Set[str]] = {
     },
     "tag_propagation": set(),
     "term_propagation": set(),
-    "snowflake_tag_propagation": {f"acryl-datahub[snowflake]>={acryl_datahub_min_version}"}
+    "snowflake_tag_propagation": {f"acryl-datahub[snowflake]>={acryl_datahub_min_version}"},
+    "telegram": {
+        "pyTelegramBotAPI">="4.12.0"
+    }
     # Transformer Plugins (None yet)
 }
 
@@ -137,6 +140,7 @@ base_dev_requirements = {
             "tag_propagation",
             "term_propagation",
             "snowflake_tag_propagation",
+            "telegram"
         ]
         for dependency in plugins[plugin]
     ),
@@ -157,6 +161,7 @@ full_test_dev_requirements = {
             "tag_propagation",
             "term_propagation",
             "snowflake_tag_propagation",
+            "telegram"
         ]
         for dependency in plugins[plugin]
     ),
@@ -172,6 +177,7 @@ entry_points = {
         "tag_propagation = datahub_actions.plugin.action.tag.tag_propagation_action:TagPropagationAction",
         "term_propagation = datahub_actions.plugin.action.term.term_propagation_action:TermPropagationAction",
         "snowflake_tag_propagation = datahub_actions.plugin.action.snowflake.tag_propagator:SnowflakeTagPropagatorAction",
+        "telegram = datahub_actions.plugin.action.telegram.telegram:TelegramNotificationAction"
     ],
     "datahub_actions.transformer.plugins": [],
     "datahub_actions.source.plugins": [],
