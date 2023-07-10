@@ -86,7 +86,7 @@ plugins: Dict[str, Set[str]] = {
     "term_propagation": set(),
     "snowflake_tag_propagation": {f"acryl-datahub[snowflake]>={acryl_datahub_min_version}"},
     "telegram": {
-        "pyTelegramBotAPI">="4.12.0"
+        "pyTelegramBotAPI>=4.12.0"
     }
     # Transformer Plugins (None yet)
 }
