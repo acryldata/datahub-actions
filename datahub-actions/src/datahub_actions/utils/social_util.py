@@ -58,9 +58,6 @@ def get_telegram_welcome_message(datahub_home_url: str):
     except Exception as e:
         logger.warn(f"Failed to acquire hostname with {e}")
         pass
-
-    current_time: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    current_timezone: str = str(datetime.datetime.now().astimezone().tzinfo)
     
     return f"👀 I'll be watching for interesting events on {hlink('DataHub', datahub_home_url)} and keep you updated when anything changes. ⚡"
 
