@@ -105,7 +105,8 @@ def test_stop():
     stopable_pipeline = Pipeline.create(stoppable_pipeline_config)
 
     # Start in async mode.
-    stopable_pipeline.start()
+    # TODO: This test should be rewritten to use async correctly, needs type ignore
+    stopable_pipeline.start()  # type: ignore
 
     # Stop the pipeline.
     stopable_pipeline.stop()
