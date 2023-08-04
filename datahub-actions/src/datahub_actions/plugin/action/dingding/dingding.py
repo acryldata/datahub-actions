@@ -12,27 +12,26 @@ from datahub_actions.utils.social_util import (
 import requests
 import json
 from ratelimit import limits, sleep_and_retry
+
 from pydantic.types import SecretStr
 
 logger = logging.getLogger(__name__)
 
+
 @sleep_and_retry
 @limits(calls=1, period=1)  # 1 call per second
 def post_message(webhook_url, content):
-    headers = {
-        'Content-Type': 'application/json'
-    }
-    data = {
-        'msgtype': 'text',
-        'text': {
-            'content': DingdingNotificationConfig.keyword.get_secret_value() + content
-        }
-    }
+    headers = {"Content-Type": "application/json"}
+    data = {"msgtype": "text",
+            "text": {
+                "content": DingdingNotificationConfig.keyword.get_secret_value() + content
+            },
+            }
     response = requests.post(webhook_url, headers=headers, data=json.dumps(data))
     if response.status_code == 200:
-        logger.info('Message send successfully')
+        logger.info("Message send successfully")
     else:
-        logger.info('Message send failed')
+        logger.info("Message send failed")
 
 
 class DingdingNotificationConfig(ConfigModel):
@@ -44,7 +43,6 @@ class DingdingNotificationConfig(ConfigModel):
 
 
 class DingdingNotification(Action):
-
     def name(self):
         return "DingdingNotification"
 
@@ -60,7 +58,10 @@ class DingdingNotification(Action):
     def __init__(self, action_config: DingdingNotificationConfig, ctx: PipelineContext):
         self.action_config = action_config
         self.ctx = ctx
-        post_message(self.action_config.webhook_url.get_secret_value(), get_welcome_message(self.action_config.base_url).text)
+        post_message(
+            self.action_config.webhook_url.get_secret_value(),
+            get_welcome_message(self.action_config.base_url).text,
+        )
 
     def act(self, event: EventEnvelope) -> None:
         try:
@@ -80,7 +81,9 @@ class DingdingNotification(Action):
                     self.ctx.graph.graph if self.ctx.graph else None,
                     channel="dingding",
                 )
-                post_message(self.action_config.webhook_url.get_secret_value(), semantic_message)
+                post_message(
+                    self.action_config.webhook_url.get_secret_value(), semantic_message
+                )
             else:
                 logger.debug("Skipping message because it didn't match our filter")
         except Exception as e:
