@@ -25,9 +25,7 @@ def post_message(webhook_url, keyword, content):
     headers = {"Content-Type": "application/json"}
     data = {
         "msgtype": "text",
-        "text": {
-            "content": keyword + content
-        },
+        "text": {"content": keyword + content},
     }
     response = requests.post(webhook_url, headers=headers, data=json.dumps(data))
     if response.status_code == 200:
@@ -87,7 +85,7 @@ class DingtalkNotification(Action):
                 post_message(
                     self.action_config.webhook_url.get_secret_value(),
                     self.action_config.keyword.get_secret_value(),
-                    semantic_message
+                    semantic_message,
                 )
             else:
                 logger.debug("Skipping message because it didn't match our filter")
