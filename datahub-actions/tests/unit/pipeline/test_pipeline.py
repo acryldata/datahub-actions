@@ -32,13 +32,13 @@ def test_create():
     # Validate Pipeline is initialized
     assert valid_pipeline.name is not None
     assert valid_pipeline.source is not None
-    assert type(valid_pipeline.source) == TestEventSource
+    assert type(valid_pipeline.source) is TestEventSource
     assert valid_pipeline.transforms is not None
     assert len(valid_pipeline.transforms) == 2  # Filter + Custom
-    assert type(valid_pipeline.transforms[0]) == FilterTransformer
-    assert type(valid_pipeline.transforms[1]) == TestTransformer
+    assert type(valid_pipeline.transforms[0]) is FilterTransformer
+    assert type(valid_pipeline.transforms[1]) is TestTransformer
     assert valid_pipeline.action is not None
-    assert type(valid_pipeline.action) == TestAction
+    assert type(valid_pipeline.action) is TestAction
     assert valid_pipeline._shutdown is False
     assert valid_pipeline._stats is not None
     assert valid_pipeline._retry_count == 3

@@ -1,19 +1,20 @@
+import json
 import logging
+
+import requests
 from datahub.configuration.common import ConfigModel
+from datahub.metadata.schema_classes import EntityChangeEventClass as EntityChangeEvent
+from pydantic.types import SecretStr
+from ratelimit import limits, sleep_and_retry
+
 from datahub_actions.action.action import Action
 from datahub_actions.event.event_envelope import EventEnvelope
-from datahub.metadata.schema_classes import EntityChangeEventClass as EntityChangeEvent
-from datahub_actions.utils.datahub_util import DATAHUB_SYSTEM_ACTOR_URN
 from datahub_actions.pipeline.pipeline_context import PipelineContext
+from datahub_actions.utils.datahub_util import DATAHUB_SYSTEM_ACTOR_URN
 from datahub_actions.utils.social_util import (
     get_message_from_entity_change_event,
     get_welcome_message,
 )
-import requests
-import json
-from ratelimit import limits, sleep_and_retry
-
-from pydantic.types import SecretStr
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +23,12 @@ logger = logging.getLogger(__name__)
 @limits(calls=1, period=1)  # 1 call per second
 def post_message(webhook_url, content):
     headers = {"Content-Type": "application/json"}
-    data = {"msgtype": "text",
-            "text": {
-                "content": DingdingNotificationConfig.keyword.get_secret_value() + content
-            },
-            }
+    data = {
+        "msgtype": "text",
+        "text": {
+            "content": DingdingNotificationConfig.keyword.get_secret_value() + content
+        },
+    }
     response = requests.post(webhook_url, headers=headers, data=json.dumps(data))
     if response.status_code == 200:
         logger.info("Message send successfully")
@@ -70,8 +72,8 @@ class DingdingNotification(Action):
             if event.event_type == "EntityChangeEvent_v1":
                 assert isinstance(event.event, EntityChangeEvent)
                 if (
-                        event.event.auditStamp.actor == DATAHUB_SYSTEM_ACTOR_URN
-                        and self.action_config.suppress_system_activity
+                    event.event.auditStamp.actor == DATAHUB_SYSTEM_ACTOR_URN
+                    and self.action_config.suppress_system_activity
                 ):
                     return None
 
