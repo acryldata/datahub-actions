@@ -26,7 +26,7 @@ def post_message(webhook_url, content):
     data = {
         "msgtype": "text",
         "text": {
-            "content": DingdingNotificationConfig.keyword.get_secret_value() + content
+            "content": DingtalkNotificationConfig.keyword.get_secret_value() + content
         },
     }
     response = requests.post(webhook_url, headers=headers, data=json.dumps(data))
@@ -36,7 +36,7 @@ def post_message(webhook_url, content):
         logger.info("Message send failed")
 
 
-class DingdingNotificationConfig(ConfigModel):
+class DingtalkNotificationConfig(ConfigModel):
     webhook_url: SecretStr
     keyword: SecretStr
     default_channel: str
@@ -44,20 +44,20 @@ class DingdingNotificationConfig(ConfigModel):
     suppress_system_activity: bool = True
 
 
-class DingdingNotification(Action):
+class DingtalkNotification(Action):
     def name(self):
-        return "DingdingNotification"
+        return "DingtalkNotification"
 
     def close(self) -> None:
         pass
 
     @classmethod
     def create(cls, config_dict: dict, ctx: PipelineContext) -> "Action":
-        action_config = DingdingNotificationConfig.parse_obj(config_dict or {})
-        logger.info(f"Dingding notification action configured with {action_config}")
+        action_config = DingtalkNotificationConfig.parse_obj(config_dict or {})
+        logger.info(f"Dingtalk notification action configured with {action_config}")
         return cls(action_config, ctx)
 
-    def __init__(self, action_config: DingdingNotificationConfig, ctx: PipelineContext):
+    def __init__(self, action_config: DingtalkNotificationConfig, ctx: PipelineContext):
         self.action_config = action_config
         self.ctx = ctx
         post_message(

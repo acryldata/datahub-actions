@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: datahub_dingtalk_action
-enabled: ${DATAHUB_ACTIONS_DINGDING_ENABLED:-false}
+enabled: ${DATAHUB_ACTIONS_Dingtalk_ENABLED:-false}
 source:
   type: "kafka"
   config:
@@ -23,14 +23,14 @@ source:
       mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
 action:
-  type: dingding
+  type: dingtalk
   config:
     # Action-specific configs (map)
-    webhook_url: ${DATAHUB_ACTIONS_DINGDING_DATAHUB_WEBHOOK_URL}
-    base_url: ${DATAHUB_ACTIONS_DINGDING_DATAHUB_BASE_URL:-http://localhost:9002}
-    keyword: ${DATAHUB_ACTIONS_DINGDING_KEYWORD:-Datahub}
-    default_channel: ${DATAHUB_ACTIONS_DINGDING_CHANNEL:-dingtalk}
-    suppress_system_activity: ${DATAHUB_ACTIONS_DINGDING_SUPPRESS_SYSTEM_ACTIVITY:-true}
+    webhook_url: ${DATAHUB_ACTIONS_DINGTALK_DATAHUB_WEBHOOK_URL}
+    base_url: ${DATAHUB_ACTIONS_DINGTALK_DATAHUB_BASE_URL:-http://localhost:9002}
+    keyword: ${DATAHUB_ACTIONS_DINGTALK_KEYWORD:-Datahub}
+    default_channel: ${DATAHUB_ACTIONS_DINGTALK_CHANNEL:-dingtalk}
+    suppress_system_activity: ${DATAHUB_ACTIONS_DINGTALK_SUPPRESS_SYSTEM_ACTIVITY:-true}
 
 datahub:
   server: "http://${DATAHUB_GMS_HOST:-localhost}:${DATAHUB_GMS_PORT:-8080}"
