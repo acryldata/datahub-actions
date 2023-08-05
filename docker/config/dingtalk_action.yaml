@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: datahub_dingtalk_action
-enabled: ${DATAHUB_ACTIONS_Dingtalk_ENABLED:-false}
+enabled: ${DATAHUB_ACTIONS_DINGTALK_ENABLED:-false}
 source:
   type: "kafka"
   config:
