@@ -64,7 +64,7 @@ All you need to do is export a few environment variables to activate and configu
 | DATAHUB_ACTIONS_DINGTALK_DATAHUB_BASE_URL | ❌ | Defaults to "http://localhost:9002". Set to the location where your DataHub UI is running. On a local quickstart this is usually "http://localhost:9002", so you shouldn't need to modify this |
 
 :::note
-where to set keyword: [here](https://img-blog.csdnimg.cn/70bfdbed8032494eb952f1f0361f00e7.png) 
+where to set keyword: [here](https://img-blog.csdnimg.cn/6ccd2e098ca546fcb616c80661c555e8.png#pic_center) 
 
 :::note
 
