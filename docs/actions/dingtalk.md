@@ -131,7 +131,7 @@ source:
 #      # Transformer-specific configs (map)
 
 action:
-  type: dingtalk
+  type: dingtalk_datahub
   config:
     # Action-specific configs (map)
     base_url: ${DATAHUB_ACTIONS_DINGTALK_DATAHUB_BASE_URL:-http://localhost:9002}
@@ -167,6 +167,7 @@ docker logs datahub-datahub-actions-1
 [2022-12-04 16:47:46,393] INFO     {datahub_actions.cli.actions:119} - Action Pipeline with name 'datahub_dingtalk_action' is now running.
 ...
 ```
+[Here is how it looks like](https://img-blog.csdnimg.cn/95a16f27d0ff40d9a1f542f533740c1a.png#pic_center)
 
 
 If the Dingtalk action was not enabled, you would see messages indicating that. 
