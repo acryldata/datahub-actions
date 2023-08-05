@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: datahub_dingding_action
+name: datahub_dingtalk_action
 enabled: ${DATAHUB_ACTIONS_DINGDING_ENABLED:-false}
 source:
   type: "kafka"
@@ -29,7 +29,7 @@ action:
     webhook_url: ${DATAHUB_ACTIONS_DINGDING_DATAHUB_WEBHOOK_URL}
     base_url: ${DATAHUB_ACTIONS_DINGDING_DATAHUB_BASE_URL:-http://localhost:9002}
     keyword: ${DATAHUB_ACTIONS_DINGDING_KEYWORD:-Datahub}
-    default_channel: ${DATAHUB_ACTIONS_DINGDING_CHANNEL:-dingding}
+    default_channel: ${DATAHUB_ACTIONS_DINGDING_CHANNEL:-dingtalk}
     suppress_system_activity: ${DATAHUB_ACTIONS_DINGDING_SUPPRESS_SYSTEM_ACTIVITY:-true}
 
 datahub:

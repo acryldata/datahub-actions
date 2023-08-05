@@ -81,7 +81,7 @@ class DingdingNotification(Action):
                     event.event,
                     self.action_config.base_url,
                     self.ctx.graph.graph if self.ctx.graph else None,
-                    channel="dingding",
+                    channel="dingtalk",
                 )
                 post_message(
                     self.action_config.webhook_url.get_secret_value(), semantic_message
