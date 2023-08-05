@@ -30,7 +30,8 @@ On startup, the action will produce a welcome message that looks like the one be
 
 
 On each event, the action will produce a notification message that looks like the one below.
-![]()
+
+![](https://img-blog.csdnimg.cn/ef624ede87c44d27b3e6b1acb3228e74.png#pic_center)
 
 
 ### Supported Events
