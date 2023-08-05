@@ -16,7 +16,9 @@ from datahub.ingestion.api.registry import PluginRegistry
 
 from datahub_actions.action.action import Action
 from datahub_actions.plugin.action.hello_world.hello_world import HelloWorldAction
+from datahub_actions.plugin.action.dingtalk.dingtalk import DingtalkNotification
 
 action_registry = PluginRegistry[Action]()
 action_registry.register_from_entrypoint("datahub_actions.action.plugins")
 action_registry.register("hello_world", HelloWorldAction)
+action_registry.register("dingtalk_datahub",DingtalkNotification)

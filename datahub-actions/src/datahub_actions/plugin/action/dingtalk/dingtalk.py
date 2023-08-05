@@ -21,12 +21,12 @@ logger = logging.getLogger(__name__)
 
 @sleep_and_retry
 @limits(calls=1, period=1)  # 1 call per second
-def post_message(webhook_url, content):
+def post_message(webhook_url, keyword, content):
     headers = {"Content-Type": "application/json"}
     data = {
         "msgtype": "text",
         "text": {
-            "content": DingtalkNotificationConfig.keyword.get_secret_value() + content
+            "content": keyword + content
         },
     }
     response = requests.post(webhook_url, headers=headers, data=json.dumps(data))
@@ -62,6 +62,7 @@ class DingtalkNotification(Action):
         self.ctx = ctx
         post_message(
             self.action_config.webhook_url.get_secret_value(),
+            self.action_config.keyword.get_secret_value(),
             get_welcome_message(self.action_config.base_url).text,
         )
 
@@ -84,7 +85,9 @@ class DingtalkNotification(Action):
                     channel="dingtalk",
                 )
                 post_message(
-                    self.action_config.webhook_url.get_secret_value(), semantic_message
+                    self.action_config.webhook_url.get_secret_value(),
+                    self.action_config.keyword.get_secret_value(),
+                    semantic_message
                 )
             else:
                 logger.debug("Skipping message because it didn't match our filter")

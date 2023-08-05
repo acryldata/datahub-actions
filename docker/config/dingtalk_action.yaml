@@ -23,7 +23,7 @@ source:
       mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
 action:
-  type: dingtalk
+  type: dingtalk_datahub
   config:
     # Action-specific configs (map)
     webhook_url: ${DATAHUB_ACTIONS_DINGTALK_DATAHUB_WEBHOOK_URL}
