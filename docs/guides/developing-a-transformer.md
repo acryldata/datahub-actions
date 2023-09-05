@@ -23,7 +23,7 @@ print the configuration that is provided when it is created, and print any Event
 ```python
 # custom_transformer.py
 from datahub_actions.transform.transformer import Transformer
-from datahub_actions.event.event import EventEnvelope
+from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from typing import Optional
 
