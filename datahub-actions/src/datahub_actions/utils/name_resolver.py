@@ -130,7 +130,7 @@ class SchemaFieldNameResolver(DefaultNameResolver):
     def get_entity_name(
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
-        return DatasetUrn._get_simple_field_path_from_v2_field_path(
+        return DatasetUrn.get_simple_field_path_from_v2_field_path(
             entity_urn.get_entity_id()[1]
         )
 

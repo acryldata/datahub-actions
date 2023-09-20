@@ -22,7 +22,7 @@ from typing import Any, List
 
 import click
 from click_default_group import DefaultGroup
-from datahub.configuration.config_loader import load_config_file, resolve_element
+from datahub.configuration.config_loader import _resolve_element, load_config_file
 
 import datahub_actions as datahub_actions_package
 from datahub_actions.pipeline.pipeline import Pipeline
@@ -37,7 +37,7 @@ pipeline_manager = PipelineManager()
 
 def best_effort_resolve_element(x: str) -> str:
     try:
-        return resolve_element(x)
+        return _resolve_element(x)
     except Exception:
         return x
 
@@ -94,7 +94,7 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
         for pipeline_config in config:
             pipeline_config_file = pathlib.Path(pipeline_config)
             with unittest.mock.patch(
-                "datahub.configuration.config_loader.resolve_element"
+                "datahub.configuration.config_loader._resolve_element"
             ) as mock_resolve_element:
                 mock_resolve_element.side_effect = best_effort_resolve_element
                 pipeline_config_dict = load_config_file(pipeline_config_file)
