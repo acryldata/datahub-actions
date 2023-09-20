@@ -17,10 +17,11 @@ ARG APP_ENV=prod
 
 FROM acryldata/datahub-ingestion-base:latest as prod-install
 COPY datahub-actions /actions-src
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 RUN mkdir -p /etc/datahub/actions && mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
-    pip install "." && \
-    pip install '.[all]' && \
+    pip install "." -i https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip install '.[all]' -i https://pypi.tuna.tsinghua.edu.cn/simple && \
     # This is required to fix security vulnerability in htrace-core4
     rm -f /usr/local/lib/python3.10/site-packages/pyspark/jars/htrace-core4-4.1.0-incubating.jar
 
