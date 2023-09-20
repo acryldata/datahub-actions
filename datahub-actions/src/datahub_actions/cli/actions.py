@@ -22,7 +22,7 @@ from typing import Any, List
 
 import click
 from click_default_group import DefaultGroup
-from datahub.configuration.config_loader import load_config_file, _resolve_element
+from datahub.configuration.config_loader import _resolve_element, load_config_file
 
 import datahub_actions as datahub_actions_package
 from datahub_actions.pipeline.pipeline import Pipeline
