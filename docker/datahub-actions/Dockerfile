@@ -33,14 +33,14 @@ RUN mkdir -p /etc/datahub/actions/conf && mkdir -p /etc/datahub/actions/system/c
 COPY ./docker/config/*.yaml /etc/datahub/actions/system/conf
 
 RUN addgroup --system datahub && adduser --system datahub --ingroup datahub \
-    && chown datahub /etc/datahub \
-    && chown -R datahub /tmp/datahub
+    && chown datahub:datahub /etc/datahub \
+    && chown -R datahub:datahub /tmp/datahub
 
 # By transferring the root user's pip cache directory to the datahub
 # user, we can avoid the need for some redundant dependency downloads.
 RUN mkdir -p /home/datahub/.cache \
     && mv /root/.cache/pip /home/datahub/.cache/pip \
-    && chown -R datahub /home/datahub/.cache/pip
+    && chown -R datahub:datahub /home/datahub/.cache/pip
 
 FROM ${APP_ENV}-install as final
 USER datahub
