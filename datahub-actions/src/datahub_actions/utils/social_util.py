@@ -7,6 +7,7 @@ from datahub.ingestion.graph.client import DataHubGraph
 from datahub.metadata.schema_classes import EntityChangeEventClass as EntityChangeEvent
 from datahub.utilities.urns.urn import Urn
 
+from datahub_actions.utils.datahub_util import make_entity_url
 from datahub_actions.utils.name_resolver import (
     get_entity_name_from_urn,
     get_entity_qualifier_from_urn,
@@ -108,20 +109,20 @@ def get_message_from_entity_change_event(
         parent_specialized_type = get_entity_qualifier_from_urn(
             str(parent_entity_urn), datahub_graph
         )
-        parent_entity_url = f"{datahub_base_url}/{parent_entity_urn.get_type()}/{parent_entity_urn}/Schema?schemaFilter={entity_name}"
+        parent_entity_url = f"{make_entity_url(str(parent_entity_urn), parent_entity_urn.get_type(), datahub_base_url)}/Schema?schemaFilter={entity_name}"
         entity_message_trailer = f"{entity_name} of {parent_specialized_type} {make_url_with_title(title=parent_entity_name, url=parent_entity_url, channel=channel)}"
     elif event.entityType == "dataFlow":
-        entity_url = f"{datahub_base_url}/pipelines/{event.entityUrn}"
+        entity_url = make_entity_url(event.entityUrn, "pipelines", datahub_base_url)
         entity_message_trailer = make_url_with_title(
             title=entity_name, url=entity_url, channel=channel
         )
     elif event.entityType == "dataJob":
-        entity_url = f"{datahub_base_url}/tasks/{event.entityUrn}"
+        entity_url = make_entity_url(event.entityUrn, "tasks", datahub_base_url)
         entity_message_trailer = make_url_with_title(
             title=entity_name, url=entity_url, channel=channel
         )
     else:
-        entity_url = f"{datahub_base_url}/{event.entityType}/{event.entityUrn}"
+        entity_url = make_entity_url(event.entityUrn, event.entityType, datahub_base_url)
         entity_message_trailer = make_url_with_title(
             title=entity_name, url=entity_url, channel=channel
         )
