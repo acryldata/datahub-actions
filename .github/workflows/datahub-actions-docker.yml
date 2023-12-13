@@ -10,7 +10,7 @@ on:
     branches:
       - main
     paths:
-      - 'docker/'
+      - 'docker/**'
       - '.github/workflows/datahub-actions-docker.yml'
     paths_ignore:
       - 'build/**'
