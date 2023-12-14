@@ -46,4 +46,5 @@ FROM ${APP_ENV}-install as final
 USER datahub
 RUN curl -s "https://get.sdkman.io" | bash
 RUN /bin/bash -c "source /$HOME/.sdkman/bin/sdkman-init.sh; sdk version; sdk install java 8.0.332-zulu"
+ENTRYPOINT [ ]
 CMD dockerize -wait ${DATAHUB_GMS_PROTOCOL:-http}://$DATAHUB_GMS_HOST:$DATAHUB_GMS_PORT/health -timeout 240s /start_datahub_actions.sh
