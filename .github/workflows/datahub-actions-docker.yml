@@ -17,6 +17,8 @@ on:
       - '**.md'
   release:
     types: [published, edited]
+  workflow_dispatch:
+
 jobs:
   setup:
     runs-on: ubuntu-latest
