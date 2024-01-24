@@ -15,7 +15,9 @@
 # Defining environment
 ARG APP_ENV=prod
 
-FROM acryldata/datahub-ingestion-base:head-full as prod-install
+# temporarily pin base image until config loader is properly fixed
+# FROM acryldata/datahub-ingestion-base:head-full as prod-install
+FROM acryldata/datahub-ingestion-base:89c7059-full as prod-install
 COPY datahub-actions /actions-src
 RUN mkdir -p /etc/datahub/actions && mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
