@@ -145,10 +145,10 @@ class ContainerNameResolver(DefaultNameResolver):
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
         if datahub_graph:
-            container_props: Optional[
-                ContainerPropertiesClass
-            ] = datahub_graph.get_aspect(
-                entity_urn=str(entity_urn), aspect_type=ContainerPropertiesClass
+            container_props: Optional[ContainerPropertiesClass] = (
+                datahub_graph.get_aspect(
+                    entity_urn=str(entity_urn), aspect_type=ContainerPropertiesClass
+                )
             )
             if container_props and container_props.name:
                 return container_props.name
@@ -200,9 +200,9 @@ class CorpUserNameResolver(DefaultNameResolver):
             if user_properties and user_properties.displayName:
                 entity_name = user_properties.displayName
 
-            editable_properties: Optional[
-                CorpUserEditableInfoClass
-            ] = datahub_graph.get_aspect(str(entity_urn), CorpUserEditableInfoClass)
+            editable_properties: Optional[CorpUserEditableInfoClass] = (
+                datahub_graph.get_aspect(str(entity_urn), CorpUserEditableInfoClass)
+            )
             if editable_properties and editable_properties.displayName:
                 entity_name = editable_properties.displayName
 
@@ -229,9 +229,9 @@ class DashboardNameResolver(DefaultNameResolver):
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
         if datahub_graph:
-            dashboard_properties: Optional[
-                DashboardInfoClass
-            ] = datahub_graph.get_aspect(str(entity_urn), DashboardInfoClass)
+            dashboard_properties: Optional[DashboardInfoClass] = (
+                datahub_graph.get_aspect(str(entity_urn), DashboardInfoClass)
+            )
             if dashboard_properties and dashboard_properties.title:
                 return dashboard_properties.title
 
