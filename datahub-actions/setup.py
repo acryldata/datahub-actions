@@ -30,7 +30,7 @@ def get_long_description():
     return description
 
 
-acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION") or "0.12.1.2"
+acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION") or "0.12.1.5"
 
 base_requirements = {
     f"acryl-datahub[kafka]>={acryl_datahub_min_version}",
@@ -85,7 +85,7 @@ plugins: Dict[str, Set[str]] = {
     "term_propagation": set(),
     "snowflake_tag_propagation": {
         f"acryl-datahub[snowflake]>={acryl_datahub_min_version}"
-    }
+    },
     # Transformer Plugins (None yet)
 }
 
