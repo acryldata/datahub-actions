@@ -10,13 +10,15 @@ on:
     branches:
       - main
     paths:
-      - 'docker/'
+      - 'docker/**'
       - '.github/workflows/datahub-actions-docker.yml'
     paths_ignore:
       - 'build/**'
       - '**.md'
   release:
     types: [published, edited]
+  workflow_dispatch:
+
 jobs:
   setup:
     runs-on: ubuntu-latest

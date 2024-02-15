@@ -15,7 +15,7 @@
 # Defining environment
 ARG APP_ENV=prod
 
-FROM acryldata/datahub-ingestion-base:latest as prod-install
+FROM acryldata/datahub-ingestion-base:head-full as prod-install
 COPY datahub-actions /actions-src
 RUN mkdir -p /etc/datahub/actions && mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
@@ -32,9 +32,9 @@ RUN chmod a+x /start_datahub_actions.sh
 RUN mkdir -p /etc/datahub/actions/conf && mkdir -p /etc/datahub/actions/system/conf
 COPY ./docker/config/*.yaml /etc/datahub/actions/system/conf
 
-RUN addgroup --system datahub && adduser --system datahub --ingroup datahub \
-    && chown datahub:datahub /etc/datahub \
-    && chown -R datahub:datahub /tmp/datahub
+# datahub:datahub is created in datahub-ingestion-base image
+RUN chown datahub:datahub /etc/datahub && \
+    chown -R datahub:datahub /tmp/datahub
 
 # By transferring the root user's pip cache directory to the datahub
 # user, we can avoid the need for some redundant dependency downloads.
@@ -46,4 +46,5 @@ FROM ${APP_ENV}-install as final
 USER datahub
 RUN curl -s "https://get.sdkman.io" | bash
 RUN /bin/bash -c "source /$HOME/.sdkman/bin/sdkman-init.sh; sdk version; sdk install java 8.0.332-zulu"
+ENTRYPOINT [ ]
 CMD dockerize -wait ${DATAHUB_GMS_PROTOCOL:-http}://$DATAHUB_GMS_HOST:$DATAHUB_GMS_PORT/health -timeout 240s /start_datahub_actions.sh

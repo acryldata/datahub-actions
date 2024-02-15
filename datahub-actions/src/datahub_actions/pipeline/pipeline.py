@@ -82,9 +82,13 @@ class Pipeline:
     _stats: PipelineStats = PipelineStats()
 
     # Options
-    _retry_count: int = DEFAULT_RETRY_COUNT  # Number of times a single event should be retried in case of processing error.
+    _retry_count: int = (
+        DEFAULT_RETRY_COUNT  # Number of times a single event should be retried in case of processing error.
+    )
     _failure_mode: FailureMode = DEFAULT_FAILURE_MODE
-    _failed_events_dir: str = DEFAULT_FAILED_EVENTS_DIR  # The top-level path where failed events will be logged.
+    _failed_events_dir: str = (
+        DEFAULT_FAILED_EVENTS_DIR  # The top-level path where failed events will be logged.
+    )
 
     def __init__(
         self,

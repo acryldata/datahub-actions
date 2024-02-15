@@ -18,7 +18,7 @@ import sys
 
 import click
 import stackprinter
-from datahub.cli.cli_utils import get_boolean_env_variable
+from datahub.cli.env_utils import get_boolean_env_variable
 from prometheus_client import start_http_server
 
 import datahub_actions as datahub_package

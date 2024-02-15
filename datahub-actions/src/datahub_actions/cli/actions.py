@@ -22,7 +22,11 @@ from typing import Any, List
 
 import click
 from click_default_group import DefaultGroup
-from datahub.configuration.config_loader import _resolve_element, load_config_file
+from datahub.configuration.config_loader import (
+    Environ,
+    _resolve_element,
+    load_config_file,
+)
 
 import datahub_actions as datahub_actions_package
 from datahub_actions.pipeline.pipeline import Pipeline
@@ -35,9 +39,9 @@ logger = logging.getLogger(__name__)
 pipeline_manager = PipelineManager()
 
 
-def best_effort_resolve_element(x: str) -> str:
+def best_effort_resolve_element(x: str, environ: Environ) -> str:
     try:
-        return _resolve_element(x)
+        return _resolve_element(x, environ=environ)
     except Exception:
         return x
 

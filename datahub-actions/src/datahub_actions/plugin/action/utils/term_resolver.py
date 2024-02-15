@@ -41,9 +41,9 @@ class GlossaryTermsResolver:
                     f"Following terms need server-side resolution {terms_needing_resolution} but a DataHub server wasn't provided. Either use fully qualified glossary term ids (e.g. urn:li:glossaryTerm:ec428203-ce86-4db3-985d-5a8ee6df32ba) or provide a datahub_api config in your recipe."
                 )
             for term_identifier in terms_needing_resolution:
-                self.glossary_term_registry[
-                    term_identifier
-                ] = self._resolve_term_id_to_urn(term_identifier)
+                self.glossary_term_registry[term_identifier] = (
+                    self._resolve_term_id_to_urn(term_identifier)
+                )
             nodes_needing_resolution = [
                 d
                 for d in glossary_entities
@@ -54,9 +54,9 @@ class GlossaryTermsResolver:
                     f"Following term groups (glossary nodes) need server-side resolution {nodes_needing_resolution} but a DataHub server wasn't provided. Either use fully qualified glossary term ids (e.g. urn:li:glossaryTerm:ec428203-ce86-4db3-985d-5a8ee6df32ba) or provide a datahub_api config in your recipe."
                 )
             for node_identifier in nodes_needing_resolution:
-                self.glossary_node_registry[
-                    node_identifier
-                ] = self._resolve_node_id_to_urn(node_identifier)
+                self.glossary_node_registry[node_identifier] = (
+                    self._resolve_node_id_to_urn(node_identifier)
+                )
 
     def _resolve_term_id_to_urn(self, term_identifier: str) -> Optional[str]:
         assert self.graph

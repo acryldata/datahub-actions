@@ -45,9 +45,11 @@ def create_action_context(
 ) -> PipelineContext:
     return PipelineContext(
         pipeline_name,
-        AcrylDataHubGraph(DataHubGraph(datahub_config))
-        if datahub_config is not None
-        else None,
+        (
+            AcrylDataHubGraph(DataHubGraph(datahub_config))
+            if datahub_config is not None
+            else None
+        ),
     )
 
 
