@@ -39,7 +39,7 @@ base_requirements = {
     "mypy_extensions>=0.4.3",
     # Actual dependencies.
     "typing-inspect",
-    "pydantic>=1.5.1",
+    "pydantic<2",
     "dictdiffer",
     "ratelimit",
 }
