@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: datahub_slack_action
+name: ${DATAHUB_ACTIONS_SLACK_CONSUMER_GROUP_ID:-datahub_slack_action}
 enabled: ${DATAHUB_ACTIONS_SLACK_ENABLED:-false}
 source:
   type: "kafka"
