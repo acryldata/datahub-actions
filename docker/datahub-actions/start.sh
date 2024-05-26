@@ -16,6 +16,8 @@
 
 SYS_CONFIGS_PATH="${DATAHUB_ACTIONS_SYSTEM_CONFIGS_PATH:-/etc/datahub/actions/system/conf}"
 USER_CONFIGS_PATH="${DATAHUB_ACTIONS_USER_CONFIGS_PATH:-/etc/datahub/actions/conf}"
+MONITORING_ENABLED="${DATAHUB_ACTIONS_MONITORING_ENABLED:-false}"
+MONITORING_PORT="${DATAHUB_ACTIONS_MONITORING_PORT:-8000}"
 
 touch /tmp/datahub/logs/actions/actions.out
 
@@ -60,4 +62,8 @@ else
     echo "No user action configurations found. Not starting user actions."
 fi
 
-datahub-actions actions $config_files
+if [ "$MONITORING_ENABLED" = true ]; then
+    datahub-actions --enable-monitoring --monitoring-port "$MONITORING_PORT" actions $config_files
+else
+    datahub-actions actions $config_files
+fi
