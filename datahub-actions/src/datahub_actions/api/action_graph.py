@@ -346,7 +346,6 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
         )
         num_entities = results.get("value", {}).get("numEntities", 0)
         if num_entities > 1:
-            breakpoint()
             logger.warning(
                 f"Got {num_entities} results for {entity_type} {name}. Will return the first match."
             )
