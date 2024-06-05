@@ -39,6 +39,7 @@ from datahub_actions.event.event_registry import (
 
 # May or may not need these.
 from datahub_actions.pipeline.pipeline_context import PipelineContext
+from datahub_actions.plugin.source.kafka.utils import with_retry
 from datahub_actions.source.event_source import EventSource
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,10 @@ def build_entity_change_event(payload: GenericPayloadClass) -> EntityChangeEvent
 class KafkaEventSourceConfig(ConfigModel):
     connection: KafkaConsumerConnectionConfig = KafkaConsumerConnectionConfig()
     topic_routes: Optional[Dict[str, str]]
+    async_commit_enabled: bool = False
+    async_commit_interval: int = 10000
+    commit_retry_count: int = 5
+    commit_retry_backoff: float = 10.0
 
 
 def kafka_messages_observer(pipeline_name: str) -> Callable:
@@ -120,6 +125,16 @@ class KafkaEventSource(EventSource):
         schema_client_config = config.connection.schema_registry_config.copy()
         schema_client_config["url"] = self.source_config.connection.schema_registry_url
         self.schema_registry_client = SchemaRegistryClient(schema_client_config)
+
+        async_commit_config: Dict[str, Any] = {}
+        if self.source_config.async_commit_enabled:
+            # See for details: https://github.com/confluentinc/librdkafka/blob/master/INTRODUCTION.md#auto-offset-commit
+            async_commit_config["enable.auto.offset.store"] = False
+            async_commit_config["enable.auto.commit"] = True
+            async_commit_config["auto.commit.interval.ms"] = (
+                self.source_config.async_commit_interval
+            )
+
         self.consumer: confluent_kafka.Consumer = confluent_kafka.DeserializingConsumer(
             {
                 # Provide a custom group id to subcribe to multiple partitions via separate actions pods.
@@ -134,6 +149,7 @@ class KafkaEventSource(EventSource):
                 "session.timeout.ms": "10000",  # 10s timeout.
                 "max.poll.interval.ms": "10000",  # 10s poll max.
                 **self.source_config.connection.consumer_config,
+                **async_commit_config,
             }
         )
         self._observe_message: Callable = kafka_messages_observer(ctx.pipeline_name)
@@ -201,16 +217,54 @@ class KafkaEventSource(EventSource):
             self.running = False
             self.consumer.close()
 
-    def ack(self, event: EventEnvelope) -> None:
-        self.consumer.commit(
+    def _commit_offsets(self, event: EventEnvelope) -> None:
+        retval = self.consumer.commit(
+            asynchronous=False,
             offsets=[
                 TopicPartition(
                     event.meta["kafka"]["topic"],
                     event.meta["kafka"]["partition"],
                     event.meta["kafka"]["offset"] + 1,
                 )
-            ]
+            ],
         )
+        if retval is None:
+            logger.exception(
+                f"Unexpected response when commiting offset to kafka: topic: {event.meta['kafka']['topic']}, partition: {event.meta['kafka']['partition']}, offset: {event.meta['kafka']['offset']}"
+            )
+            return
+        for partition in retval:
+            if partition.error is not None:
+                raise KafkaException(
+                    f"Failed to commit offest for topic: {partition.topic}, partition: {partition.partition}, offset: {partition.offset}: {partition.error.str()}"
+                )
         logger.debug(
             f"Successfully committed offsets at message: topic: {event.meta['kafka']['topic']}, partition: {event.meta['kafka']['partition']}, offset: {event.meta['kafka']['offset']}"
         )
+
+    def _store_offsets(self, event: EventEnvelope) -> None:
+        self.consumer.store_offsets(
+            offsets=[
+                TopicPartition(
+                    event.meta["kafka"]["topic"],
+                    event.meta["kafka"]["partition"],
+                    event.meta["kafka"]["offset"] + 1,
+                )
+            ],
+        )
+
+    def ack(self, event: EventEnvelope, processed: bool = True) -> None:
+        # See for details: https://github.com/confluentinc/librdkafka/blob/master/INTRODUCTION.md#auto-offset-commit
+
+        if processed or not self.source_config.async_commit_enabled:
+            # Immediately commit if the message was processed by the upstream,
+            # or delayed commit is disabled
+            with_retry(
+                self.source_config.commit_retry_count,
+                self.source_config.commit_retry_backoff,
+                self._commit_offsets,
+                event,
+            )
+        else:
+            # Otherwise store offset for periodic autocommit
+            self._store_offsets(event)
