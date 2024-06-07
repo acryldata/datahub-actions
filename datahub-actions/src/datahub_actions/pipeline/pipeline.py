@@ -169,9 +169,15 @@ class Pipeline:
         enveloped_events = self.source.events()
         for enveloped_event in enveloped_events:
             # Then, process the event.
-            self._process_event(enveloped_event)
+            retval = self._process_event(enveloped_event)
+
+            # For legacy users w/o selective ack support, convert
+            # None to True, i.e. always commit.
+            if retval is None:
+                retval = True
+
             # Finally, ack the event.
-            self._ack_event(enveloped_event)
+            self._ack_event(enveloped_event, retval)
 
     def stop(self) -> None:
         """
@@ -189,10 +195,11 @@ class Pipeline:
         """
         return self._stats
 
-    def _process_event(self, enveloped_event: EventEnvelope) -> None:
+    def _process_event(self, enveloped_event: EventEnvelope) -> Optional[bool]:
         # Attempt to process the incoming event, with retry.
         curr_attempt = 1
         max_attempts = self._retry_count + 1
+        retval = None
         while curr_attempt <= max_attempts:
             try:
                 # First, transform the event.
@@ -200,10 +207,10 @@ class Pipeline:
 
                 # Then, invoke the action if the event is non-null.
                 if transformed_event is not None:
-                    self._execute_action(transformed_event)
+                    retval = self._execute_action(transformed_event)
 
                 # Short circuit - processing has succeeded.
-                return
+                return retval
             except Exception:
                 logger.exception(
                     f"Caught exception while attempting to process event. Attempt {curr_attempt}/{max_attempts} event type: {enveloped_event.event_type}, pipeline name: {self.name}"
@@ -219,6 +226,8 @@ class Pipeline:
 
             # Finally, handle the failure
             self._handle_failure(enveloped_event)
+
+        return retval
 
     def _execute_transformers(
         self, enveloped_event: EventEnvelope
@@ -254,19 +263,20 @@ class Pipeline:
                 f"Caught exception while executing Transformer with name {type(transformer).__name__}"
             ) from e
 
-    def _execute_action(self, enveloped_event: EventEnvelope) -> None:
+    def _execute_action(self, enveloped_event: EventEnvelope) -> Optional[bool]:
         try:
-            self.action.act(enveloped_event)
+            retval = self.action.act(enveloped_event)
             self._stats.increment_action_success_count()
+            return retval
         except Exception as e:
             self._stats.increment_action_exception_count()
             raise PipelineException(
                 f"Caught exception while executing Action with type {type(self.action).__name__}"
             ) from e
 
-    def _ack_event(self, enveloped_event: EventEnvelope) -> None:
+    def _ack_event(self, enveloped_event: EventEnvelope, processed: bool) -> None:
         try:
-            self.source.ack(enveloped_event)
+            self.source.ack(enveloped_event, processed)
             self._stats.increment_success_count()
         except Exception:
             self._stats.increment_failed_ack_count()
