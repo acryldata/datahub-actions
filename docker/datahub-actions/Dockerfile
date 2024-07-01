@@ -17,6 +17,9 @@ ARG APP_ENV=prod
 
 FROM acryldata/datahub-ingestion-base:head-full as prod-install
 COPY datahub-actions /actions-src
+
+USER root
+
 RUN mkdir -p /etc/datahub/actions && mkdir -p /tmp/datahub/logs/actions/system
 RUN cd /actions-src && \
     pip install "." && \
