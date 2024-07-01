@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 ENTITY_CHANGE_EVENT_NAME = "entityChangeEvent"
 DEFAULT_TOPIC_ROUTES = {
     "mcl": "MetadataChangeLog_Versioned_v1",
+    "mcl_timeseries": "MetadataChangeLog_Timeseries_v1",
     "pe": "PlatformEvent_v1",
 }
 
@@ -188,6 +189,13 @@ class KafkaEventSource(EventSource):
             else:
                 if "mcl" in topic_routes and msg.topic() == topic_routes["mcl"]:
                     yield from self.handle_mcl(msg)
+                if (
+                    "mcl_timeseries" in topic_routes
+                    and msg.topic() == topic_routes["mcl_timeseries"]
+                ):
+                    yield from self.handle_mcl(
+                        msg
+                    )  # Handle timeseries in the same way as usual MCL.
                 elif "pe" in topic_routes and msg.topic() == topic_routes["pe"]:
                     yield from self.handle_pe(msg)
 
