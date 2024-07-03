@@ -65,3 +65,7 @@ def make_datahub_url(urn: str, base_url: str) -> str:
     entity_type = entity_type_from_urn(urn)
     urn = urn.replace("/", "%2F")
     return f"{base_url}/{ENTITY_TYPE_TO_URL_PATH_MAP[entity_type]}/{urn}/"
+
+def make_entity_url(urn: str, entity_type: str, base_url: str) -> str:
+    urn = urn.replace("/", "%2F")
+    return f"{base_url}/{entity_type}/{urn}"
