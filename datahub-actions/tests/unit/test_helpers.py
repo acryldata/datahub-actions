@@ -138,7 +138,7 @@ class TestEventSource(EventSource):
             EventEnvelope("TestEvent", TestEvent("value"), {}),
         ]
 
-    def ack(self, event: EventEnvelope) -> None:
+    def ack(self, event: EventEnvelope, processed: bool = True) -> None:
         self.ack_count = self.ack_count + 1
 
     def close(self) -> None:
@@ -221,7 +221,7 @@ class StoppableEventSource(EventSource):
                 "MetadataChangeLogEvent_v1", metadata_change_log_event, {}
             )
 
-    def ack(self, event: EventEnvelope) -> None:
+    def ack(self, event: EventEnvelope, processed: bool = True) -> None:
         pass
 
     def close(self) -> None:

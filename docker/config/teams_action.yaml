@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: datahub_teams_action
+name: ${DATAHUB_ACTIONS_TEAMS_CONSUMER_GROUP_ID:-datahub_teams_action}
 enabled: ${DATAHUB_ACTIONS_TEAMS_ENABLED:-false}
 source:
   type: "kafka"

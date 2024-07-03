@@ -62,6 +62,7 @@ source:
     # Topic Routing - which topics to read from.
     topic_routes:
       mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1} # Topic name for MetadataChangeLogEvent_v1 events. 
+      mcl_timeseries: ${METADATA_CHANGE_LOG_TIMESERIES_TOPIC_NAME:-MetadataChangeLog_Timeseries_v1} # Topic name for MetadataChangeLogEvent_v1 timeseries events. 
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1} # Topic name for PlatformEvent_v1 events. 
 action:
   # action configs
@@ -75,7 +76,8 @@ action:
   | `connection.bootstrap` | ✅ | N/A | The Kafka bootstrap URI, e.g. `localhost:9092`. |
   | `connection.schema_registry_url` | ✅ | N/A | The URL for the Kafka schema registry, e.g. `http://localhost:8081` |
   | `connection.consumer_config` | ❌ | {} | A set of key-value pairs that represents arbitrary Kafka Consumer configs |
-  | `topic_routes.mcl` | ❌  | `MetadataChangeLogEvent_v1` | The name of the topic containing MetadataChangeLog events |
+  | `topic_routes.mcl` | ❌  | `MetadataChangeLog_Versioned_v1` | The name of the topic containing versionined MetadataChangeLog events |
+  | `topic_routes.mcl_timeseries` | ❌  | `MetadataChangeLog_Timeseries_v1` | The name of the topic containing timeseries MetadataChangeLog events |
   | `topic_routes.pe` | ❌ | `PlatformEvent_v1` | The name of the topic containing PlatformEvent events |
 </details>
 

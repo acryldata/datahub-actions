@@ -48,7 +48,7 @@ class EventSource(Closeable, metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def ack(self, event: EventEnvelope) -> None:
+    def ack(self, event: EventEnvelope, processed: bool = True) -> None:
         """
         Acknowledges the processing of an individual event by the Actions Framework
         """
