@@ -41,18 +41,11 @@ from datahub_actions.transform.transformer_registry import transformer_registry
 # Mocked Metadata Change Log representing a Domain change for a Dataset.
 metadata_change_log_event = MetadataChangeLogEvent.from_class(
     MetadataChangeLogClass(
-        "dataset",
-        "UPSERT",
-        None,
-        "urn:li:dataset:(urn:li:dataPlatform:hive,SampleHiveDataset,PROD)",
-        None,
-        "domains",
-        None,
-        None,
-        None,
-        None,
-        None,
-        AuditStampClass(0, "urn:li:corpuser:datahub"),
+        entityType="dataset",
+        changeType="UPSERT",
+        entityUrn="urn:li:dataset:(urn:li:dataPlatform:hive,SampleHiveDataset,PROD)",
+        aspectName="domains",
+        created=AuditStampClass(0, "urn:li:corpuser:datahub"),
     )
 )
 
