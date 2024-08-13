@@ -217,15 +217,15 @@ class Pipeline:
                 )
                 curr_attempt = curr_attempt + 1
 
-            logger.error(
-                f"Failed to process event after {self._retry_count} retries. event type: {enveloped_event.event_type}, pipeline name: {self.name}. Handling failure..."
-            )
+        logger.error(
+            f"Failed to process event after {self._retry_count} retries. event type: {enveloped_event.event_type}, pipeline name: {self.name}. Handling failure..."
+        )
 
-            # Increment failed event count.
-            self._stats.increment_failed_event_count()
+        # Increment failed event count.
+        self._stats.increment_failed_event_count()
 
-            # Finally, handle the failure
-            self._handle_failure(enveloped_event)
+        # Finally, handle the failure
+        self._handle_failure(enveloped_event)
 
         return retval
 
