@@ -51,6 +51,7 @@ metadata_change_log_event = MetadataChangeLogEvent.from_class(
         None,
         None,
         None,
+        None,
         AuditStampClass(0, "urn:li:corpuser:datahub"),
     )
 )
