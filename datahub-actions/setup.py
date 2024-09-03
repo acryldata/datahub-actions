@@ -93,7 +93,7 @@ mypy_stubs = {
     "types-pytz",
     "types-dataclasses",
     "sqlalchemy-stubs",
-    "types-pkg_resources",
+    "types-setuptools",
     "types-six",
     "types-python-dateutil",
     "types-requests",

@@ -13,10 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 buildscript {
   apply from: './repositories.gradle'
   buildscript.repositories.addAll(project.repositories)
+}
+
+plugins {
+    id 'com.palantir.docker' version '0.35.0' apply false
 }
 
 project.ext.externalDependency = [
