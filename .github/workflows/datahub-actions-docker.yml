@@ -71,7 +71,7 @@ jobs:
           username: ${{ secrets.ACRYL_DOCKER_USERNAME }}
           password: ${{ secrets.ACRYL_DOCKER_PASSWORD }}
       - name: Build and Push Image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           file: ./docker/datahub-actions/Dockerfile
           platforms: linux/amd64,linux/arm64
@@ -100,7 +100,7 @@ jobs:
         id: action_tag
         run: echo "tag=$(cut -d',' -f1 <<<'${{ steps.docker_meta_comma_sep.outputs.tags }}')" >> $GITHUB_OUTPUT
       - name: Build and Push Image (slim)
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           file: ./docker/datahub-actions/Dockerfile
           platforms: linux/amd64,linux/arm64
