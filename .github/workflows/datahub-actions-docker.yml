@@ -36,15 +36,15 @@ jobs:
           SHORT_SHA=$(git rev-parse --short "$GITHUB_SHA")
           TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/main,head\,${SHORT_SHA},g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
           UNIQUE_TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/main,${SHORT_SHA},g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "unique_tag=$UNIQUE_TAG" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "unique_tag=$UNIQUE_TAG" >> "$GITHUB_OUTPUT"
       - name: Check whether publishing enabled
         id: publish
         env:
           ENABLE_PUBLISH: ${{ secrets.ACRYL_DOCKER_PASSWORD }}
         run: |
           echo "Enable publish: ${{ env.ENABLE_PUBLISH != '' }}"
-          echo "publish=${{ env.ENABLE_PUBLISH != '' }}" >> $GITHUB_OUTPUT
+          echo "publish=${{ env.ENABLE_PUBLISH != '' }}" >> "$GITHUB_OUTPUT"
   push_to_registries:
     name: Build and Push Docker Image to DockerHub
     runs-on: ubuntu-latest
@@ -98,7 +98,7 @@ jobs:
           tag-custom-only: true
       - name: Actions Docker Tag
         id: action_tag
-        run: echo "tag=$(cut -d',' -f1 <<<'${{ steps.docker_meta_comma_sep.outputs.tags }}')" >> $GITHUB_OUTPUT
+        run: echo "tag=$(cut -d',' -f1 <<<'${{ steps.docker_meta_comma_sep.outputs.tags }}')" >> "$GITHUB_OUTPUT"
       - name: Build and Push Image (slim)
         uses: docker/build-push-action@v6
         with:
@@ -106,7 +106,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.docker_meta_slim.outputs.tags }}
           push: ${{ needs.setup.outputs.publish == 'true' }}
-          build-args:
+          build-args: |
             "APP_ENV=prod-slim"
             "DOCKER_BASE_IMAGE=${{ steps.action_tag.outputs.tag }}"
   # image_scan:
