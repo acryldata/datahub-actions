@@ -19,8 +19,8 @@ on:
     types: [published, edited]
   workflow_dispatch:
 
-env:
-  DOCKER_CHANGES: ${{ github.event_name != 'workflow_dispatch' && (github.event.pull_request.changed_files > 0 || github.event.head_commit.modified > 0) && contains(github.event.pull_request.changed_files || github.event.head_commit.modified, 'docker/') }}
+# env:
+#   DOCKER_CHANGES: ${{ github.event_name != 'workflow_dispatch' && (github.event.pull_request.changed_files > 0 || github.event.head_commit.modified > 0) && contains(github.event.pull_request.changed_files || github.event.head_commit.modified, 'docker/') }}
 
 jobs:
   setup:
@@ -58,7 +58,7 @@ jobs:
   regular_image:
     name: Build & Push Image to DockerHub
     runs-on: ubuntu-latest
-    if: ${{ needs.setup.outputs.publish == 'true' || needs.setup.outputs.build_docker == 'true' }}
+    # if: ${{ needs.setup.outputs.publish == 'true' || needs.setup.outputs.build_docker == 'true' }}
     needs: setup
     steps:
       - name: Check out the repo
@@ -95,7 +95,7 @@ jobs:
   slim_image:
     name: Build & Push Image to DockerHub (slim)
     runs-on: ubuntu-latest
-    if: ${{ needs.setup.outputs.publish == 'true' || needs.setup.outputs.build_docker == 'true' }}
+    # if: ${{ needs.setup.outputs.publish == 'true' || needs.setup.outputs.build_docker == 'true' }}
     needs: setup
     steps:
       - name: Check out the repo (slim)
