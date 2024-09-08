@@ -19,9 +19,6 @@ on:
     types: [published, edited]
   workflow_dispatch:
 
-# env:
-#   DOCKER_CHANGES: ${{ github.event_name != 'workflow_dispatch' && (github.event.pull_request.changed_files > 0 || github.event.head_commit.modified > 0) && contains(github.event.pull_request.changed_files || github.event.head_commit.modified, 'docker/') }}
-
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -29,12 +26,9 @@ jobs:
       tag: ${{ steps.tag.outputs.tag }}
       publish: ${{ steps.publish.outputs.publish }}
       unique_tag: ${{ steps.tag.outputs.unique_tag }}
-      build_docker: ${{ env.DOCKER_CHANGES }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        # with:
-        #   fetch-depth: 0
       - name: Compute Tag
         id: tag
         run: |
@@ -51,14 +45,9 @@ jobs:
         run: |
           echo "Enable publish: ${{ env.ENABLE_PUBLISH != '' }}"
           echo "publish=${{ env.ENABLE_PUBLISH != '' }}" >> "$GITHUB_OUTPUT"
-      # - name: Check for changes in docker directory
-      #   id: check_docker_changes
-      #   run: |
-      #     git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^docker/' && echo "build_docker=true" >> "$GITHUB_OUTPUT" || echo "build_docker=false" >> "$GITHUB_OUTPUT"
   regular_image:
     name: Build & Push Image to DockerHub
     runs-on: ubuntu-latest
-    # if: ${{ needs.setup.outputs.publish == 'true' || needs.setup.outputs.build_docker == 'true' }}
     needs: setup
     steps:
       - name: Check out the repo
@@ -71,8 +60,6 @@ jobs:
             acryldata/datahub-actions
           tags: |
             type=raw,value=${{ needs.setup.outputs.tag }}
-          # tag-custom: ${{ needs.setup.outputs.tag }}
-          # tag-custom-only: true
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         if: ${{ needs.setup.outputs.publish == 'true' }}
@@ -98,7 +85,6 @@ jobs:
   slim_image:
     name: Build & Push Image to DockerHub (slim)
     runs-on: ubuntu-latest
-    # if: ${{ needs.setup.outputs.publish == 'true' || needs.setup.outputs.build_docker == 'true' }}
     needs: setup
     steps:
       - name: Check out the repo (slim)
@@ -199,9 +185,6 @@ jobs:
         uses: ishworkh/docker-image-artifact-download@v1
         with:
           image: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
-      # - name: Download image (slim)
-      #   uses: ishworkh/docker-image-artifact-download@v1
-      #   with:
       - name: Run Trivy vulnerability scanner (slim)
         uses: aquasecurity/trivy-action@master
         env:
