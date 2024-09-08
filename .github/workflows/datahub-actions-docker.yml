@@ -75,6 +75,7 @@ jobs:
           # tag-custom-only: true
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        if: ${{ needs.setup.outputs.publish == 'true' }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to DockerHub
@@ -87,9 +88,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           file: ./docker/datahub-actions/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ needs.setup.outputs.publish == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           push: ${{ needs.setup.outputs.publish == 'true' }}
+          cache-from: type=registry,ref=${{ steps.docker_meta.outputs.tags }}
+          cache-to: type=inline
           target: final
           build-args: 'GEM_FURY_TOKEN=${{ secrets.GEMFURY_PULL_TOKEN }}'
   slim_image:
@@ -109,6 +112,7 @@ jobs:
           tags: |
             type=raw,value=${{ needs.setup.outputs.tag }}
       - name: Set up QEMU (slim)
+        if: ${{ needs.setup.outputs.publish == 'true' }}
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx (slim)
         uses: docker/setup-buildx-action@v2
@@ -122,13 +126,23 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           file: ./docker/datahub-actions/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ needs.setup.outputs.publish == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           tags: ${{ steps.docker_meta_slim.outputs.tags }}
           push: ${{ needs.setup.outputs.publish == 'true' }}
           target: final
+          load: ${{ needs.setup.outputs.publish != 'true' }}
           build-args: |
             "APP_ENV=prod-slim"
             "GEM_FURY_TOKEN=${{ secrets.GEMFURY_PULL_TOKEN }}"
+      - name: Save Docker image
+        if: needs.setup.outputs.publish != 'true'
+        run: docker save ${{ steps.docker_meta_slim.outputs.tags }} > image.tar
+      - name: Upload artifact
+        if: needs.setup.outputs.publish != 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: image.tar
   # image_scan:
   #   permissions:
   #     contents: read # for actions/checkout to fetch code
@@ -169,20 +183,41 @@ jobs:
     name: '[Monitoring] Scan slim action images for vulnerabilities'
     runs-on: ubuntu-latest
     needs: [setup, slim_image]
-    if: needs.setup.outputs.publish == 'true'
     steps:
       - name: Checkout # adding checkout step just to make trivy upload happy
         uses: actions/checkout@v4
-      - name: Download image (slim)
+      - name: Set image reference
+        id: set_image_ref
+        run: |
+          if [[ "${{ needs.setup.outputs.publish }}" == "true" ]]; then
+            echo "IMAGE_REF=acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "IMAGE_REF=datahub-actions-slim:local" >> $GITHUB_OUTPUT
+          fi
+      - name: Download artifact (if not publishing)
+        if: needs.setup.outputs.publish != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+      - name: Load Docker image (if not publishing)
+        if: needs.setup.outputs.publish != 'true'
+        run: docker load < image.tar
+      - name: Download image (if publishing)
+        if: needs.setup.outputs.publish == 'true'
         uses: ishworkh/docker-image-artifact-download@v1
         with:
-          image: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
+          image: ${{ steps.set_image_ref.outputs.IMAGE_REF }}
+      # - name: Download image (slim)
+      #   uses: ishworkh/docker-image-artifact-download@v1
+      #   with:
+      #     image: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
       - name: Run Trivy vulnerability scanner (slim)
         uses: aquasecurity/trivy-action@master
         env:
           TRIVY_OFFLINE_SCAN: true
         with:
-          image-ref: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
+          image-ref: ${{ steps.set_image_ref.outputs.IMAGE_REF }}
+          # image-ref: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results.sarif'
