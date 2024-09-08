@@ -169,12 +169,12 @@ jobs:
     name: '[Monitoring] Scan slim action images for vulnerabilities'
     runs-on: ubuntu-latest
     needs: [setup, slim_image]
+    if: needs.setup.outputs.publish == 'true'
     steps:
       - name: Checkout # adding checkout step just to make trivy upload happy
         uses: actions/checkout@v4
       - name: Download image (slim)
         uses: ishworkh/docker-image-artifact-download@v1
-        if: ${{ needs.setup.outputs.publish != 'true' }}
         with:
           image: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
       - name: Run Trivy vulnerability scanner (slim)
