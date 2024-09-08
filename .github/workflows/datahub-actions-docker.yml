@@ -186,14 +186,6 @@ jobs:
     steps:
       - name: Checkout # adding checkout step just to make trivy upload happy
         uses: actions/checkout@v4
-      - name: Set image reference
-        id: set_image_ref
-        run: |
-          if [[ "${{ needs.setup.outputs.publish }}" == "true" ]]; then
-            echo "IMAGE_REF=acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}" >> $GITHUB_OUTPUT
-          else
-            echo "IMAGE_REF=datahub-actions-slim:local" >> $GITHUB_OUTPUT
-          fi
       - name: Download artifact (if not publishing)
         if: needs.setup.outputs.publish != 'true'
         uses: actions/download-artifact@v3
@@ -206,18 +198,16 @@ jobs:
         if: needs.setup.outputs.publish == 'true'
         uses: ishworkh/docker-image-artifact-download@v1
         with:
-          image: ${{ steps.set_image_ref.outputs.IMAGE_REF }}
+          image: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
       # - name: Download image (slim)
       #   uses: ishworkh/docker-image-artifact-download@v1
       #   with:
-      #     image: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
       - name: Run Trivy vulnerability scanner (slim)
         uses: aquasecurity/trivy-action@master
         env:
           TRIVY_OFFLINE_SCAN: true
         with:
-          image-ref: ${{ steps.set_image_ref.outputs.IMAGE_REF }}
-          # image-ref: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
+          image-ref: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results.sarif'
