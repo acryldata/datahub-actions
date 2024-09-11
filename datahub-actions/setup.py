@@ -30,7 +30,7 @@ def get_long_description():
     return description
 
 
-acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION") or "0.12.1.5"
+acryl_datahub_min_version = os.environ.get("ACRYL_DATAHUB_MIN_VERSION") or "0.13.3.6rc1"
 
 base_requirements = {
     f"acryl-datahub[datahub-kafka]>={acryl_datahub_min_version}",
@@ -86,6 +86,7 @@ plugins: Dict[str, Set[str]] = {
     "snowflake_tag_propagation": {
         f"acryl-datahub[snowflake]>={acryl_datahub_min_version}"
     },
+    "doc_propagation": set(),
     # Transformer Plugins (None yet)
 }
 
@@ -138,6 +139,7 @@ base_dev_requirements = {
             "tag_propagation",
             "term_propagation",
             "snowflake_tag_propagation",
+            "doc_propagation",
         ]
         for dependency in plugins[plugin]
     ),
@@ -158,6 +160,7 @@ full_test_dev_requirements = {
             "tag_propagation",
             "term_propagation",
             "snowflake_tag_propagation",
+            "doc_propagation",
         ]
         for dependency in plugins[plugin]
     ),
@@ -173,6 +176,7 @@ entry_points = {
         "tag_propagation = datahub_actions.plugin.action.tag.tag_propagation_action:TagPropagationAction",
         "term_propagation = datahub_actions.plugin.action.term.term_propagation_action:TermPropagationAction",
         "snowflake_tag_propagation = datahub_actions.plugin.action.snowflake.tag_propagator:SnowflakeTagPropagatorAction",
+        "doc_propagation = datahub_actions.plugin.action.propagation.docs.propagation_action:DocPropagationAction",
     ],
     "datahub_actions.transformer.plugins": [],
     "datahub_actions.source.plugins": [],

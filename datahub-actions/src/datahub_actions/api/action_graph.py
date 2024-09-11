@@ -186,6 +186,16 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
             return entities
         return []
 
+    def get_upstreams(self, entity_urn: str) -> List[str]:
+        url_frag = f"/relationships?direction=OUTGOING&types=List(DownstreamOf)&urn={urllib.parse.quote(entity_urn)}"
+        url = f"{self.graph._gms_server}{url_frag}"
+        response = self.graph._get_generic(url)
+        if response["count"] > 0:
+            relnships = response["relationships"]
+            entities = [x["entity"] for x in relnships]
+            return entities
+        return []
+
     def get_relationships(
         self, entity_urn: str, direction: str, relationship_types: List[str]
     ) -> List[str]:
