@@ -1,3 +1,4 @@
+# Copied largely without modification from datahub-project/datahub/smoke-test/requests_wrapper
 import requests
 from tests.consistency_utils import wait_for_writes_to_sync
 

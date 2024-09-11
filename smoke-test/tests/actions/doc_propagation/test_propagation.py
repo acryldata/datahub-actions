@@ -7,6 +7,7 @@ from typing import Any, List
 
 import datahub.metadata.schema_classes as models
 import pytest
+from datahub.api.entities.dataset.dataset import Dataset
 from datahub.emitter.mce_builder import make_dataset_urn, make_schema_field_urn
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.ingestion.api.common import PipelineContext, RecordEnvelope
@@ -80,8 +81,6 @@ def create_test_data(filename: str, test_resources_dir: str) -> List[str]:
                 field_urn = make_schema_field_urn(dataset_urn, field.fieldPath)
                 urns.append(field_urn)
         return urns
-
-    from datahub.api.entities.dataset.dataset import Dataset
 
     mcps = []
     all_urns = []
@@ -157,8 +156,6 @@ def add_col_col_lineage(graph):
 
 
 def add_field_description(f1, description, graph):
-    import datahub.metadata.schema_classes as models
-
     urn = Urn.from_string(f1)
     dataset_urn = urn.entity_ids[0]
     schema_metadata = graph.get_aspect(dataset_urn, models.SchemaMetadataClass)
@@ -171,8 +168,6 @@ def add_field_description(f1, description, graph):
 
 
 def check_propagated_description(downstream_field, description, graph):
-    import datahub.metadata.schema_classes as models
-
     documentation = graph.get_aspect(downstream_field, models.DocumentationClass)
     assert any(doc.documentation == description for doc in documentation.documentations)
 

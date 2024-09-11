@@ -1,3 +1,5 @@
+# Copied largely without modification from datahub-project/datahub/smoke-test/tests
+
 import os
 
 import pytest

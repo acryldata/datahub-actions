@@ -15,7 +15,7 @@
 import json
 import logging
 import time
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, Optional
 
 from datahub.configuration.common import ConfigModel
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
@@ -31,6 +31,7 @@ from datahub.metadata.schema_classes import (
     MetadataAttributionClass,
     MetadataChangeLogClass,
 )
+from datahub.metadata.urns import DatasetUrn
 from datahub.utilities.urns.urn import Urn
 from pydantic import BaseModel, Field, validator
 
@@ -314,9 +315,11 @@ class DocPropagationAction(Action):
             # No need to propagate to self
             return None
 
-        if not dataset_urn.startswith("urn:li:dataset"):
+        try:
+            DatasetUrn.from_string(dataset_urn)
+        except Exception as e:
             logger.error(
-                f"Invalid dataset urn {dataset_urn}. Must start with urn:li:dataset"
+                f"Invalid dataset urn {dataset_urn}. {e}. Skipping documentation propagation."
             )
             return None
 
@@ -441,22 +444,6 @@ class DocPropagationAction(Action):
                 return True
         return False
 
-    def get_upstreams(self, graph: AcrylDataHubGraph, entity_urn: str) -> List[str]:
-        """
-        Fetch the upstreams for an dataset or schema field.
-        Note that this DOES NOT support DataJob upstreams, or any intermediate nodes.
-        """
-        import urllib.parse
-
-        url_frag = f"/relationships?direction=OUTGOING&types=List(DownstreamOf)&urn={urllib.parse.quote(entity_urn)}"
-        url = f"{graph.graph._gms_server}{url_frag}"
-        response = graph.graph._get_generic(url)
-        if response["count"] > 0:
-            relnships = response["relationships"]
-            entities = [x["entity"] for x in relnships]
-            return entities
-        return []
-
     def _only_one_upstream_field(
         self,
         graph: AcrylDataHubGraph,
@@ -469,11 +456,7 @@ class DocPropagationAction(Action):
 
         TODO: We should cache upstreams because we make this fetch upstreams call FOR EVERY downstream that must be propagated to.
         """
-        upstreams = (
-            graph.get_upstreams(entity_urn=downstream_field)
-            if hasattr(graph, "get_upstreams")
-            else self.get_upstreams(graph, downstream_field)
-        )
+        upstreams = graph.get_upstreams(entity_urn=downstream_field)
         # Use a set here in case there are duplicated upstream edges
         upstream_fields = list(
             {x for x in upstreams if x.startswith("urn:li:schemaField")}
