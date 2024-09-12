@@ -9,6 +9,11 @@ jobs:
   unit-test-results:
     name: Unit Test Results
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: write
+      repository-projects: write
     if: github.event.workflow_run.conclusion != 'skipped'
 
     steps:
@@ -28,7 +33,7 @@ jobs:
           done
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           check_name: "Unit Test Results (${{ github.event.workflow_run.name }})"
           commit: ${{ github.event.workflow_run.head_sha }}

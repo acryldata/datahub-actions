@@ -11,11 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-ARG DOCKER_BASE_IMAGE=acryldata/datahub-actions:head
-
-FROM $DOCKER_BASE_IMAGE as prod-install
-
-USER 0
-RUN pip uninstall -y pyspark
-USER datahub
