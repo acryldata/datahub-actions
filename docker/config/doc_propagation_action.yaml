@@ -19,6 +19,8 @@ source:
     connection:
       bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
       schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
+      consumer_config:
+        max.poll.interval.ms: ${MAX_POLL_INTERVAL_MS:-60000} # 1 minute per poll
     topic_routes:
       mcl: ${METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME:-MetadataChangeLog_Versioned_v1}
       pe: ${PLATFORM_EVENT_TOPIC_NAME:-PlatformEvent_v1}
@@ -27,6 +29,11 @@ action:
   config:
     # Action-specific configs (map)
     columns_enabled: ${DATAHUB_ACTIONS_DOC_PROPAGATION_COLUMNS_ENABLED:-true}
+    max_propagation_depth: ${DATAHUB_ACTIONS_DOC_PROPAGATION_MAX_PROPAGATION_DEPTH:-5}
+    max_propagation_fanout: ${DATAHUB_ACTIONS_DOC_PROPAGATION_MAX_PROPAGATION_FANOUT:-1000}
+    max_propagation_time_millis: ${DATAHUB_ACTIONS_DOC_PROPAGATION_MAX_PROPAGATION_TIME_MILLIS:-3600000} # 1 hour
+    rate_limit_propagated_writes: ${DATAHUB_ACTIONS_DOC_PROPAGATION_RATE_LIMIT_PROPAGATED_WRITES:-1500} # 100 writes per second (default)
+    rate_limit_propagated_writes_period: ${DATAHUB_ACTIONS_DOC_PROPAGATION_RATE_LIMIT_PROPAGATED_WRITES_PERIOD:-15} # Every 15 seconds
 
 datahub:
   server: 'http://${DATAHUB_GMS_HOST:-localhost}:${DATAHUB_GMS_PORT:-8080}'

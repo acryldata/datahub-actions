@@ -15,9 +15,9 @@
 import json
 import logging
 import time
-from typing import Any, Iterable, Optional
+from enum import Enum
+from typing import Iterable, List, Optional, Tuple
 
-from datahub.configuration.common import ConfigModel
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.metadata.schema_classes import (
     AuditStampClass,
@@ -32,8 +32,8 @@ from datahub.metadata.schema_classes import (
     MetadataChangeLogClass,
 )
 from datahub.metadata.urns import DatasetUrn
-from datahub.utilities.urns.urn import Urn
-from pydantic import BaseModel, Field, validator
+from datahub.utilities.urns.urn import Urn, guess_entity_type
+from pydantic import Field
 
 from datahub_actions.action.action import Action
 from datahub_actions.api.action_graph import AcrylDataHubGraph
@@ -41,6 +41,11 @@ from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.plugin.action.mcl_utils import MCLProcessor
 from datahub_actions.plugin.action.propagation.propagation_utils import (
+    DirectionType,
+    PropagationConfig,
+    PropagationDirective,
+    RelationshipType,
+    SourceDetails,
     get_unique_siblings,
 )
 from datahub_actions.plugin.action.stats_util import (
@@ -51,58 +56,19 @@ from datahub_actions.plugin.action.stats_util import (
 logger = logging.getLogger(__name__)
 
 
-class DocPropagationDirective(BaseModel):
-    propagate: bool = Field(
-        description="Indicates whether the documentation should be propagated."
-    )
+class DocPropagationDirective(PropagationDirective):
     doc_string: Optional[str] = Field(
         default=None, description="Documentation string to be propagated."
     )
-    operation: str = Field(
-        description="Operation to be performed on the documentation. Can be ADD, MODIFY or REMOVE."
-    )
-    entity: str = Field(
-        description="Entity URN from which the documentation is propagated. This will either be the same as the origin or the via entity, depending on the propagation path."
-    )
-    origin: str = Field(
-        description="Origin entity for the documentation. This is the entity that triggered the documentation propagation.",
-    )
-    via: Optional[str] = Field(
-        None,
-        description="Via entity for the documentation. This is the direct entity that the documentation was propagated through.",
-    )
-    actor: Optional[str] = Field(
-        None,
-        description="Actor that triggered the documentation propagation.",
-    )
 
 
-class SourceDetails(BaseModel):
-    origin: Optional[str] = Field(
-        None,
-        description="Origin entity for the documentation. This is the entity that triggered the documentation propagation.",
-    )
-    via: Optional[str] = Field(
-        None,
-        description="Via entity for the documentation. This is the direct entity that the documentation was propagated through.",
-    )
-    propagated: Optional[str] = Field(
-        None,
-        description="Indicates whether the documentation was propagated.",
-    )
-    actor: Optional[str] = Field(
-        None,
-        description="Actor that triggered the documentation propagation.",
-    )
-
-    @validator("propagated", pre=True)
-    def convert_boolean_to_lowercase_string(cls, v: Any) -> Optional[str]:
-        if isinstance(v, bool):
-            return str(v).lower()
-        return v
+class ColumnPropagationRelationships(str, Enum):
+    UPSTREAM = "upstream"
+    DOWNSTREAM = "downstream"
+    SIBLING = "sibling"
 
 
-class DocPropagationConfig(ConfigModel):
+class DocPropagationConfig(PropagationConfig):
     """
     Configuration model for documentation propagation.
 
@@ -130,6 +96,19 @@ class DocPropagationConfig(ConfigModel):
         False,
         description="Indicates whether dataset level documentation propagation is enabled or not.",
         example=False,
+    )
+    column_propagation_relationships: List[ColumnPropagationRelationships] = Field(
+        [
+            ColumnPropagationRelationships.SIBLING,
+            ColumnPropagationRelationships.DOWNSTREAM,
+            ColumnPropagationRelationships.UPSTREAM,
+        ],
+        description="Relationships for column documentation propagation.",
+        example=[
+            ColumnPropagationRelationships.UPSTREAM,
+            ColumnPropagationRelationships.SIBLING,
+            ColumnPropagationRelationships.DOWNSTREAM,
+        ],
     )
 
 
@@ -182,6 +161,10 @@ class DocPropagationAction(Action):
         self.refresh_config()
         self._stats = ActionStageReport()
         self._stats.start()
+        assert self.ctx.graph
+        self._rate_limited_emit_mcp = self.config.get_rate_limited_emit_mcp(
+            self.ctx.graph.graph
+        )
 
     def name(self) -> str:
         return "DocPropagator"
@@ -192,6 +175,67 @@ class DocPropagationAction(Action):
         logger.info(f"Doc Propagation Config action configured with {action_config}")
         return cls(action_config, ctx)
 
+    def should_stop_propagation(
+        self, source_details: SourceDetails
+    ) -> Tuple[bool, str]:
+        """
+        Check if the propagation should be stopped based on the source details.
+        Return result and reason.
+        """
+        if source_details.propagation_started_at and (
+            int(time.time() * 1000.0) - source_details.propagation_started_at
+            >= self.config.max_propagation_time_millis
+        ):
+            return (True, "Propagation time exceeded.")
+        if (
+            source_details.propagation_depth
+            and source_details.propagation_depth >= self.config.max_propagation_depth
+        ):
+            return (True, "Propagation depth exceeded.")
+        return False, ""
+
+    def get_propagation_relationships(
+        self, entity_type: str, source_details: Optional[SourceDetails]
+    ) -> List[Tuple[RelationshipType, DirectionType]]:
+
+        possible_relationships = []
+        if entity_type == "schemaField":
+            if (source_details is not None) and (
+                source_details.propagation_relationship
+                and source_details.propagation_direction
+            ):
+                restricted_relationship = source_details.propagation_relationship
+                restricted_direction = source_details.propagation_direction
+            else:
+                restricted_relationship = None
+                restricted_direction = None
+
+            for relationship in self.config.column_propagation_relationships:
+                if relationship == ColumnPropagationRelationships.UPSTREAM:
+                    if (
+                        restricted_relationship == RelationshipType.LINEAGE
+                        and restricted_direction == DirectionType.DOWN
+                    ):  # Skip upstream if the propagation has been restricted to downstream
+                        continue
+                    possible_relationships.append(
+                        (RelationshipType.LINEAGE, DirectionType.UP)
+                    )
+                elif relationship == ColumnPropagationRelationships.DOWNSTREAM:
+                    if (
+                        restricted_relationship == RelationshipType.LINEAGE
+                        and restricted_direction == DirectionType.UP
+                    ):  # Skip upstream if the propagation has been restricted to downstream
+                        continue
+                    possible_relationships.append(
+                        (RelationshipType.LINEAGE, DirectionType.DOWN)
+                    )
+                elif relationship == ColumnPropagationRelationships.SIBLING:
+                    possible_relationships.append(
+                        (RelationshipType.SIBLING, DirectionType.ALL)
+                    )
+        logger.debug(f"Possible relationships: {possible_relationships}")
+        return possible_relationships
+
     def process_schema_field_documentation(
         self,
         entity_urn: str,
@@ -199,53 +243,111 @@ class DocPropagationAction(Action):
         aspect_value: GenericAspectClass,
         previous_aspect_value: Optional[GenericAspectClass],
     ) -> Optional[DocPropagationDirective]:
-        if aspect_name == "documentation":
-            logger.debug("Processing 'documentation' MCL")
-            if self.config.columns_enabled:
-                current_docs = DocumentationClass.from_obj(
-                    json.loads(aspect_value.value)
+        """
+        Process changes in the documentation aspect of schemaField entities.
+        Produce a directive to propagate the documentation.
+        Business Logic checks:
+            - If the documentation is sourced by this action, then we propagate
+              it.
+            - If the documentation is not sourced by this action, then we log a
+                warning and propagate it.
+            - If we have exceeded the maximum depth of propagation or maximum
+              time for propagation, then we stop propagation and don't return a directive.
+        """
+        if (
+            aspect_name != "documentation"
+            or guess_entity_type(entity_urn) != "schemaField"
+        ):
+            # not a documentation aspect or not a schemaField entity
+            return None
+
+        logger.debug("Processing 'documentation' MCL")
+        if self.config.columns_enabled:
+            current_docs = DocumentationClass.from_obj(json.loads(aspect_value.value))
+            old_docs = (
+                None
+                if previous_aspect_value is None
+                else DocumentationClass.from_obj(
+                    json.loads(previous_aspect_value.value)
                 )
-                old_docs = (
-                    None
-                    if previous_aspect_value is None
-                    else DocumentationClass.from_obj(
-                        json.loads(previous_aspect_value.value)
+            )
+            if current_docs.documentations:
+                # get the most recently updated documentation with attribution
+                current_documentation_instance = sorted(
+                    [doc for doc in current_docs.documentations if doc.attribution],
+                    key=lambda x: x.attribution.time if x.attribution else 0,
+                )[-1]
+                assert current_documentation_instance.attribution
+                if (
+                    current_documentation_instance.attribution.source is None
+                    or current_documentation_instance.attribution.source
+                    != self.action_urn
+                ):
+                    logger.warning(
+                        f"Documentation is not sourced by this action which is unexpected. Will be propagating for {entity_urn}"
                     )
+                source_details = (
+                    (current_documentation_instance.attribution.sourceDetail)
+                    if current_documentation_instance.attribution
+                    else {}
                 )
-                if current_docs.documentations:
-                    # we assume that the first documentation is the primary one
-                    # we can change this later
-                    current_documentation_instance = current_docs.documentations[0]
-                    source_details = (
-                        (current_documentation_instance.attribution.sourceDetail)
-                        if current_documentation_instance.attribution
-                        else {}
+                source_details_parsed: SourceDetails = SourceDetails.parse_obj(
+                    source_details
+                )
+                should_stop_propagation, reason = self.should_stop_propagation(
+                    source_details_parsed
+                )
+                if should_stop_propagation:
+                    logger.warning(f"Stopping propagation for {entity_urn}. {reason}")
+                    return None
+                else:
+                    logger.debug(f"Propagating documentation for {entity_urn}")
+                propagation_relationships = self.get_propagation_relationships(
+                    entity_type="schemaField", source_details=source_details_parsed
+                )
+                origin_entity = source_details_parsed.origin
+                if old_docs is None or not old_docs.documentations:
+                    return DocPropagationDirective(
+                        propagate=True,
+                        doc_string=current_documentation_instance.documentation,
+                        operation="ADD",
+                        entity=entity_urn,
+                        origin=origin_entity,
+                        via=entity_urn,
+                        actor=self.actor_urn,
+                        propagation_started_at=source_details_parsed.propagation_started_at,
+                        propagation_depth=(
+                            source_details_parsed.propagation_depth + 1
+                            if source_details_parsed.propagation_depth
+                            else 1
+                        ),
+                        relationships=propagation_relationships,
                     )
-                    origin_entity = source_details.get("origin")
-                    if old_docs is None or not old_docs.documentations:
+                else:
+                    old_docs_instance = sorted(
+                        old_docs.documentations,
+                        key=lambda x: x.attribution.time if x.attribution else 0,
+                    )[-1]
+                    if (
+                        current_documentation_instance.documentation
+                        != old_docs_instance.documentation
+                    ):
                         return DocPropagationDirective(
                             propagate=True,
                             doc_string=current_documentation_instance.documentation,
-                            operation="ADD",
+                            operation="MODIFY",
                             entity=entity_urn,
                             origin=origin_entity,
                             via=entity_urn,
                             actor=self.actor_urn,
+                            propagation_started_at=source_details_parsed.propagation_started_at,
+                            propagation_depth=(
+                                source_details_parsed.propagation_depth + 1
+                                if source_details_parsed.propagation_depth
+                                else 1
+                            ),
+                            relationships=propagation_relationships,
                         )
-                    else:
-                        if (
-                            current_docs.documentations[0].documentation
-                            != old_docs.documentations[0].documentation
-                        ):
-                            return DocPropagationDirective(
-                                propagate=True,
-                                doc_string=current_documentation_instance.documentation,
-                                operation="MODIFY",
-                                entity=entity_urn,
-                                origin=origin_entity,
-                                via=entity_urn,
-                                actor=self.actor_urn,
-                            )
         return None
 
     def should_propagate(
@@ -256,7 +358,6 @@ class DocPropagationAction(Action):
             return self.mcl_processor.process(event)
         if event.event_type == "EntityChangeEvent_v1":
             assert isinstance(event.event, EntityChangeEvent)
-            # logger.info(f"Received event {event}")
             assert self.ctx.graph is not None
             semantic_event = event.event
             if (
@@ -299,6 +400,12 @@ class DocPropagationAction(Action):
                                 if semantic_event.auditStamp
                                 else self.actor_urn
                             ),
+                            propagation_started_at=int(time.time() * 1000.0),
+                            propagation_depth=1,  # we start at 1 because this is the first propagation
+                            relationships=self.get_propagation_relationships(
+                                entity_type="schemaField",
+                                source_details=None,
+                            ),
                         )
         return None
 
@@ -327,7 +434,7 @@ class DocPropagationAction(Action):
             time=int(time.time() * 1000.0), actor=self.actor_urn
         )
 
-        source_details = context.dict(exclude_none=True)
+        source_details = context.for_metadata_attribution()
         attribution: MetadataAttributionClass = MetadataAttributionClass(
             source=self.action_urn,
             time=auditStamp.time,
@@ -339,11 +446,16 @@ class DocPropagationAction(Action):
             mutation_needed = False
             action_sourced = False
             # we check if there are any existing documentations generated by
-            # this action, if so, we update them
+            # this action and sourced from the same origin, if so, we update them
             # otherwise, we add a new documentation entry sourced by this action
-            for doc_association in documentations.documentations:
+            for doc_association in documentations.documentations[:]:
                 if doc_association.attribution and doc_association.attribution.source:
-                    if doc_association.attribution.source == self.action_urn:
+                    source_details_parsed: SourceDetails = SourceDetails.parse_obj(
+                        doc_association.attribution.sourceDetail
+                    )
+                    if doc_association.attribution.source == self.action_urn and (
+                        source_details_parsed.origin == context.origin
+                    ):
                         action_sourced = True
                         if doc_association.documentation != field_doc:
                             mutation_needed = True
@@ -351,10 +463,7 @@ class DocPropagationAction(Action):
                                 doc_association.documentation = field_doc or ""
                                 doc_association.attribution = attribution
                             elif operation == "REMOVE":
-                                # TODO : should we remove the documentation or just set it to empty string?
-                                # Ideally we remove it
-                                doc_association.documentation = ""
-                                doc_association.attribution = attribution
+                                documentations.documentations.remove(doc_association)
             if not action_sourced:
                 documentations.documentations.append(
                     DocumentationAssociationClass(
@@ -459,12 +568,12 @@ class DocPropagationAction(Action):
         upstreams = graph.get_upstreams(entity_urn=downstream_field)
         # Use a set here in case there are duplicated upstream edges
         upstream_fields = list(
-            {x for x in upstreams if x.startswith("urn:li:schemaField")}
+            {x for x in upstreams if guess_entity_type(x) == "schemaField"}
         )
 
         # If we found no upstreams for the downstream field, simply skip.
         if not upstream_fields:
-            logger.warning(
+            logger.debug(
                 f"No upstream fields found. Skipping propagation to downstream {downstream_field}"
             )
             return False
@@ -480,7 +589,7 @@ class DocPropagationAction(Action):
     def act(self, event: EventEnvelope) -> None:
         assert self.ctx.graph
         for mcp in self.act_async(event):
-            self.ctx.graph.graph.emit(mcp)
+            self._rate_limited_emit_mcp(mcp)
 
     def act_async(
         self, event: EventEnvelope
@@ -503,6 +612,7 @@ class DocPropagationAction(Action):
 
         try:
             doc_propagation_directive = self.should_propagate(event)
+            # breakpoint()
             logger.debug(
                 f"Doc propagation directive for {event}: {doc_propagation_directive}"
             )
@@ -517,21 +627,47 @@ class DocPropagationAction(Action):
                     via=doc_propagation_directive.via,
                     propagated=True,
                     actor=doc_propagation_directive.actor,
+                    propagation_started_at=doc_propagation_directive.propagation_started_at,
+                    propagation_depth=doc_propagation_directive.propagation_depth,
                 )
                 assert self.ctx.graph
-
-                # TODO: Put each mechanism behind a config flag to be controlled externally.
-
-                # Step 1: Propagate to downstream entities
-                yield from self._propagate_to_downstreams(
-                    doc_propagation_directive, context
+                logger.debug(f"Doc Propagation Directive: {doc_propagation_directive}")
+                # TODO: Put each mechanism behind a config flag to be controlled
+                # externally.
+                lineage_downstream = (
+                    RelationshipType.LINEAGE,
+                    DirectionType.DOWN,
+                ) in doc_propagation_directive.relationships
+                lineage_upstream = (
+                    RelationshipType.LINEAGE,
+                    DirectionType.UP,
+                ) in doc_propagation_directive.relationships
+                lineage_any = (
+                    RelationshipType.LINEAGE,
+                    DirectionType.ALL,
+                ) in doc_propagation_directive.relationships
+                logger.debug(
+                    f"Lineage Downstream: {lineage_downstream}, Lineage Upstream: {lineage_upstream}, Lineage Any: {lineage_any}"
                 )
+                if lineage_downstream or lineage_any:
+                    # Step 1: Propagate to downstream entities
+                    yield from self._propagate_to_downstreams(
+                        doc_propagation_directive, context
+                    )
 
-                # Step 2: Propagate to sibling entities
-                yield from self._propagate_to_siblings(
-                    doc_propagation_directive, context
-                )
-
+                if lineage_upstream or lineage_any:
+                    # Step 2: Propagate to upstream entities
+                    yield from self._propagate_to_upstreams(
+                        doc_propagation_directive, context
+                    )
+                if (
+                    RelationshipType.SIBLING,
+                    DirectionType.ALL,
+                ) in doc_propagation_directive.relationships:
+                    # Step 3: Propagate to sibling entities
+                    yield from self._propagate_to_siblings(
+                        doc_propagation_directive, context
+                    )
             stats.end(event, success=True)
 
         except Exception:
@@ -552,10 +688,14 @@ class DocPropagationAction(Action):
             f"Downstreams: {downstreams} for {doc_propagation_directive.entity}"
         )
         entity_urn = doc_propagation_directive.entity
-
-        if entity_urn.startswith("urn:li:schemaField"):
+        propagated_context = SourceDetails.parse_obj(context.dict())
+        propagated_context.propagation_relationship = RelationshipType.LINEAGE
+        propagated_context.propagation_direction = DirectionType.DOWN
+        propagated_entities_this_hop_count = 0
+        # breakpoint()
+        if guess_entity_type(entity_urn) == "schemaField":
             downstream_fields = {
-                x for x in downstreams if x.startswith("urn:li:schemaField")
+                x for x in downstreams if guess_entity_type(x) == "schemaField"
             }
             for field in downstream_fields:
                 schema_field_urn = Urn.create_from_string(field)
@@ -566,31 +706,114 @@ class DocPropagationAction(Action):
                     f"Will {doc_propagation_directive.operation} documentation {doc_propagation_directive.doc_string} for {field_path} on {parent_urn}"
                 )
 
-                if parent_urn.startswith("urn:li:dataset"):
+                parent_entity_type = guess_entity_type(parent_urn)
+
+                if parent_entity_type == "dataset":
                     if self._only_one_upstream_field(
                         self.ctx.graph,
                         downstream_field=str(schema_field_urn),
                         upstream_field=entity_urn,
                     ):
+                        if (
+                            propagated_entities_this_hop_count
+                            >= self.config.max_propagation_fanout
+                        ):
+                            # breakpoint()
+                            logger.warning(
+                                f"Exceeded max propagation fanout of {self.config.max_propagation_fanout}. Skipping propagation to downstream {field}"
+                            )
+                            # No need to propagate to more downstreams
+                            return
+
                         maybe_mcp = self.modify_docs_on_columns(
                             self.ctx.graph,
                             doc_propagation_directive.operation,
                             field,
                             parent_urn,
                             field_doc=doc_propagation_directive.doc_string,
-                            context=context,
+                            context=propagated_context,
                         )
                         if maybe_mcp:
+                            propagated_entities_this_hop_count += 1
                             yield maybe_mcp
 
-                elif parent_urn.startswith("urn:li:chart"):
+                elif parent_entity_type == "chart":
                     logger.warning(
                         "Charts are expected to have fields that are dataset schema fields. Skipping for now..."
                     )
 
                 self._stats.increment_assets_impacted(field)
 
-        elif entity_urn.startswith("urn:li:dataset"):
+        elif guess_entity_type(entity_urn) == "dataset":
+            logger.debug(
+                "Dataset level documentation propagation is not yet supported!"
+            )
+
+    def _propagate_to_upstreams(
+        self, doc_propagation_directive: DocPropagationDirective, context: SourceDetails
+    ) -> Iterable[MetadataChangeProposalWrapper]:
+        """
+        Propagate the documentation to upstream entities.
+        """
+        assert self.ctx.graph
+        upstreams = self.ctx.graph.get_upstreams(
+            entity_urn=doc_propagation_directive.entity
+        )
+        logger.debug(f"Upstreams: {upstreams} for {doc_propagation_directive.entity}")
+        entity_urn = doc_propagation_directive.entity
+        propagated_context = SourceDetails.parse_obj(context.dict())
+        propagated_context.propagation_relationship = RelationshipType.LINEAGE
+        propagated_context.propagation_direction = DirectionType.UP
+        propagated_entities_this_hop_count = 0
+
+        if guess_entity_type(entity_urn) == "schemaField":
+            upstream_fields = {
+                x for x in upstreams if guess_entity_type(x) == "schemaField"
+            }
+            # We only propagate to the upstream field if there is only one
+            # upstream field
+            if len(upstream_fields) == 1:
+                for field in upstream_fields:
+                    schema_field_urn = Urn.create_from_string(field)
+                    parent_urn = schema_field_urn.get_entity_id()[0]
+                    field_path = schema_field_urn.get_entity_id()[1]
+
+                    logger.debug(
+                        f"Will {doc_propagation_directive.operation} documentation {doc_propagation_directive.doc_string} for {field_path} on {parent_urn}"
+                    )
+
+                    parent_entity_type = guess_entity_type(parent_urn)
+
+                    if parent_entity_type == "dataset":
+                        if (
+                            propagated_entities_this_hop_count
+                            >= self.config.max_propagation_fanout
+                        ):
+                            logger.warning(
+                                f"Exceeded max propagation fanout of {self.config.max_propagation_fanout}. Skipping propagation to upstream {field}"
+                            )
+                            # No need to propagate to more upstreams
+                            return
+                        maybe_mcp = self.modify_docs_on_columns(
+                            self.ctx.graph,
+                            doc_propagation_directive.operation,
+                            field,
+                            parent_urn,
+                            field_doc=doc_propagation_directive.doc_string,
+                            context=propagated_context,
+                        )
+                        if maybe_mcp:
+                            propagated_entities_this_hop_count += 1
+                            yield maybe_mcp
+
+                    elif parent_entity_type == "chart":
+                        logger.warning(
+                            "Charts are expected to have fields that are dataset schema fields. Skipping for now..."
+                        )
+
+                    self._stats.increment_assets_impacted(field)
+
+        elif guess_entity_type(entity_urn) == "dataset":
             logger.debug(
                 "Dataset level documentation propagation is not yet supported!"
             )
@@ -604,12 +827,16 @@ class DocPropagationAction(Action):
         assert self.ctx.graph
         entity_urn = doc_propagation_directive.entity
         siblings = get_unique_siblings(self.ctx.graph, entity_urn)
+        propagated_context = SourceDetails.parse_obj(context.dict())
+        propagated_context.propagation_relationship = RelationshipType.SIBLING
+        propagated_context.propagation_direction = DirectionType.ALL
 
         logger.debug(f"Siblings: {siblings} for {doc_propagation_directive.entity}")
 
         for sibling in siblings:
-            if entity_urn.startswith("urn:li:schemaField") and sibling.startswith(
-                "urn:li:schemaField"
+            if (
+                guess_entity_type(entity_urn) == "schemaField"
+                and guess_entity_type(sibling) == "schemaField"
             ):
                 parent_urn = Urn.create_from_string(sibling).get_entity_id()[0]
                 self._stats.increment_assets_impacted(sibling)
@@ -619,7 +846,7 @@ class DocPropagationAction(Action):
                     schema_field_urn=sibling,
                     dataset_urn=parent_urn,
                     field_doc=doc_propagation_directive.doc_string,
-                    context=context,
+                    context=propagated_context,
                 )
                 if maybe_mcp:
                     yield maybe_mcp
