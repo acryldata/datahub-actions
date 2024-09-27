@@ -51,11 +51,8 @@ framework_common = {
     "PyYAML",
     "toml>=0.10.0",
     "entrypoints",
-    "docker",
-    "expandvars>=0.6.5",
     "python-dateutil>=2.8.0",
     "stackprinter",
-    "tabulate",
     "progressbar2",
 }
 
@@ -106,7 +103,6 @@ mypy_stubs = {
     # versions 0.1.13 and 0.1.14 seem to have issues
     "types-click==0.1.12",
     "boto3-stubs[s3,glue,sagemaker]",
-    "types-tabulate",
 }
 
 base_dev_requirements = {
