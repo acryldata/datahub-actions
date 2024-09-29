@@ -24,6 +24,7 @@ from datahub.configuration.common import ConfigModel
 from datahub.emitter.mce_builder import make_schema_field_urn
 from datahub.ingestion.graph.client import DataHubGraph, SearchFilterRule
 from datahub.metadata.schema_classes import MetadataAttributionClass
+from datahub.utilities.str_enum import StrEnum
 from datahub.utilities.urns.urn import Urn, guess_entity_type
 from pydantic import validator
 from pydantic.fields import Field
@@ -35,13 +36,13 @@ from datahub_actions.api.action_graph import AcrylDataHubGraph
 SYSTEM_ACTOR = "urn:li:corpuser:__datahub_system"
 
 
-class RelationshipType(str, Enum):
+class RelationshipType(StrEnum):
     LINEAGE = "lineage"  # signifies all types of lineage
     HIERARCHY = "hierarchy"  # signifies all types of hierarchy
     SIBLING = "sibling"  # signifies all types of sibling
 
 
-class DirectionType(str, Enum):
+class DirectionType(StrEnum):
     UP = "up"  # signifies upstream or parent (depending on relationship type)
     DOWN = "down"  # signifies downstream or child (depending on relationship type)
     ALL = "all"  # signifies all directions
