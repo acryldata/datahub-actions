@@ -66,7 +66,8 @@ jobs:
           images: |
             acryldata/datahub-actions
           tags: |
-            type=raw,value=${{ needs.setup.outputs.tag }}
+            type=raw,value=${{ needs.setup.outputs.unique_tag }}
+            type=raw,value=head,enable={{is_default_branch}}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         if: ${{ needs.setup.outputs.publish == 'true' }}
@@ -103,7 +104,8 @@ jobs:
           images: |
             acryldata/datahub-actions-slim
           tags: |
-            type=raw,value=${{ needs.setup.outputs.tag }}
+            type=raw,value=${{ needs.setup.outputs.unique_tag }}
+            type=raw,value=head,enable={{is_default_branch}}
       - name: Set up QEMU (slim)
         if: ${{ needs.setup.outputs.publish == 'true' }}
         uses: docker/setup-qemu-action@v2
