@@ -12,9 +12,8 @@ on:
     paths:
       - "docker/**"
       - ".github/workflows/datahub-actions-docker.yml"
-    paths-ignore:
-      - "build/**"
-      - "**.md"
+      - "!build/**"
+      - "!**.md"
   release:
     types: [published, edited]
   workflow_dispatch:
