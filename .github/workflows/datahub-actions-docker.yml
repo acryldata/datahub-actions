@@ -63,7 +63,7 @@ jobs:
     needs: setup
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Docker meta
         id: docker_meta
         uses: docker/metadata-action@v5
@@ -105,11 +105,13 @@ jobs:
         id: docker_meta_slim
         uses: docker/metadata-action@v5
         with:
+          # The slim images use a totally separate image name, so we don't need to
+          # suffix the tags with -slim.
           images: |
             acryldata/datahub-actions-slim
           tags: |
             type=raw,value=${{ needs.setup.outputs.unique_tag }}
-            type=raw,value=head,enable={{is_default_branch}}
+            type=raw,value=${{ needs.setup.outputs.tracking_tag }},enable=${{ needs.setup.outputs.tracking_tag != '' }}
       - name: Set up QEMU (slim)
         if: ${{ needs.setup.outputs.publish == 'true' }}
         uses: docker/setup-qemu-action@v2
