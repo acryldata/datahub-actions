@@ -4,17 +4,17 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'build/**'
-      - '**.md'
+      - "build/**"
+      - "**.md"
   pull_request:
     branches:
       - main
     paths:
-      - 'docker/**'
-      - '.github/workflows/datahub-actions-docker.yml'
-    paths_ignore:
-      - 'build/**'
-      - '**.md'
+      - "docker/**"
+      - ".github/workflows/datahub-actions-docker.yml"
+    paths-ignore:
+      - "build/**"
+      - "**.md"
   release:
     types: [published, edited]
   workflow_dispatch:
@@ -23,9 +23,11 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.tag.outputs.tag }}
       publish: ${{ steps.publish.outputs.publish }}
+      # The tracking tag will be "head", "v1.2.3", or "pr1234".
+      # The unique tag will be a short SHA.
       unique_tag: ${{ steps.tag.outputs.unique_tag }}
+      tracking_tag: ${{ steps.tag.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -34,10 +36,14 @@ jobs:
         run: |
           echo "GITHUB_REF: $GITHUB_REF"
           SHORT_SHA=$(git rev-parse --short "$GITHUB_SHA")
-          TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/main,head\,${SHORT_SHA},g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
-          UNIQUE_TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/main,${SHORT_SHA},g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "SHORT_SHA: $SHORT_SHA"
+          UNIQUE_TAG=$SHORT_SHA
+          echo "UNIQUE_TAG: $UNIQUE_TAG"
+          TRACKING_TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/main,head,g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
+          echo "TRACKING_TAG: $TRACKING_TAG"
+
           echo "unique_tag=$UNIQUE_TAG" >> "$GITHUB_OUTPUT"
+          echo "tracking_tag=$TRACKING_TAG" >> "$GITHUB_OUTPUT"
       - name: Check whether publishing enabled
         id: publish
         env:
@@ -67,7 +73,7 @@ jobs:
             acryldata/datahub-actions
           tags: |
             type=raw,value=${{ needs.setup.outputs.unique_tag }}
-            type=raw,value=head,enable={{is_default_branch}}
+            type=raw,value=${{ needs.setup.outputs.tracking_tag }},enable=${{ needs.setup.outputs.tracking_tag != '' }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         if: ${{ needs.setup.outputs.publish == 'true' }}
@@ -89,7 +95,6 @@ jobs:
           cache-from: type=registry,ref=${{ steps.docker_meta.outputs.tags }}
           cache-to: type=inline
           target: final
-          build-args: 'GEM_FURY_TOKEN=${{ secrets.GEMFURY_PULL_TOKEN }}'
   slim_image:
     name: Build & Push Image to DockerHub (slim)
     runs-on: ubuntu-latest
@@ -128,7 +133,6 @@ jobs:
           load: ${{ needs.setup.outputs.publish != 'true' }}
           build-args: |
             "APP_ENV=prod-slim"
-            "GEM_FURY_TOKEN=${{ secrets.GEMFURY_PULL_TOKEN }}"
       - name: Save Docker image
         if: needs.setup.outputs.publish != 'true'
         run: docker save ${{ steps.docker_meta_slim.outputs.tags }} > image.tar
@@ -175,7 +179,7 @@ jobs:
       contents: read # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    name: '[Monitoring] Scan slim action images for vulnerabilities'
+    name: "[Monitoring] Scan slim action images for vulnerabilities"
     runs-on: ubuntu-latest
     needs: [setup, slim_image]
     steps:
@@ -198,16 +202,16 @@ jobs:
           TRIVY_OFFLINE_SCAN: true
         with:
           image-ref: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
-          format: 'template'
-          template: '@/contrib/sarif.tpl'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          format: "template"
+          template: "@/contrib/sarif.tpl"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
           ignore-unfixed: true
-          vuln-type: 'os,library'
+          vuln-type: "os,library"
       - name: Upload Trivy scan results to GitHub Security tab (slim)
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
   smoke_test:
     name: Run Smoke Tests
     runs-on: ubuntu-latest
@@ -225,13 +229,13 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
+          distribution: "zulu"
           java-version: 17
       - uses: gradle/actions/setup-gradle@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: "3.10"
+          cache: "pip"
       - name: Download artifact (if not publishing)
         if: needs.setup.outputs.publish != 'true'
         uses: actions/download-artifact@v3
@@ -248,8 +252,8 @@ jobs:
           DATAHUB_TELEMETRY_ENABLED: false
           DATAHUB_ACTIONS_IMAGE: acryldata/datahub-actions-slim
           DATAHUB_ACTIONS_VERSION: ${{ needs.setup.outputs.unique_tag }}
-          ACTIONS_EXTRA_PACKAGES: 'acryl-datahub-actions[executor]==0.0.13 acryl-datahub-actions==0.0.13 acryl-datahub==0.10.5'
-          ACTIONS_CONFIG: 'https://raw.githubusercontent.com/acryldata/datahub-actions/main/docker/config/executor.yaml'
+          ACTIONS_EXTRA_PACKAGES: "acryl-datahub-actions[executor]==0.0.13 acryl-datahub-actions==0.0.13 acryl-datahub==0.10.5"
+          ACTIONS_CONFIG: "https://raw.githubusercontent.com/acryldata/datahub-actions/main/docker/config/executor.yaml"
         run: |
           ./smoke-test/run-quickstart.sh
       - name: Disk Check
