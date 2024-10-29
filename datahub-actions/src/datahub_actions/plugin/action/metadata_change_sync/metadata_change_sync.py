@@ -81,6 +81,8 @@ class MetadataChangeSyncAction(Action):
             logger.debug(f"received orig_event {orig_event}")
             if (orig_event.get("aspectName") not in self.aspects_exclude_set) and (
                 orig_event.get("entityType") not in self.config.entity_type_to_exclude
+                if self.config.entity_type_to_exclude
+                else True
             ):
                 mcp = self.buildMcp(orig_event)
                 if mcp is not None:
