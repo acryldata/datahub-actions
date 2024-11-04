@@ -21,7 +21,7 @@ class MetadataChangeEmitterConfig(BaseModel):
     gms_server: Optional[str]
     gms_auth_token: Optional[str]
     aspects_to_exclude: Optional[List]
-    entity_type_to_exclude: Optional[List] = Field(default_factory=list)
+    entity_type_to_exclude: List[str] = Field(default_factory=list)
     extra_headers: Optional[Dict[str, str]]
 
 
