@@ -7,7 +7,7 @@ from datahub.metadata.schema_classes import (
     MetadataChangeLogClass,
     MetadataChangeProposalClass,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from datahub_actions.action.action import Action
 from datahub_actions.event.event_envelope import EventEnvelope
@@ -21,6 +21,7 @@ class MetadataChangeEmitterConfig(BaseModel):
     gms_server: Optional[str]
     gms_auth_token: Optional[str]
     aspects_to_exclude: Optional[List]
+    entity_type_to_exclude: List[str] = Field(default_factory=list)
     extra_headers: Optional[Dict[str, str]]
 
 
@@ -59,6 +60,7 @@ class MetadataChangeSyncAction(Action):
             if self.config.aspects_to_exclude
             else self.DEFAULT_ASPECTS_EXCLUDE_SET
         )
+
         extra_headers_keys = (
             list(self.config.extra_headers.keys())
             if self.config.extra_headers
@@ -77,10 +79,18 @@ class MetadataChangeSyncAction(Action):
         if event.event_type is METADATA_CHANGE_LOG_EVENT_V1_TYPE:
             orig_event = cast(MetadataChangeLogClass, event.event)
             logger.debug(f"received orig_event {orig_event}")
-            if orig_event.get("aspectName") not in self.aspects_exclude_set:
+            if (orig_event.get("aspectName") not in self.aspects_exclude_set) and (
+                orig_event.get("entityType") not in self.config.entity_type_to_exclude
+                if self.config.entity_type_to_exclude
+                else True
+            ):
                 mcp = self.buildMcp(orig_event)
                 if mcp is not None:
                     self.emit(mcp)
+            else:
+                logger.debug(
+                    f"skip emitting mcp for aspect as {orig_event.get('aspectName')} or entity type {orig_event.get('entityType')} on exclude list"
+                )
 
     def buildMcp(
         self, orig_event: MetadataChangeLogClass
