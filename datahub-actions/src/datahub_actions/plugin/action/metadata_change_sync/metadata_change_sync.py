@@ -87,6 +87,10 @@ class MetadataChangeSyncAction(Action):
                 mcp = self.buildMcp(orig_event)
                 if mcp is not None:
                     self.emit(mcp)
+            else:
+                logger.debug(
+                    f"skip emitting mcp for aspect as {orig_event.get('aspectName')} or entity type {orig_event.get('entityType')} on exclude list"
+                )
 
     def buildMcp(
         self, orig_event: MetadataChangeLogClass
