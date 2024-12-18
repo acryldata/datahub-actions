@@ -67,7 +67,9 @@ aws_common = {
 # Note: for all of these, framework_common will be added.
 plugins: Dict[str, Set[str]] = {
     # Source Plugins
-    "kafka": set(),  # included by default
+    "kafka": {
+        "confluent_kafka>=2.6.1",
+    },
     # Action Plugins
     "executor": {
         "acryl-executor==0.1.2",
