@@ -41,8 +41,10 @@ jobs:
           TRACKING_TAG=$(echo ${GITHUB_REF} | sed -e "s,refs/heads/main,head,g" -e 's,refs/tags/,,g' -e 's,refs/pull/\([0-9]*\).*,pr\1,g')
           echo "TRACKING_TAG: $TRACKING_TAG"
 
-          echo "unique_tag=$UNIQUE_TAG" >> "$GITHUB_OUTPUT"
-          echo "tracking_tag=$TRACKING_TAG" >> "$GITHUB_OUTPUT"
+          {
+            echo "unique_tag=${UNIQUE_TAG}"
+            echo "tracking_tag=${TRACKING_TAG}"
+          } >> $GITHUB_OUTPUT
       - name: Check whether publishing enabled
         id: publish
         env:
