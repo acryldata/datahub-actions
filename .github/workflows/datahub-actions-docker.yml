@@ -64,6 +64,11 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+      - name: Setup Outputs
+        run: |
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "unique_tag=${{ needs.setup.outputs.unique_tag }}"
+          echo "tracking_tag=${{ needs.setup.outputs.tracking_tag }}"
       - name: Docker meta
         id: docker_meta
         uses: docker/metadata-action@v5
@@ -101,6 +106,11 @@ jobs:
     steps:
       - name: Check out the repo (slim)
         uses: actions/checkout@v3
+      - name: Setup Outputs
+        run: |
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "unique_tag=${{ needs.setup.outputs.unique_tag }}"
+          echo "tracking_tag=${{ needs.setup.outputs.tracking_tag }}"
       - name: Docker meta (slim)
         id: docker_meta_slim
         uses: docker/metadata-action@v5
