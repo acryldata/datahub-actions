@@ -1,6 +1,5 @@
 # test_datahub_event_source.py
 
-import json
 from typing import List, cast
 from unittest.mock import MagicMock, patch
 
@@ -208,14 +207,8 @@ def test_handle_pe() -> None:
     otherwise yields nothing.
     """
     # Valid "entityChangeEvent" object
-    event_data = {
-        "name": "entityChangeEvent",
-        "payload": {
-            "contentType": "application/json",
-            "value": '{"entityUrn":"urn:li:dataset:(test)"}',
-        },
-    }
-    msg = ExternalEvent(contentType="application/json", value=json.dumps(event_data))
+    event_value = '{"header":{"timestampMillis":1737170481713},"name":"entityChangeEvent","payload":{"value":"{\\"auditStamp\\":{\\"actor\\":\\"urn:li:corpuser:john.joyce@acryl.io\\",\\"time\\":1737170481713},\\"entityUrn\\":\\"urn:li:dataset:(urn:li:dataPlatform:snowflake,datahub_community.datahub_slack.message_file,PROD)\\",\\"entityType\\":\\"dataset\\",\\"modifier\\":\\"urn:li:tag:COLUMNFIELD\\",\\"category\\":\\"TAG\\",\\"operation\\":\\"ADD\\",\\"version\\":0,\\"parameters\\":{\\"tagUrn\\":\\"urn:li:tag:COLUMNFIELD\\"}}","contentType":"application/json"}}'
+    msg = ExternalEvent(contentType="application/json", value=event_value)
 
     envelopes: List[EventEnvelope] = list(DataHubEventSource.handle_pe(msg))
     assert len(envelopes) == 1
@@ -223,8 +216,8 @@ def test_handle_pe() -> None:
     assert isinstance(envelopes[0].event, EntityChangeEvent)
 
     # Different event name => no yield
-    event_data["name"] = "someOtherEvent"
-    msg2 = ExternalEvent(contentType="application/json", value=json.dumps(event_data))
+    event_value_2 = '{"header":{"timestampMillis":1737170481713},"name":"anotherEvent","payload":{"value":"{\\"auditStamp\\":{\\"actor\\":\\"urn:li:corpuser:john.joyce@acryl.io\\",\\"time\\":1737170481713},\\"entityUrn\\":\\"urn:li:dataset:(urn:li:dataPlatform:snowflake,datahub_community.datahub_slack.message_file,PROD)\\",\\"entityType\\":\\"dataset\\",\\"modifier\\":\\"urn:li:tag:COLUMNFIELD\\",\\"category\\":\\"TAG\\",\\"operation\\":\\"ADD\\",\\"version\\":0,\\"parameters\\":{\\"tagUrn\\":\\"urn:li:tag:COLUMNFIELD\\"}}","contentType":"application/json"}}'
+    msg2 = ExternalEvent(contentType="application/json", value=event_value_2)
     envelopes2 = list(DataHubEventSource.handle_pe(msg2))
     assert len(envelopes2) == 0
 
