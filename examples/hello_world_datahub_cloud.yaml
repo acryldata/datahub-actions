@@ -1,11 +1,12 @@
 # hello_world.yaml
 name: "hello_world_datahub_cloud"
-# 1. Event Source: Where to source event from.
+# 1. DataHub Cloud Connection: Configure how to talk to DataHub Cloud
 datahub:
-  server: "https://longtailcompanions.acryl.io"
-  token: "eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImpvaG4uam95Y2VAYWNyeWwuaW8iLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6ImMyYTAwYzAxLWNjZWMtNDRiNC05NGIxLTNmZWY3ZTk3ODkzNiIsInN1YiI6ImpvaG4uam95Y2VAYWNyeWwuaW8iLCJleHAiOjE3NDAwMDk3MjQsImlzcyI6ImRhdGFodWItbWV0YWRhdGEtc2VydmljZSJ9.WpIRnVb4qktlcVC_EJS-7i4E_rLJ3CTe3XHT6cL18oE"
+  server: "<your-datahub-cloud-url"
+  token: "<your-datahub-cloud-token>"
+# 2. Event Source: Where to source event from.
 source:
   type: "datahub-cloud"
-# 2. Action: What action to take on events. 
+# 3. Action: What action to take on events. 
 action:
   type: "hello_world"
