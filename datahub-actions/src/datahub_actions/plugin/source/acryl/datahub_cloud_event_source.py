@@ -18,6 +18,10 @@ from datahub_actions.event.event_registry import (
 
 # May or may not need these.
 from datahub_actions.pipeline.pipeline_context import PipelineContext
+from datahub_actions.plugin.source.acryl.constants import (
+    ENTITY_CHANGE_EVENT_NAME,
+    PLATFORM_EVENT_TOPIC_NAME,
+)
 from datahub_actions.plugin.source.acryl.datahub_cloud_events_ack_manager import (
     AckManager,
 )
@@ -30,16 +34,17 @@ from datahub_actions.source.event_source import EventSource
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-ENTITY_CHANGE_EVENT_NAME = "entityChangeEvent"
-
 
 # Converts a DataHub Events Message to an EntityChangeEvent.
 def build_entity_change_event(payload: GenericPayloadClass) -> EntityChangeEvent:
-    return EntityChangeEvent.from_json(payload.get("value"))
+    try:
+        return EntityChangeEvent.from_json(payload.get("value"))
+    except Exception as e:
+        raise ValueError("Failed to parse into EntityChangeEvent") from e
 
 
 class DataHubEventsSourceConfig(ConfigModel):
-    topic: str = "PlatformEvent_v1"
+    topic: str = PLATFORM_EVENT_TOPIC_NAME
     consumer_id: Optional[str]  # Used to store offset for the consumer.
     lookback_days: Optional[int] = None
     reset_offsets: Optional[bool] = False
@@ -47,7 +52,7 @@ class DataHubEventsSourceConfig(ConfigModel):
     # Time and Exit Conditions.
     kill_after_idle_timeout: bool = False
     idle_timeout_duration_seconds: int = 30
-    event_processing_time_max_duration_seconds: int = 30
+    event_processing_time_max_duration_seconds: int = 60
 
 
 # This is the custom DataHub-based Event Source.
@@ -105,12 +110,12 @@ class DataHubEventSource(EventSource):
                 while self.ack_manager.outstanding_acks():
                     time.sleep(1)
                     sleeps_to_go -= 1
-                    logger.info(f"Sleeps to go: {sleeps_to_go}")
+                    logger.debug(f"Sleeps to go: {sleeps_to_go}")
 
                     if sleeps_to_go == 0:
                         self.running = False
                         raise Exception(
-                            f"Failed to process all events successfully within specified time \n{self.ack_manager.acks.values()}",
+                            f"Failed to successfully process all events successfully after specified time {self.source_config.event_processing_time_max_duration_seconds}! If more time is required, please increase the timeout using this config. {self.ack_manager.acks.values()}",
                         )
                 logger.debug(
                     f"Successfully processed events up to offset id {self.safe_to_ack_offset}"
@@ -125,7 +130,6 @@ class DataHubEventSource(EventSource):
                 # Handle Idle Timeout
                 num_events = len(events_response.events)
 
-                # breakpoint()
                 if num_events == 0:
                     if last_idle_response_timestamp == 0:
                         last_idle_response_timestamp = (

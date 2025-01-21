@@ -51,7 +51,7 @@ Use the following config(s) to get started with the DataHub Cloud Event Source.
 To start listening for new events from now, you can use the following recipe: 
 
 ```yml
-name: "unique-pipeline-name"
+name: "unique-action-name"
 datahub:
   server: "https://<your-organization>.acryl.io"
   token: "<your-datahub-cloud-token>"
@@ -68,7 +68,7 @@ Note that the `datahub` configuration block is **required** to connect to your D
 To reset the offsets for the action pipeline and start consuming events from 7 days ago, you can use the following recipe: 
 
 ```yml
-name: "unique-pipeline-name"
+name: "unique-action-name"
 datahub:
   server: "https://<your-organization>.acryl.io"
   token: "<your-datahub-cloud-token>"
@@ -91,8 +91,7 @@ Note that the `datahub` configuration block is **required** to connect to your D
   
   | Field                                 | Required | Default                       | Description                                                                               |
   | ------------------------------------- | :------: | :---------------------------: | ----------------------------------------------------------------------------------------- |
-  | `token`                               |    ✅    | None                          | Authentication token if required for accessing the event source.                          |
-  | `topic`                               |    ❌    | `PlatformEvent_v1`            | The name of the topic from which events will be consumed.                                 |
+  | `topic`                               |    ❌    | `PlatformEvent_v1`            | The name of the topic from which events will be consumed. Do not change this unless you know what you're doing!                                |
   | `lookback_days`                       |    ❌    | None                           | Optional number of days to look back when polling for events.                             |
   | `reset_offsets`                       |    ❌    | `False`                       | When set to `True`, the consumer will ignore any stored offsets and start fresh.          |
   | `kill_after_idle_timeout`             |    ❌    | `False`                       | If `True`, stops the consumer after being idle for the specified timeout duration.        |
