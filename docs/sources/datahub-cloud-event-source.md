@@ -1,5 +1,17 @@
 # DataHub Cloud Event Source
 
+## Prerequisites
+
+### Compatibility
+
+The **DataHub Cloud Event Source** is only compatible with versions of DataHub Cloud above  `v0.3.7`.
+
+### Privileges
+
+By default, users do not have access to the Events API of DataHub Cloud. In order to access the API, the user or service account
+associated with the access token used to configure this events source _must_ have the `Get Platform Events` platform privilege, which
+can be granted using an [Access Policy](https://datahubproject.io/docs/authorization/access-policies-guide/). 
+
 ## Overview
 
 The DataHub Cloud Event Source allows you to use DataHub Actions with an instance of DataHub Cloud hosted by [Acryl](https://acryl.io).
