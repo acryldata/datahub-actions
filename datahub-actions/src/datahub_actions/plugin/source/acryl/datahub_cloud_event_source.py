@@ -18,10 +18,10 @@ from datahub_actions.event.event_registry import (
 
 # May or may not need these.
 from datahub_actions.pipeline.pipeline_context import PipelineContext
-from datahub_actions.plugin.source.acryl.acryl_datahub_events_ack_manager import (
+from datahub_actions.plugin.source.acryl.datahub_cloud_events_ack_manager import (
     AckManager,
 )
-from datahub_actions.plugin.source.acryl.acryl_datahub_events_consumer import (
+from datahub_actions.plugin.source.acryl.datahub_cloud_events_consumer import (
     DataHubEventsConsumer,
     ExternalEvent,
 )
@@ -39,11 +39,10 @@ def build_entity_change_event(payload: GenericPayloadClass) -> EntityChangeEvent
 
 
 class DataHubEventsSourceConfig(ConfigModel):
-    consumer_id: str  # Used to store offset for the consumer.
-    token: str = ""
     topic: str = "PlatformEvent_v1"
+    consumer_id: Optional[str]  # Used to store offset for the consumer.
     lookback_days: Optional[int] = None
-    force_full_refresh: Optional[bool] = False
+    reset_offsets: Optional[bool] = False
 
     # Time and Exit Conditions.
     kill_after_idle_timeout: bool = False
@@ -78,7 +77,7 @@ class DataHubEventSource(EventSource):
             graph=self.ctx.graph.graph,
             consumer_id=self.consumer_id,
             lookback_days=self.source_config.lookback_days,
-            force_full_refresh=self.source_config.force_full_refresh,
+            reset_offsets=self.source_config.reset_offsets,
         )
         self.ack_manager = AckManager()
         self.safe_to_ack_offset: Optional[str] = None
@@ -89,7 +88,8 @@ class DataHubEventSource(EventSource):
         return cls(config, ctx)
 
     def events(self) -> Iterable[EventEnvelope]:
-        logger.debug(f"Subscribing to the following topic: {self.source_config.topic}")
+        logger.info("Starting DataHub Cloud events source...")
+        logger.info(f"Subscribing to the following topic: {self.source_config.topic}")
         self.running = True
         yield from self._poll_and_process_events()
 
@@ -97,7 +97,6 @@ class DataHubEventSource(EventSource):
         """Poll and process events in the main loop."""
         last_idle_response_timestamp = 0
         while self.running:
-            logger.info("DataHub Events Consumer main loop")
             try:
                 sleeps_to_go = (
                     self.source_config.event_processing_time_max_duration_seconds
@@ -113,11 +112,11 @@ class DataHubEventSource(EventSource):
                         raise Exception(
                             f"Failed to process all events successfully within specified time \n{self.ack_manager.acks.values()}",
                         )
-                logger.info(
+                logger.debug(
                     f"Successfully processed events up to offset id {self.safe_to_ack_offset}"
                 )
                 self.safe_to_ack_offset = self.datahub_events_consumer.offset_id
-                logger.info(f"Safe to ack offset: {self.safe_to_ack_offset}")
+                logger.debug(f"Safe to ack offset: {self.safe_to_ack_offset}")
 
                 events_response = self.datahub_events_consumer.poll_events(
                     topic=self.source_config.topic, poll_timeout_seconds=2

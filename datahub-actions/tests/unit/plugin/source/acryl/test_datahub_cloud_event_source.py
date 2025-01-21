@@ -13,14 +13,14 @@ from datahub_actions.event.event_registry import (
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 
 # Import your source + config classes from the correct module path.
-from datahub_actions.plugin.source.acryl.acryl_datahub_event_source import (
+from datahub_actions.plugin.source.acryl.datahub_cloud_event_source import (
     DataHubEventSource,
     DataHubEventsSourceConfig,
 )
-from datahub_actions.plugin.source.acryl.acryl_datahub_events_ack_manager import (
+from datahub_actions.plugin.source.acryl.datahub_cloud_events_ack_manager import (
     AckManager,
 )
-from datahub_actions.plugin.source.acryl.acryl_datahub_events_consumer import (
+from datahub_actions.plugin.source.acryl.datahub_cloud_events_consumer import (
     DataHubEventsConsumer,
     ExternalEvent,
     ExternalEventsResponse,
@@ -50,11 +50,9 @@ def base_config_dict() -> dict:
     We will parse this into DataHubEventsSourceConfig in each test.
     """
     return {
-        "consumer_id": "my_consumer_id",
-        "token": "fake-token",
         "topic": "PlatformEvent_v1",
         "lookback_days": None,
-        "force_full_refresh": False,
+        "reset_offsets": False,
         "kill_after_idle_timeout": True,
         "idle_timeout_duration_seconds": 5,
         "event_processing_time_max_duration_seconds": 5,
@@ -69,7 +67,6 @@ def test_create_source(
     """
     source = DataHubEventSource.create(base_config_dict, mock_pipeline_context)
     assert isinstance(source, DataHubEventSource)
-    assert source.source_config.consumer_id == "my_consumer_id"
     # The consumer_id on the instance includes the action prefix from pipeline_name
     assert source.consumer_id == "urn:li:dataHubAction:test-pipeline"
 

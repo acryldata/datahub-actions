@@ -8,13 +8,13 @@ from datahub.ingestion.graph.client import DataHubGraph
 from requests.exceptions import ConnectionError, HTTPError
 from requests.models import Response
 
-from datahub_actions.plugin.source.acryl.acryl_datahub_events_consumer import (
+from datahub_actions.plugin.source.acryl.datahub_cloud_events_consumer import (
     DataHubEventsConsumer,
     ExternalEvent,
     ExternalEventsResponse,
 )
-from datahub_actions.plugin.source.acryl.acryl_datahub_events_consumer_offsets_store import (
-    AcrylDataHubEventsConsumerOffsetsStore,
+from datahub_actions.plugin.source.acryl.datahub_cloud_events_consumer_offsets_store import (
+    DataHubEventsConsumerPlatformResourceOffsetsStore,
 )
 
 
@@ -57,24 +57,24 @@ def external_events_response() -> ExternalEventsResponse:
 def test_consumer_init_with_consumer_id_loads_offsets(mock_graph: DataHubGraph) -> None:
     """
     Verify that providing a consumer_id triggers loading existing offsets
-    from the store, unless force_full_refresh is True.
+    from the store, unless reset_offsets is True.
     """
-    mock_store = MagicMock(spec=AcrylDataHubEventsConsumerOffsetsStore)
+    mock_store = MagicMock(spec=DataHubEventsConsumerPlatformResourceOffsetsStore)
     mock_store.load_offset_id.return_value = "loaded-offset"
 
     # Patch the store's constructor so it returns our mock_store
     with patch.object(
-        target=AcrylDataHubEventsConsumerOffsetsStore,
+        target=DataHubEventsConsumerPlatformResourceOffsetsStore,
         attribute="__init__",
         return_value=None,
     ), patch.object(
-        AcrylDataHubEventsConsumerOffsetsStore,
+        DataHubEventsConsumerPlatformResourceOffsetsStore,
         "load_offset_id",
         new=mock_store.load_offset_id,
     ):
         # Construct the consumer
         consumer = DataHubEventsConsumer(
-            graph=mock_graph, consumer_id="test-consumer", force_full_refresh=False
+            graph=mock_graph, consumer_id="test-consumer", reset_offsets=False
         )
         # Because we've mocked __init__, manually set consumer.offsets_store
         consumer.offsets_store = mock_store
@@ -86,26 +86,26 @@ def test_consumer_init_with_consumer_id_loads_offsets(mock_graph: DataHubGraph) 
         assert consumer.offset_id == "loaded-offset"
 
 
-def test_consumer_init_with_consumer_id_and_force_full_refresh(
+def test_consumer_init_with_consumer_id_and_reset_offsets(
     mock_graph: DataHubGraph,
 ) -> None:
     """
-    Verify that when force_full_refresh=True, we do NOT load the offset
+    Verify that when reset_offsets=True, we do NOT load the offset
     from the store.
     """
-    mock_store = MagicMock(spec=AcrylDataHubEventsConsumerOffsetsStore)
+    mock_store = MagicMock(spec=DataHubEventsConsumerPlatformResourceOffsetsStore)
 
     with patch.object(
-        target=AcrylDataHubEventsConsumerOffsetsStore,
+        target=DataHubEventsConsumerPlatformResourceOffsetsStore,
         attribute="__init__",
         return_value=None,
     ):
         consumer = DataHubEventsConsumer(
-            graph=mock_graph, consumer_id="test-consumer", force_full_refresh=True
+            graph=mock_graph, consumer_id="test-consumer", reset_offsets=True
         )
         consumer.offsets_store = mock_store
 
-        # load_offset_id should NOT be called if force_full_refresh=True
+        # load_offset_id should NOT be called if reset_offsets=True
         mock_store.load_offset_id.assert_not_called()
         assert consumer.offset_id is None
 
@@ -236,7 +236,7 @@ def test_commit_offsets_with_explicit_offset(mock_graph: DataHubGraph) -> None:
     """
     Test commit_offsets when an explicit offset_id is passed.
     """
-    mock_store = MagicMock(spec=AcrylDataHubEventsConsumerOffsetsStore)
+    mock_store = MagicMock(spec=DataHubEventsConsumerPlatformResourceOffsetsStore)
     consumer = DataHubEventsConsumer(
         graph=mock_graph,
         consumer_id="test-consumer",
@@ -252,7 +252,7 @@ def test_commit_offsets_with_consumer_offset(mock_graph: DataHubGraph) -> None:
     """
     Test commit_offsets uses the consumer's current offset if none is provided.
     """
-    mock_store = MagicMock(spec=AcrylDataHubEventsConsumerOffsetsStore)
+    mock_store = MagicMock(spec=DataHubEventsConsumerPlatformResourceOffsetsStore)
     consumer = DataHubEventsConsumer(
         graph=mock_graph,
         consumer_id="test-consumer",

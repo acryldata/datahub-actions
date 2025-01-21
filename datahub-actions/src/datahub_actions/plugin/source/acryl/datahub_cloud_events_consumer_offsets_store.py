@@ -49,7 +49,7 @@ class EventConsumerState(BaseModel):
         return EventConsumerState.parse_raw(blob.decode())
 
 
-class AcrylDataHubEventsConsumerOffsetsStore:
+class DataHubEventsConsumerPlatformResourceOffsetsStore:
     """
     State store for the Event Source.
     This loads the offset id for a given consumer id string.

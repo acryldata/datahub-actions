@@ -2,7 +2,7 @@
 
 from typing import Any, Dict
 
-from datahub_actions.plugin.source.acryl.acryl_datahub_events_ack_manager import (
+from datahub_actions.plugin.source.acryl.datahub_cloud_events_ack_manager import (
     AckManager,
 )
 

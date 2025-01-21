@@ -11,8 +11,8 @@ from datahub.metadata.schema_classes import (
     SerializedValueSchemaTypeClass,
 )
 
-from datahub_actions.plugin.source.acryl.acryl_datahub_events_consumer_offsets_store import (
-    AcrylDataHubEventsConsumerOffsetsStore,
+from datahub_actions.plugin.source.acryl.datahub_cloud_events_consumer_offsets_store import (
+    DataHubEventsConsumerPlatformResourceOffsetsStore,
     EventConsumerState,
 )
 
@@ -58,7 +58,7 @@ def test_store_offset_id() -> None:
     Tests that store_offset_id emits the correct MCP to DataHubGraph.
     """
     mock_graph: DataHubGraph = MagicMock()
-    store = AcrylDataHubEventsConsumerOffsetsStore(
+    store = DataHubEventsConsumerPlatformResourceOffsetsStore(
         graph=mock_graph,
         consumer_id="test_consumer",
     )
@@ -94,7 +94,7 @@ def test_load_offset_id_no_existing_state() -> None:
     get_aspect_mock = cast(MagicMock, mock_graph.get_aspect)
     get_aspect_mock.return_value = None  # Simulate no stored aspect
 
-    store = AcrylDataHubEventsConsumerOffsetsStore(
+    store = DataHubEventsConsumerPlatformResourceOffsetsStore(
         graph=mock_graph,
         consumer_id="test_consumer",
     )
@@ -126,7 +126,7 @@ def test_load_offset_id_existing_state() -> None:
     get_aspect_mock = cast(MagicMock, mock_graph.get_aspect)
     get_aspect_mock.return_value = mock_resource_info
 
-    store = AcrylDataHubEventsConsumerOffsetsStore(
+    store = DataHubEventsConsumerPlatformResourceOffsetsStore(
         graph=mock_graph,
         consumer_id="test_consumer",
     )

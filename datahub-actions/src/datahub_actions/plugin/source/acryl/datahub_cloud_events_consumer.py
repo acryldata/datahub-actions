@@ -13,8 +13,8 @@ from tenacity import (
     wait_exponential,
 )
 
-from datahub_actions.plugin.source.acryl.acryl_datahub_events_consumer_offsets_store import (
-    AcrylDataHubEventsConsumerOffsetsStore,
+from datahub_actions.plugin.source.acryl.datahub_cloud_events_consumer_offsets_store import (
+    DataHubEventsConsumerPlatformResourceOffsetsStore,
 )
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class DataHubEventsConsumer:
         consumer_id: Optional[str] = None,
         offset_id: Optional[str] = None,
         lookback_days: Optional[int] = None,
-        force_full_refresh: Optional[bool] = False,
+        reset_offsets: Optional[bool] = False,
     ):
         # 1) Always set self.consumer_id, even if None, so tests can assert it safely.
         self.consumer_id: Optional[str] = consumer_id
@@ -52,29 +52,31 @@ class DataHubEventsConsumer:
         self.graph: DataHubGraph = graph
         self.offset_id: Optional[str] = offset_id
         self.default_lookback_days: Optional[int] = lookback_days
-        self.offsets_store: Optional[AcrylDataHubEventsConsumerOffsetsStore] = None
+        self.offsets_store: Optional[
+            DataHubEventsConsumerPlatformResourceOffsetsStore
+        ] = None
 
         # Build the base URL from the graph config
         self.base_url = f"{graph.config.server}/openapi"
 
         # 2) Create the offsets store only if we have a consumer_id
         if self.consumer_id is not None:
-            self.offsets_store = AcrylDataHubEventsConsumerOffsetsStore(
+            self.offsets_store = DataHubEventsConsumerPlatformResourceOffsetsStore(
                 graph=self.graph,
                 consumer_id=self.consumer_id,
             )
-            # 3) If not forcing a full refresh, load any stored offset
-            #    But only overwrite if the store actually has one.
-            if not force_full_refresh:
+            # 3) If you've chosen to reset consumer offsets, we simply do not load the previous.
+            # Otherwise, load the offsets.
+            if not reset_offsets:
                 loaded_offset = self.offsets_store.load_offset_id()
                 if loaded_offset is not None:
                     self.offset_id = loaded_offset
 
-            logger.info(
+            logger.debug(
                 f"Starting DataHub Events Consumer with id {self.consumer_id} at offset id {self.offset_id}"
             )
         else:
-            logger.info("Starting DataHub Events Consumer with no consumer ID.")
+            logger.debug("Starting DataHub Events Consumer with no consumer ID.")
 
     @retry(
         retry=retry_if_exception_type((HTTPError, ConnectionError)),
