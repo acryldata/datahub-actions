@@ -31,6 +31,16 @@ jobs:
       - name: Gradle build (and test)
         run: |
           ./gradlew build
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
       - uses: actions/upload-artifact@v3
         if: always()
         with:
