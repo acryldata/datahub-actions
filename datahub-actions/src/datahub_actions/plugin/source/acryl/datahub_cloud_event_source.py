@@ -115,7 +115,7 @@ class DataHubEventSource(EventSource):
                     if sleeps_to_go == 0:
                         self.running = False
                         raise Exception(
-                            f"Failed to successfully process all events successfully after specified time {self.source_config.event_processing_time_max_duration_seconds}! If more time is required, please increase the timeout using this config. {self.ack_manager.acks.values()}",
+                            f"Failed to process all events successfully after specified time {self.source_config.event_processing_time_max_duration_seconds}! If more time is required, please increase the timeout using this config. {self.ack_manager.acks.values()}",
                         )
                 logger.debug(
                     f"Successfully processed events up to offset id {self.safe_to_ack_offset}"
