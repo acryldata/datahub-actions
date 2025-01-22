@@ -188,11 +188,10 @@ Two event types are currently supported. Read more about them below.
 
 ## Supported Event Sources
 
-Currently, the only event source that is officially supported is `kafka`, which polls for events
-via a Kafka Consumer. 
+Currently, the following event sources are supported:
 
 - [Kafka Event Source](./docs/sources/kafka-event-source.md)
-
+- [DataHub Cloud Event Source](./docs/sources/kafka-event-source.md)
 
 ## Supported Actions
 
