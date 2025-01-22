@@ -54,6 +54,7 @@ framework_common = {
     "python-dateutil>=2.8.0",
     "stackprinter",
     "progressbar2",
+    "tenacity",
 }
 
 aws_common = {
@@ -127,7 +128,6 @@ base_dev_requirements = {
     "jsonpickle",
     "build",
     "twine",
-    "tenacity",
     *list(
         dependency
         for plugin in [
