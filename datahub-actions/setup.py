@@ -127,6 +127,7 @@ base_dev_requirements = {
     "jsonpickle",
     "build",
     "twine",
+    "tenacity",
     *list(
         dependency
         for plugin in [
