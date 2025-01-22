@@ -2,7 +2,7 @@
 name: "hello_world_datahub_cloud"
 # 1. DataHub Cloud Connection: Configure how to talk to DataHub Cloud
 datahub:
-  server: "<your-datahub-cloud-url"
+  server: "https://<your-organization>.acryl.io"
   token: "<your-datahub-cloud-token>"
 # 2. Event Source: Where to source event from.
 source:
