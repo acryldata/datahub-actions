@@ -151,7 +151,7 @@ jobs:
         run: docker save ${{ steps.docker_meta_slim.outputs.tags }} > image.tar
       - name: Upload artifact
         if: needs.setup.outputs.publish != 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docker-image
           path: image.tar
