@@ -191,7 +191,7 @@ Two event types are currently supported. Read more about them below.
 Currently, the following event sources are supported:
 
 - [Kafka Event Source](./docs/sources/kafka-event-source.md)
-- [DataHub Cloud Event Source](./docs/sources/kafka-event-source.md)
+- [DataHub Cloud Event Source](./docs/sources/datahub-cloud-event-source.md)
 
 ## Supported Actions
 
