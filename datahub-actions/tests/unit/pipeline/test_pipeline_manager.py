@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+
 from datahub_actions.pipeline.pipeline import Pipeline
 from datahub_actions.pipeline.pipeline_manager import PipelineManager
 

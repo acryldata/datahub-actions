@@ -44,8 +44,8 @@ def mock_pipeline() -> Mock:
 def mock_pipeline_manager() -> Mock:
     """Create a mock pipeline manager."""
     mock = Mock(spec=PipelineManager)
-    mock.start_pipeline = Mock()
-    mock.stop_all = Mock()
+    mock.start_pipeline = Mock(return_value=None)
+    mock.stop_all = Mock(return_value=None)
     return mock
 
 
@@ -153,7 +153,6 @@ def test_invalid_config_single(invalid_config_file: str) -> None:
 def test_all_configs_invalid_or_disabled(
     invalid_config_file: str,
     disabled_config_file: str,
-    capture_logger: pytest.LogCaptureFixture,
 ) -> None:
     """Test that program exits when all configs are invalid or disabled."""
     runner = CliRunner()
@@ -190,6 +189,7 @@ def test_mixed_valid_and_invalid_configs(
     capture_logger: pytest.LogCaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
     mock_pipeline: Mock,
+    mock_pipeline_manager: Mock,
 ) -> None:
     """Test handling mix of valid and invalid configs."""
 
@@ -214,7 +214,11 @@ def test_mixed_valid_and_invalid_configs(
         monkeypatch,
         "datahub_actions.pipeline.pipeline.Pipeline.create",
         mock_create_pipeline,
-    ), local_monkeypatch(monkeypatch, "time.sleep", mock_sleep):
+    ), local_monkeypatch(monkeypatch, "time.sleep", mock_sleep), local_monkeypatch(
+        monkeypatch,
+        "datahub_actions.cli.actions.pipeline_manager",
+        mock_pipeline_manager,
+    ):
         result = runner.invoke(
             actions, ["run", "-c", temp_config_file, "-c", disabled_config_file]
         )
