@@ -1,6 +1,7 @@
 import logging
 import os
 import tempfile
+from contextlib import contextmanager
 from typing import Generator
 from unittest.mock import Mock
 
@@ -10,7 +11,7 @@ from click.testing import CliRunner
 from datahub_actions.cli.actions import actions, pipeline_config_to_pipeline
 from datahub_actions.pipeline.pipeline import Pipeline
 from datahub_actions.pipeline.pipeline_manager import PipelineManager
-from contextlib import contextmanager
+
 
 @contextmanager
 def local_monkeypatch(monkeypatch, target, replacement):
@@ -20,6 +21,7 @@ def local_monkeypatch(monkeypatch, target, replacement):
         yield
     finally:
         monkeypatch.undo()
+
 
 @pytest.fixture
 def capture_logger(
@@ -159,6 +161,22 @@ def test_all_configs_invalid_or_disabled(
         actions, ["run", "-c", invalid_config_file, "-c", disabled_config_file]
     )
     assert result.exit_code == 1
+    assert (
+        "Failed to load action configuration. Unbound variable(s) provided in config YAML."
+        in str(result.exception)
+    )
+
+
+def test_all_configs_multiple_disabled(
+    disabled_config_file: str,
+    capture_logger: pytest.LogCaptureFixture,
+) -> None:
+    """Test that program exits when all configs are invalid or disabled."""
+    runner = CliRunner()
+    result = runner.invoke(
+        actions, ["run", "-c", disabled_config_file, "-c", disabled_config_file]
+    )
+    assert result.exit_code == 1
     assert any(
         "No valid pipelines were started from 2 config(s). Check that at least one pipeline is enabled and all required environment variables are set."
         in record.message
@@ -191,13 +209,14 @@ def test_mixed_valid_and_invalid_configs(
     runner = CliRunner()
 
     # Use local_monkeypatch for tighter control
-    
+
     with local_monkeypatch(
-        monkeypatch, "datahub_actions.pipeline.pipeline.Pipeline.create", mock_create_pipeline
+        monkeypatch,
+        "datahub_actions.pipeline.pipeline.Pipeline.create",
+        mock_create_pipeline,
     ), local_monkeypatch(monkeypatch, "time.sleep", mock_sleep):
         result = runner.invoke(
-            actions,
-            ["run", "-c", temp_config_file, "-c", disabled_config_file]
+            actions, ["run", "-c", temp_config_file, "-c", disabled_config_file]
         )
 
     assert result.exit_code == 1
@@ -237,9 +256,13 @@ def test_debug_mode_with_valid_config(
 
     # Use local_monkeypatch for tighter control
     with local_monkeypatch(
-        monkeypatch, "datahub_actions.pipeline.pipeline.Pipeline.create", mock_create_pipeline
+        monkeypatch,
+        "datahub_actions.pipeline.pipeline.Pipeline.create",
+        mock_create_pipeline,
     ), local_monkeypatch(monkeypatch, "time.sleep", mock_sleep), local_monkeypatch(
-        monkeypatch, "datahub_actions.cli.actions.pipeline_manager", mock_pipeline_manager
+        monkeypatch,
+        "datahub_actions.cli.actions.pipeline_manager",
+        mock_pipeline_manager,
     ):
         result = runner.invoke(
             actions,

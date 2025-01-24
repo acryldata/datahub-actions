@@ -147,7 +147,7 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
             pipeline_config_dict = load_config_file(pipeline_config_file)
             pipelines.append(pipeline_config_to_pipeline(pipeline_config_dict))
         except UnboundVariable as e:
-            if len(config) == 1:
+            if len(valid_configs) == 1:
                 raise Exception(
                     "Failed to load action configuration. Unbound variable(s) provided in config YAML."
                 ) from e
