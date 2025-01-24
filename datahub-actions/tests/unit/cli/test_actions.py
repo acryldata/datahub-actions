@@ -151,7 +151,7 @@ def test_all_configs_invalid_or_disabled(
     )
     assert result.exit_code == 1
     assert any(
-        "No valid pipelines were started from 2 config(s). Check that at least one pipeline is enabled and all required variables are bound."
+        "No valid pipelines were started from 2 config(s). Check that at least one pipeline is enabled and all required environment variables are set."
         in record.message
         for record in capture_logger.records
     )
@@ -278,7 +278,7 @@ def test_multiple_disabled_configs(
     )
     assert result.exit_code == 1
     assert any(
-        "No valid pipelines were started from 2 config(s). Check that at least one pipeline is enabled and all required variables are bound."
+        "No valid pipelines were started from 2 config(s). Check that at least one pipeline is enabled and all required environment variables are set."
         in record.message
         for record in capture_logger.records
     )

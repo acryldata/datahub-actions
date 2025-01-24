@@ -78,14 +78,12 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
 
     # Statically configured to be registered with the pipeline Manager.
     pipelines: List[Pipeline] = []
-    attempted_configs = 0
 
     logger.debug("Creating Actions Pipelines...")
 
     # If individual pipeline config was provided, create a pipeline from it.
     if config is not None:
         for pipeline_config in config:
-            attempted_configs += 1
             pipeline_config_file = pathlib.Path(pipeline_config)
             try:
                 # Attempt to load the configuration file
@@ -99,8 +97,8 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
                 else:
                     # Multiple configs, simply log and continue.
                     # Log the unbound variable error
-                    logger.error(
-                        f"Failed to load pipeline configuration! Skipping action...: {e}"
+                    logger.warning(
+                        f"Failed to load pipeline configuration! Skipping action config file {pipeline_config_file}...: {e}"
                     )
                     continue
 
@@ -120,8 +118,8 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
     # Exit early if no valid pipelines were created
     if not pipelines:
         logger.error(
-            f"No valid pipelines were started from {attempted_configs} config(s). "
-            "Check that at least one pipeline is enabled and all required variables are bound."
+            f"No valid pipelines were started from {len(config)} config(s). "
+            "Check that at least one pipeline is enabled and all required environment variables are set."
         )
         sys.exit(1)
 
