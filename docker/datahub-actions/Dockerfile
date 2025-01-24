@@ -46,7 +46,8 @@ RUN --mount=type=cache,target=/datahub-ingestion/.cache/uv,uid=1000,gid=1000 \
 
 FROM base AS prod-install
 
-RUN UV_LINK_MODE=copy uv pip install -e ".[all]"
+RUN --mount=type=cache,target=/datahub-ingestion/.cache/uv,uid=1000,gid=1000 \
+    UV_LINK_MODE=copy uv pip install -e ".[all]"
 
 FROM ${APP_ENV}-install AS final
 WORKDIR /datahub-ingestion
