@@ -1,17 +1,3 @@
-# Copyright 2021 Acryl Data, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import logging
 import pathlib
 import signal
@@ -22,13 +8,13 @@ from typing import Any, List
 import click
 from click_default_group import DefaultGroup
 from datahub.configuration.config_loader import load_config_file
+from expandvars import UnboundVariable
 
 import datahub_actions as datahub_actions_package
 from datahub_actions.pipeline.pipeline import Pipeline
 from datahub_actions.pipeline.pipeline_manager import PipelineManager
 
 logger = logging.getLogger(__name__)
-
 
 # Instantiate a singleton instance of the Pipeline Manager.
 pipeline_manager = PipelineManager()
@@ -78,14 +64,32 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
 
     # Statically configured to be registered with the pipeline Manager.
     pipelines: List[Pipeline] = []
+    attempted_configs = 0
 
     logger.debug("Creating Actions Pipelines...")
 
     # If individual pipeline config was provided, create a pipeline from it.
     if config is not None:
         for pipeline_config in config:
+            attempted_configs += 1
             pipeline_config_file = pathlib.Path(pipeline_config)
-            pipeline_config_dict = load_config_file(pipeline_config_file)
+            try:
+                # Attempt to load the configuration file
+                pipeline_config_dict = load_config_file(pipeline_config_file)
+                logger.info("Pipeline configuration loaded successfully.")
+            except UnboundVariable as e:
+                if len(config) == 1:
+                    raise Exception(
+                        "Failed to load action configuration. Unbound variable(s) provided in config YAML."
+                    ) from e
+                else:
+                    # Multiple configs, simply log and continue.
+                    # Log the unbound variable error
+                    logger.error(
+                        f"Failed to load pipeline configuration! Skipping action...: {e}"
+                    )
+                    continue
+
             enabled = pipeline_config_dict.get("enabled", True)
             if enabled == "false" or enabled is False:
                 logger.warning(
@@ -99,6 +103,14 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
                 pipeline_config_to_pipeline(pipeline_config_dict)
             )  # Now, instantiate the pipeline.
 
+    # Exit early if no valid pipelines were created
+    if not pipelines:
+        logger.error(
+            f"No valid pipelines were started from {attempted_configs} config(s). "
+            "Check that at least one pipeline is enabled and all required variables are bound."
+        )
+        sys.exit(1)
+
     logger.debug("Starting Actions Pipelines")
 
     # Start each pipeline.
@@ -106,7 +118,7 @@ def run(ctx: Any, config: List[str], debug: bool) -> None:
         pipeline_manager.start_pipeline(p.name, p)
         logger.info(f"Action Pipeline with name '{p.name}' is now running.")
 
-    # Now, simply run forever.
+    # Now, run forever only if we have valid pipelines
     while True:
         time.sleep(5)
 
@@ -121,10 +133,10 @@ def version() -> None:
 
 
 # Handle shutdown signal. (ctrl-c)
-def handle_shutdown(signum, frame):
+def handle_shutdown(signum: int, frame: Any) -> None:
     logger.info("Stopping all running Action Pipelines...")
     pipeline_manager.stop_all()
-    exit(1)
+    sys.exit(1)
 
 
 signal.signal(signal.SIGINT, handle_shutdown)
