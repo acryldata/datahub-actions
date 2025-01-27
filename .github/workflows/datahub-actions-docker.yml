@@ -11,6 +11,7 @@ on:
       - main
     paths:
       - "docker/**"
+      - "datahub-actions/**"
       - ".github/workflows/datahub-actions-docker.yml"
       - "!build/**"
       - "!**.md"
@@ -265,8 +266,6 @@ jobs:
           DATAHUB_TELEMETRY_ENABLED: false
           DATAHUB_ACTIONS_IMAGE: acryldata/datahub-actions-slim
           DATAHUB_ACTIONS_VERSION: ${{ needs.setup.outputs.unique_tag }}
-          ACTIONS_EXTRA_PACKAGES: "acryl-datahub-actions[executor]==0.0.13 acryl-datahub-actions==0.0.13 acryl-datahub==0.10.5"
-          ACTIONS_CONFIG: "https://raw.githubusercontent.com/acryldata/datahub-actions/main/docker/config/executor.yaml"
         run: |
           ./smoke-test/run-quickstart.sh
       - name: Disk Check
