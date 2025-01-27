@@ -148,7 +148,7 @@ jobs:
             "APP_ENV=prod-slim"
       - name: Save Docker image
         if: needs.setup.outputs.publish != 'true'
-        run: docker save ${{ steps.docker_meta_slim.outputs.tags }} > image.tar
+        run: docker image save -o image.tar ${{ steps.docker_meta_slim.outputs.tags }}
       - name: Upload artifact
         if: needs.setup.outputs.publish != 'true'
         uses: actions/upload-artifact@v3
@@ -205,7 +205,7 @@ jobs:
           name: docker-image
       - name: Load Docker image (if not publishing)
         if: needs.setup.outputs.publish != 'true'
-        run: docker load < image.tar
+        run: docker image load -i image.tar
       - name: Pull Docker image (if publishing)
         if: needs.setup.outputs.publish == 'true'
         run: docker pull acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
