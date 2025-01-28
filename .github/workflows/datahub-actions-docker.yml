@@ -11,6 +11,7 @@ on:
       - main
     paths:
       - "docker/**"
+      - "datahub-actions/**"
       - ".github/workflows/datahub-actions-docker.yml"
       - "!build/**"
       - "!**.md"
@@ -148,7 +149,7 @@ jobs:
             "APP_ENV=prod-slim"
       - name: Save Docker image
         if: needs.setup.outputs.publish != 'true'
-        run: docker save ${{ steps.docker_meta_slim.outputs.tags }} > image.tar
+        run: docker image save -o image.tar ${{ steps.docker_meta_slim.outputs.tags }}
       - name: Upload artifact
         if: needs.setup.outputs.publish != 'true'
         uses: actions/upload-artifact@v3
@@ -205,7 +206,7 @@ jobs:
           name: docker-image
       - name: Load Docker image (if not publishing)
         if: needs.setup.outputs.publish != 'true'
-        run: docker load < image.tar
+        run: docker image load -i image.tar
       - name: Pull Docker image (if publishing)
         if: needs.setup.outputs.publish == 'true'
         run: docker pull acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
@@ -265,8 +266,6 @@ jobs:
           DATAHUB_TELEMETRY_ENABLED: false
           DATAHUB_ACTIONS_IMAGE: acryldata/datahub-actions-slim
           DATAHUB_ACTIONS_VERSION: ${{ needs.setup.outputs.unique_tag }}
-          ACTIONS_EXTRA_PACKAGES: "acryl-datahub-actions[executor]==0.0.13 acryl-datahub-actions==0.0.13 acryl-datahub==0.10.5"
-          ACTIONS_CONFIG: "https://raw.githubusercontent.com/acryldata/datahub-actions/main/docker/config/executor.yaml"
         run: |
           ./smoke-test/run-quickstart.sh
       - name: Disk Check
