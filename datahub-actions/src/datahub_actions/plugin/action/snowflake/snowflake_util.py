@@ -34,7 +34,7 @@ class SnowflakeTagHelper(Closeable):
 
     @staticmethod
     def get_term_name_from_id(term_urn: str, graph: AcrylDataHubGraph) -> str:
-        term_id = Urn.create_from_string(term_urn).get_entity_id_as_string()
+        term_id = Urn.from_string(term_urn).get_entity_id_as_string()
         if term_id.count("-") == 4:
             # needs resolution
             term_info = graph.graph.get_aspect(term_urn, GlossaryTermInfoClass)
@@ -43,7 +43,7 @@ class SnowflakeTagHelper(Closeable):
             term_name = term_info.name
             parent = term_info.parentNode
             while parent:
-                parent_id = Urn.create_from_string(parent).get_entity_id_as_string()
+                parent_id = Urn.from_string(parent).get_entity_id_as_string()
                 node_info = graph.graph.get_aspect(parent, GlossaryNodeInfoClass)
                 assert node_info
                 if parent_id.count("-") == 4:
@@ -61,7 +61,7 @@ class SnowflakeTagHelper(Closeable):
 
     @staticmethod
     def get_label_urn_to_tag(label_urn: str, graph: AcrylDataHubGraph) -> str:
-        label_urn_parsed = Urn.create_from_string(label_urn)
+        label_urn_parsed = Urn.from_string(label_urn)
         if label_urn_parsed.get_type() == "tag":
             return label_urn_parsed.get_entity_id_as_string()
         elif label_urn_parsed.get_type() == "glossaryTerm":

@@ -261,8 +261,8 @@ def get_unique_siblings(graph: AcrylDataHubGraph, entity_urn: str) -> list[str]:
     """
 
     if guess_entity_type(entity_urn) == "schemaField":
-        parent_urn = Urn.create_from_string(entity_urn).get_entity_id()[0]
-        entity_field_path = Urn.create_from_string(entity_urn).get_entity_id()[1]
+        parent_urn = Urn.from_string(entity_urn).get_entity_id()[0]
+        entity_field_path = Urn.from_string(entity_urn).get_entity_id()[1]
         # Does my parent have siblings?
         siblings: Optional[models.SiblingsClass] = graph.graph.get_aspect(
             parent_urn,

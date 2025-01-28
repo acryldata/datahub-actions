@@ -100,8 +100,8 @@ def get_message_from_entity_change_event(
     entity_name = get_entity_name_from_urn(event.entityUrn, datahub_graph)
     # special handling for entity type schemaField
     if event.entityType == "schemaField":
-        schema_field_urn = Urn.create_from_string(event.entityUrn)
-        parent_entity_urn = Urn.create_from_string(schema_field_urn.get_entity_id()[0])
+        schema_field_urn = Urn.from_string(event.entityUrn)
+        parent_entity_urn = Urn.from_string(schema_field_urn.get_entity_id()[0])
         parent_entity_name = get_entity_name_from_urn(
             str(parent_entity_urn), datahub_graph
         )
