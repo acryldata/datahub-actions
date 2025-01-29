@@ -98,7 +98,7 @@ task installDevTest(type: Exec, dependsOn: [installDev]) {
   outputs.dir("${venv_name}")
   outputs.file("${venv_name}/.build_install_dev_test_sentinel")
   commandLine 'bash', '-x', '-c',
-    "${venv_name}/bin/pip install -e .[dev,integration-tests] && touch ${venv_name}/.build_install_dev_test_sentinel"
+    "source ${venv_name}/bin/activate && ${venv_name}/bin/uv pip install -e .[dev,integration-tests] && touch ${venv_name}/.build_install_dev_test_sentinel"
 }
 
 def testFile = hasProperty('testFile') ? testFile : 'unknown'

@@ -51,9 +51,9 @@ class DefaultNameResolver(NameResolver):
     def get_specialized_type(
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
-        entity_type = entity_urn.get_type()
+        entity_type = entity_urn.entity_type
         entity_type = {"schemaField": "column"}.get(
-            entity_urn.get_type(), entity_urn.get_type()
+            entity_urn.entity_type, entity_urn.entity_type
         )
 
         if datahub_graph:
@@ -70,7 +70,7 @@ class DataFlowNameResolver(DefaultNameResolver):
     def get_entity_name(
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
-        dataflow_urn = DataFlowUrn.create_from_string(str(entity_urn))
+        dataflow_urn = DataFlowUrn.from_string(str(entity_urn))
         dataflow_name = dataflow_urn.get_flow_id()
         return dataflow_name
 
@@ -78,7 +78,7 @@ class DataFlowNameResolver(DefaultNameResolver):
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
         """We prefix the type of the dataset with the platform it is part of"""
-        dataflow_urn = DataFlowUrn.create_from_string(str(entity_urn))
+        dataflow_urn = DataFlowUrn.from_string(str(entity_urn))
         dataflow_orch = dataflow_urn.get_orchestrator_name()
         return f"{dataflow_orch} DAG"
 
@@ -87,7 +87,7 @@ class DataJobNameResolver(DefaultNameResolver):
     def get_entity_name(
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
-        datajob_urn = DataJobUrn.create_from_string(str(entity_urn))
+        datajob_urn = DataJobUrn.from_string(str(entity_urn))
         datajob_name = datajob_urn.get_job_id()
         return datajob_name
 
@@ -95,7 +95,7 @@ class DataJobNameResolver(DefaultNameResolver):
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
         """We prefix the type of the datajob with the platform it is part of"""
-        datajob_urn = DataJobUrn.create_from_string(str(entity_urn))
+        datajob_urn = DataJobUrn.from_string(str(entity_urn))
         dataflow_urn = datajob_urn.get_data_flow_urn()
         dataflow_orch = dataflow_urn.get_orchestrator_name()
         return f"{dataflow_orch} Task"
@@ -105,8 +105,8 @@ class DatasetNameResolver(DefaultNameResolver):
     def get_entity_name(
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
-        dataset_urn = DatasetUrn.create_from_string(str(entity_urn))
-        dataset_name = dataset_urn.get_dataset_name()
+        dataset_urn = DatasetUrn.from_string(str(entity_urn))
+        dataset_name = dataset_urn.name
         if datahub_graph:
             properties: Optional[DatasetPropertiesClass] = datahub_graph.get_aspect(
                 entity_urn=str(entity_urn), aspect_type=DatasetPropertiesClass
@@ -120,7 +120,7 @@ class DatasetNameResolver(DefaultNameResolver):
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
         """We prefix the type of the dataset with the platform it is part of"""
-        dataset_urn = DatasetUrn.create_from_string(str(entity_urn))
+        dataset_urn = DatasetUrn.from_string(str(entity_urn))
         dataset_platform = dataset_urn.get_data_platform_urn().get_entity_id_as_string()
         specialized_type = super().get_specialized_type(entity_urn, datahub_graph)
         return f"{dataset_platform} {specialized_type}"
@@ -131,7 +131,7 @@ class SchemaFieldNameResolver(DefaultNameResolver):
         self, entity_urn: Urn, datahub_graph: Optional[DataHubGraph]
     ) -> str:
         return DatasetUrn.get_simple_field_path_from_v2_field_path(
-            entity_urn.get_entity_id()[1]
+            entity_urn.entity_ids[1]
         )
 
     def get_specialized_type(
@@ -255,7 +255,7 @@ class NameResolverRegistry:
         self.default_resolver = DefaultNameResolver()
 
     def get_resolver(self, entity_urn: Urn) -> NameResolver:
-        return self.registry.get(entity_urn.get_type(), self.default_resolver)
+        return self.registry.get(entity_urn.entity_type, self.default_resolver)
 
 
 _name_resolver_registry = NameResolverRegistry()
@@ -264,7 +264,7 @@ _name_resolver_registry = NameResolverRegistry()
 def get_entity_name_from_urn(
     entity_urn_str: str, datahub_graph: Optional[DataHubGraph]
 ) -> str:
-    entity_urn = Urn.create_from_string(entity_urn_str)
+    entity_urn = Urn.from_string(entity_urn_str)
     return _name_resolver_registry.get_resolver(entity_urn).get_entity_name(
         entity_urn, datahub_graph
     )
@@ -273,7 +273,7 @@ def get_entity_name_from_urn(
 def get_entity_qualifier_from_urn(
     entity_urn_str: str, datahub_graph: Optional[DataHubGraph]
 ) -> str:
-    entity_urn = Urn.create_from_string(entity_urn_str)
+    entity_urn = Urn.from_string(entity_urn_str)
     return _name_resolver_registry.get_resolver(entity_urn).get_specialized_type(
         entity_urn, datahub_graph
     )

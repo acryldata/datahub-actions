@@ -113,7 +113,7 @@ class DocPropagationConfig(PropagationConfig):
 
 
 def get_field_path(schema_field_urn: str) -> str:
-    urn = Urn.create_from_string(schema_field_urn)
+    urn = Urn.from_string(schema_field_urn)
     return urn.get_entity_id()[1]
 
 
@@ -698,7 +698,7 @@ class DocPropagationAction(Action):
                 x for x in downstreams if guess_entity_type(x) == "schemaField"
             }
             for field in downstream_fields:
-                schema_field_urn = Urn.create_from_string(field)
+                schema_field_urn = Urn.from_string(field)
                 parent_urn = schema_field_urn.get_entity_id()[0]
                 field_path = schema_field_urn.get_entity_id()[1]
 
@@ -774,7 +774,7 @@ class DocPropagationAction(Action):
             # upstream field
             if len(upstream_fields) == 1:
                 for field in upstream_fields:
-                    schema_field_urn = Urn.create_from_string(field)
+                    schema_field_urn = Urn.from_string(field)
                     parent_urn = schema_field_urn.get_entity_id()[0]
                     field_path = schema_field_urn.get_entity_id()[1]
 
@@ -838,7 +838,7 @@ class DocPropagationAction(Action):
                 guess_entity_type(entity_urn) == "schemaField"
                 and guess_entity_type(sibling) == "schemaField"
             ):
-                parent_urn = Urn.create_from_string(sibling).get_entity_id()[0]
+                parent_urn = Urn.from_string(sibling).get_entity_id()[0]
                 self._stats.increment_assets_impacted(sibling)
                 maybe_mcp = self.modify_docs_on_columns(
                     self.ctx.graph,
