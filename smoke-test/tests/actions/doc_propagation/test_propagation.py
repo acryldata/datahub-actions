@@ -5,11 +5,11 @@ import time
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterator, List, Tuple
 
 import datahub.metadata.schema_classes as models
-from pydantic import BaseModel
 import pytest
+import tenacity
 from datahub.api.entities.dataset.dataset import Dataset
 from datahub.emitter.mce_builder import make_schema_field_urn
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
@@ -19,11 +19,7 @@ from datahub.ingestion.graph.client import DatahubClientConfig, DataHubGraph
 from datahub.ingestion.sink.file import FileSink, FileSinkConfig
 from datahub.utilities.urns.urn import Urn
 from jinja2 import Template
-import tenacity
-from datahub_actions.plugin.action.propagation.docs.propagation_action import (
-    DocPropagationConfig,
-)
-
+from pydantic import BaseModel
 
 from tests.utils import (
     delete_urns_from_file,
@@ -111,7 +107,7 @@ def action_env_vars(pytestconfig) -> ActionTestEnv:
                 key, value = line.split("=", 1)
                 env_vars[key] = value
 
-    return ActionTestEnv(**env_vars)
+    return ActionTestEnv.parse_obj(**env_vars)
 
 
 @pytest.fixture(scope="function")
@@ -162,31 +158,6 @@ def root_dir(pytestconfig):
 @pytest.fixture(scope="module", autouse=False)
 def test_resources_dir(root_dir):
     return Path(root_dir) / "tests" / "actions" / "doc_propagation" / "resources"
-
-
-@pytest.fixture(scope="function")
-def ingest_cleanup_data_function(request, test_resources_dir, graph, test_id):
-    @contextmanager
-    def _ingest_cleanup_data(template_file="datasets_template.yaml"):
-        new_file, filename = tempfile.mkstemp(suffix=f"_{test_id}.json")
-        try:
-            template_path = Path(test_resources_dir) / template_file
-            all_urns = create_test_data(filename, template_path, test_id)
-            print(
-                f"Ingesting datasets test data for test_id: {test_id} using template: {template_file}"
-            )
-            ingest_file_via_rest(filename)
-            yield all_urns
-        finally:
-            if DELETE_AFTER_TEST:
-                print(f"Removing test data for test_id: {test_id}")
-                delete_urns_from_file(filename)
-                for urn in all_urns:
-                    graph.delete_entity(urn, hard=True)
-                wait_for_writes_to_sync()
-            os.remove(filename)
-
-    return _ingest_cleanup_data
 
 
 @pytest.fixture(scope="function")
@@ -261,7 +232,7 @@ def large_fanout_graph_function(graph: DataHubGraph):
     @contextmanager
     def _large_fanout_graph(
         test_id: str, max_fanout: int
-    ) -> Iterable[Tuple[str, List[str]]]:
+    ) -> Iterator[Tuple[str, List[str]]]:
         max_index = max_fanout + 1
         all_urns = []
         dataset_base_name = f"large_fanout_dataset_{test_id}"
