@@ -152,7 +152,7 @@ jobs:
         run: docker image save -o image.tar ${{ steps.docker_meta_slim.outputs.tags }}
       - name: Upload artifact
         if: needs.setup.outputs.publish != 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docker-image
           path: image.tar
@@ -201,7 +201,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Download artifact (if not publishing)
         if: needs.setup.outputs.publish != 'true'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docker-image
       - name: Load Docker image (if not publishing)
@@ -214,6 +214,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         env:
           TRIVY_OFFLINE_SCAN: true
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2,ghcr.io/aquasecurity/trivy-db:2
         with:
           image-ref: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
           format: "template"
@@ -252,7 +253,7 @@ jobs:
           cache: "pip"
       - name: Download artifact (if not publishing)
         if: needs.setup.outputs.publish != 'true'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docker-image
       - name: Load Docker image (if not publishing)

@@ -305,7 +305,11 @@ class DocPropagationAction(Action):
                 propagation_relationships = self.get_propagation_relationships(
                     entity_type="schemaField", source_details=source_details_parsed
                 )
-                origin_entity = source_details_parsed.origin
+                origin_entity = (
+                    source_details_parsed.origin
+                    if source_details_parsed.origin
+                    else entity_urn
+                )
                 if old_docs is None or not old_docs.documentations:
                     return DocPropagationDirective(
                         propagate=True,
