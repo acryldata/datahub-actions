@@ -214,6 +214,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         env:
           TRIVY_OFFLINE_SCAN: true
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2,ghcr.io/aquasecurity/trivy-db:2
         with:
           image-ref: acryldata/datahub-actions-slim:${{ needs.setup.outputs.unique_tag }}
           format: "template"
