@@ -19,6 +19,7 @@ FROM acryldata/datahub-ingestion-base:head-full AS base
 
 USER root
 
+COPY --chown=datahub:datahub ./docker/datahub-actions/initialize_executor_yaml.sh /initialize_executor_yaml.sh
 COPY --chown=datahub:datahub ./docker/datahub-actions/start.sh /start_datahub_actions.sh
 COPY --chown=datahub:datahub ./docker/datahub-actions/readiness-check.sh /readiness-check.sh
 
