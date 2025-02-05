@@ -8,7 +8,7 @@ CONSUMER_CONFIG=""
 for var in $(env | grep ^KAFKA_PROPERTIES_ | awk -F= '{print $1}'); do
   key=$(echo $var | sed 's/^KAFKA_PROPERTIES_//g' | tr '[:upper:]' '[:lower:]' | tr '_' '.')
   value=${!var}
-  CONSUMER_CONFIG="${CONSUMER_CONFIG}\n      ${key}: \"${value}\""
+  CONSUMER_CONFIG="${CONSUMER_CONFIG}\n      ${key}: ${value}"
 done
 
 # If consumer_config is not empty, insert it *before* topic_routes
