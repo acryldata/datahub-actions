@@ -8,7 +8,11 @@ CONSUMER_CONFIG=""
 for var in $(env | grep ^KAFKA_PROPERTIES_ | awk -F= '{print $1}'); do
   key=$(echo $var | sed 's/^KAFKA_PROPERTIES_//g' | tr '[:upper:]' '[:lower:]' | tr '_' '.')
   value=${!var}
-  CONSUMER_CONFIG="${CONSUMER_CONFIG}\n        ${key}: ${value}"
+  # librdkafka doesn't support "sasl.jaas.config" config
+  if [[ "$key" != "sasl.jaas.config" ]]; then
+    value=${!var}
+    CONSUMER_CONFIG="${CONSUMER_CONFIG}\n        ${key}: ${value}"
+  fi
 done
 
 CONSUMER_CONFIG=$(echo "$CONSUMER_CONFIG" | cut -c4-)
