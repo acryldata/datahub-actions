@@ -24,6 +24,7 @@ COPY --chown=datahub:datahub ./docker/datahub-actions/start.sh /start_datahub_ac
 COPY --chown=datahub:datahub ./docker/datahub-actions/readiness-check.sh /readiness-check.sh
 
 RUN chmod a+x /start_datahub_actions.sh && \
+    chmod a+x /initialize_executor_yaml.sh && \
     mkdir -p /etc/datahub/actions && \
     mkdir -p /tmp/datahub/logs/actions/system && \
     chown -R datahub:datahub /etc/datahub /tmp/datahub && \
