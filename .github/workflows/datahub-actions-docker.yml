@@ -149,7 +149,10 @@ jobs:
             "APP_ENV=prod-slim"
       - name: Save Docker image
         if: needs.setup.outputs.publish != 'true'
-        run: docker image save -o image.tar ${{ steps.docker_meta_slim.outputs.tags }}
+        # Replace new line characters with spaces in
+        # steps.docker_meta_slim.outputs.tags as the new lines splits the
+        # command into two otherwise.
+        run: docker image save -o image.tar $(echo "${{ steps.docker_meta_slim.outputs.tags }}" | tr '\n' ' ')
       - name: Upload artifact
         if: needs.setup.outputs.publish != 'true'
         uses: actions/upload-artifact@v4
