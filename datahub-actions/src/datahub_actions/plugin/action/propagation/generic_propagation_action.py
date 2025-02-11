@@ -1,13 +1,12 @@
 import json
 import logging
-import cachetools
 from typing import Any, Dict, Iterable, List, Optional
-from pydantic import Field
 
-from datahub.metadata.schema_classes import (
-    GenericAspectClass,
-)
+import cachetools
+from datahub.emitter.mcp import MetadataChangeProposalWrapper
+from datahub.metadata.schema_classes import GenericAspectClass
 from datahub.utilities.urns.urn import Urn, guess_entity_type
+from pydantic import Field
 
 from datahub_actions.action.action import Action
 from datahub_actions.api.action_graph import AcrylDataHubGraph
@@ -15,26 +14,33 @@ from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.plugin.action.mce_utils import MCEProcessor
 from datahub_actions.plugin.action.mcl_utils import MCLProcessor
-from datahub_actions.plugin.action.propagation.docs.docs_propagator import DocsPropagator, DocsPropagatorConfig
+from datahub_actions.plugin.action.propagation.docs.docs_propagator import (
+    DocsPropagator,
+    DocsPropagatorConfig,
+)
 from datahub_actions.plugin.action.propagation.propagation_utils import (
     DirectionType,
     PropagationConfig,
     PropagationDirective,
+    PropagationRelationships,
+    PropertyPropagationDirective,
+    PropertyType,
     RelationshipType,
     SourceDetails,
-    get_unique_siblings, PropertyType, PropagationRelationships, PropertyPropagationDirective,
+    get_unique_siblings,
 )
 from datahub_actions.plugin.action.propagation.propagator import EntityPropagator
 from datahub_actions.plugin.action.stats_util import (
     ActionStageReport,
     EventProcessingStats,
 )
-
-from datahub.emitter.mcp import MetadataChangeProposalWrapper
-
-from datahub_actions.plugin.action.tag.tag_propagator import TagPropagator, TagPropagatorConfig
+from datahub_actions.plugin.action.tag.tag_propagator import (
+    TagPropagator,
+    TagPropagatorConfig,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class PropertyPropagationConfig(PropagationConfig):
     """
@@ -46,15 +52,18 @@ class PropertyPropagationConfig(PropagationConfig):
         entity_types_enabled (Dict[str, bool]): Mapping of entity types to whether propagation is enabled.
         propagation_relationships (List[PropagationRelationships]): Allowed propagation relationships.
     """
-    enabled: bool = Field(True, description="Indicates whether property propagation is enabled.")
+
+    enabled: bool = Field(
+        True, description="Indicates whether property propagation is enabled."
+    )
     supported_properties: List[PropertyType] = Field(
         [PropertyType.DOCUMENTATION, PropertyType.TAG],
-        description="List of property types that can be propagated."
+        description="List of property types that can be propagated.",
     )
 
     entity_types_enabled: Dict[str, bool] = Field(
         {"schemaField": True, "dataset": False},
-        description="Mapping of entity types to whether propagation is enabled."
+        description="Mapping of entity types to whether propagation is enabled.",
     )
     propagation_relationships: List[PropagationRelationships] = Field(
         [
@@ -62,7 +71,7 @@ class PropertyPropagationConfig(PropagationConfig):
             PropagationRelationships.DOWNSTREAM,
             PropagationRelationships.UPSTREAM,
         ],
-        description="Allowed propagation relationships."
+        description="Allowed propagation relationships.",
     )
 
 
@@ -73,7 +82,11 @@ class GenericPropagationAction(Action):
 
     def __init__(self, config: PropertyPropagationConfig, ctx: PipelineContext):
         super().__init__()
-        self.action_urn = f"urn:li:dataHubAction:{ctx.pipeline_name}" if not ctx.pipeline_name.startswith("urn:li:dataHubAction") else ctx.pipeline_name
+        self.action_urn = (
+            f"urn:li:dataHubAction:{ctx.pipeline_name}"
+            if not ctx.pipeline_name.startswith("urn:li:dataHubAction")
+            else ctx.pipeline_name
+        )
         self.config = config
         self.last_config_refresh = 0
         self.ctx = ctx
@@ -87,18 +100,37 @@ class GenericPropagationAction(Action):
             self.ctx.graph.graph
         )
 
-        self.propagators : List[EntityPropagator] = []
-        self.propagators.append(DocsPropagator(self.action_urn, self.ctx.graph, DocsPropagatorConfig(propagation_relationships=self.config.propagation_relationships)))
-        self.propagators.append(TagPropagator(self.action_urn, self.ctx.graph, TagPropagatorConfig(propagation_relationships=self.config.propagation_relationships)))
+        self.propagators: List[EntityPropagator] = []
+        self.propagators.append(
+            DocsPropagator(
+                self.action_urn,
+                self.ctx.graph,
+                DocsPropagatorConfig(
+                    propagation_relationships=self.config.propagation_relationships
+                ),
+            )
+        )
+        self.propagators.append(
+            TagPropagator(
+                self.action_urn,
+                self.ctx.graph,
+                TagPropagatorConfig(
+                    propagation_relationships=self.config.propagation_relationships
+                ),
+            )
+        )
 
     @classmethod
     def create(cls, config_dict: dict, ctx: PipelineContext) -> "Action":
         action_config = PropertyPropagationConfig.parse_obj(config_dict or {})
-        logger.info(f"Generic Propagation Config action configured with {action_config}")
+        logger.info(
+            f"Generic Propagation Config action configured with {action_config}"
+        )
         return cls(action_config, ctx)
 
-
-    def _extract_property_value(self, property_type: str, aspect_value: Optional[GenericAspectClass]) -> Any:
+    def _extract_property_value(
+        self, property_type: str, aspect_value: Optional[GenericAspectClass]
+    ) -> Any:
         """Extract the property value from the aspect based on property type."""
         if not aspect_value:
             return None
@@ -118,7 +150,9 @@ class GenericPropagationAction(Action):
         for mcp in self.act_async(event):
             self._rate_limited_emit_mcp(mcp)
 
-    def act_async(self, event: EventEnvelope) -> Iterable[MetadataChangeProposalWrapper]:
+    def act_async(
+        self, event: EventEnvelope
+    ) -> Iterable[MetadataChangeProposalWrapper]:
         """Process the event asynchronously and yield change proposals."""
         if not self.config.enabled:
             logger.warning("Property propagation is disabled. Skipping event")
@@ -136,13 +170,10 @@ class GenericPropagationAction(Action):
                 logger.info(f"Calling propagator: {propagator.__class__.__name__}")
                 directive = propagator.should_propagate(event)
                 logger.info(
-                    #f"Doc propagation directive {directive} for event: {event}"
+                    # f"Doc propagation directive {directive} for event: {event}"
                     f"Doc propagation directive {directive}"
                 )
-                if (
-                        directive is not None
-                        and directive.propagate
-                ):
+                if directive is not None and directive.propagate:
                     self._stats.increment_assets_processed(directive.entity)
                     yield from self._propagate_directive(directive, propagator)
             stats.end(event, success=True)
@@ -150,40 +181,44 @@ class GenericPropagationAction(Action):
             logger.error(f"Error processing event {event}:", exc_info=True)
             stats.end(event, success=False)
 
-    def _propagate_directive(self, directive: PropertyPropagationDirective, propagator:EntityPropagator) ->  Iterable[MetadataChangeProposalWrapper]:
+    def _propagate_directive(
+        self, directive: PropertyPropagationDirective, propagator: EntityPropagator
+    ) -> Iterable[MetadataChangeProposalWrapper]:
         assert self.ctx.graph
         logger.debug(f"Doc Propagation Directive: {directive}")
         # TODO: Put each mechanism behind a config flag to be controlled
         # externally.
         lineage_downstream = (
-                                 RelationshipType.LINEAGE,
-                                 DirectionType.DOWN,
-                             ) in directive.relationships
+            RelationshipType.LINEAGE,
+            DirectionType.DOWN,
+        ) in directive.relationships
         lineage_upstream = (
-                               RelationshipType.LINEAGE,
-                               DirectionType.UP,
-                           ) in directive.relationships
+            RelationshipType.LINEAGE,
+            DirectionType.UP,
+        ) in directive.relationships
         lineage_any = (
-                          RelationshipType.LINEAGE,
-                          DirectionType.ALL,
-                      ) in directive.relationships
+            RelationshipType.LINEAGE,
+            DirectionType.ALL,
+        ) in directive.relationships
         logger.info(
             f"Lineage Downstream: {lineage_downstream}, Lineage Upstream: {lineage_upstream}, Lineage Any: {lineage_any}"
         )
-        if lineage_downstream or lineage_any or lineage_upstream or (
+        if (
+            lineage_downstream
+            or lineage_any
+            or lineage_upstream
+            or (
                 RelationshipType.SIBLING,
                 DirectionType.ALL,
+            )
         ):
             # Step 1: Propagate to downstream entities
             yield from self._propagate_property(
-                propagator=propagator,
-                directive=directive
-                )
+                propagator=propagator, directive=directive
+            )
 
     def _propagate_property(
-            self,
-            propagator: EntityPropagator,
-            directive: PropertyPropagationDirective
+        self, propagator: EntityPropagator, directive: PropertyPropagationDirective
     ) -> Iterable[MetadataChangeProposalWrapper]:
         """Propagate the property according to the directive."""
         assert self.ctx.graph
@@ -211,16 +246,18 @@ class GenericPropagationAction(Action):
             elif relationship == RelationshipType.SIBLING:
                 yield from self._propagate_to_siblings(propagator, directive, context)
 
-    @cachetools.cachedmethod(cache=lambda self: cachetools.TTLCache(maxsize=1000, ttl=60 * 5)) # type: ignore[misc]
-    def get_upstreams_cached(self, graph: AcrylDataHubGraph, entity_urn: str) -> List[str]:
+    @cachetools.cachedmethod(cache=lambda self: cachetools.TTLCache(maxsize=1000, ttl=60 * 5))  # type: ignore[misc]
+    def get_upstreams_cached(
+        self, graph: AcrylDataHubGraph, entity_urn: str
+    ) -> List[str]:
         """Get the upstream entity from cache."""
         return graph.get_upstreams(entity_urn=entity_urn)
 
     def _only_one_upstream_field(
-            self,
-            graph: AcrylDataHubGraph,
-            downstream_field: str,
-            upstream_field: str,
+        self,
+        graph: AcrylDataHubGraph,
+        downstream_field: str,
+        upstream_field: str,
     ) -> bool:
         """
         Check if there is only one upstream field for the downstream field. If upstream_field is provided,
@@ -249,14 +286,19 @@ class GenericPropagationAction(Action):
             )
         return result
 
-
     def _propagate_to_direction(
-            self, propagator: EntityPropagator, doc_propagation_directive: PropagationDirective, context: SourceDetails, direction: DirectionType
+        self,
+        propagator: EntityPropagator,
+        doc_propagation_directive: PropagationDirective,
+        context: SourceDetails,
+        direction: DirectionType,
     ) -> Iterable[MetadataChangeProposalWrapper]:
         """
         Propagate the documentation to down/upstream entities.
         """
-        logger.info(f"Propagating to {direction} for {doc_propagation_directive.entity}, context: {context} with propagator {propagator.__class__.__name__}")
+        logger.info(
+            f"Propagating to {direction} for {doc_propagation_directive.entity}, context: {context} with propagator {propagator.__class__.__name__}"
+        )
         assert self.ctx.graph
         direction_str = "Upstreams" if direction == DirectionType.UP else "Downstreams"
         if direction == DirectionType.DOWN:
@@ -302,13 +344,21 @@ class GenericPropagationAction(Action):
 
                 if parent_entity_type == "dataset":
                     if self._only_one_upstream_field(
-                            self.ctx.graph,
-                            downstream_field=str(schema_field_urn) if direction == DirectionType.DOWN else entity_urn,
-                            upstream_field=entity_urn if direction == DirectionType.DOWN else str(schema_field_urn),
+                        self.ctx.graph,
+                        downstream_field=(
+                            str(schema_field_urn)
+                            if direction == DirectionType.DOWN
+                            else entity_urn
+                        ),
+                        upstream_field=(
+                            entity_urn
+                            if direction == DirectionType.DOWN
+                            else str(schema_field_urn)
+                        ),
                     ):
                         if (
-                                propagated_entities_this_hop_count
-                                >= self.config.max_propagation_fanout
+                            propagated_entities_this_hop_count
+                            >= self.config.max_propagation_fanout
                         ):
                             # breakpoint()
                             logger.warning(
@@ -361,10 +411,10 @@ class GenericPropagationAction(Action):
             )
 
     def _propagate_to_siblings(
-            self,
-            propagator: EntityPropagator,
-            directive: PropertyPropagationDirective,
-            context: SourceDetails
+        self,
+        propagator: EntityPropagator,
+        directive: PropertyPropagationDirective,
+        context: SourceDetails,
     ) -> Iterable[MetadataChangeProposalWrapper]:
         """Propagate property to sibling entities."""
         assert self.ctx.graph
@@ -373,9 +423,7 @@ class GenericPropagationAction(Action):
         for sibling in siblings:
             if guess_entity_type(sibling) == guess_entity_type(directive.entity):
                 maybe_mcp = propagator.create_property_change_proposal(
-                    directive,
-                    Urn.from_string(sibling),
-                    context
+                    directive, Urn.from_string(sibling), context
                 )
                 if maybe_mcp:
                     yield maybe_mcp

@@ -17,15 +17,21 @@ import time
 from typing import List, Optional
 
 from datahub.emitter.mce_builder import make_tag_urn
-from pydantic import Field, validator
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.utilities.urns.urn import Urn
+from pydantic import Field, validator
 
 from datahub_actions.api.action_graph import AcrylDataHubGraph
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import EntityChangeEvent
-from datahub_actions.plugin.action.propagation.propagation_utils import SourceDetails, PropagationDirective
-from datahub_actions.plugin.action.propagation.propagator import EntityPropagatorConfig, EntityPropagator
+from datahub_actions.plugin.action.propagation.propagation_utils import (
+    PropagationDirective,
+    SourceDetails,
+)
+from datahub_actions.plugin.action.propagation.propagator import (
+    EntityPropagator,
+    EntityPropagatorConfig,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -68,8 +74,11 @@ class TagPropagatorConfig(EntityPropagatorConfig):
 class TagPropagationDirective(PropagationDirective):
     tag: str
 
+
 class TagPropagator(EntityPropagator):
-    def __init__(self, action_urn: str, graph: AcrylDataHubGraph, config: TagPropagatorConfig) -> None:
+    def __init__(
+        self, action_urn: str, graph: AcrylDataHubGraph, config: TagPropagatorConfig
+    ) -> None:
         super().__init__(action_urn, graph, config)
         self.config = config
         self.graph = graph
@@ -120,10 +129,10 @@ class TagPropagator(EntityPropagator):
                     else "{}"
                 )
 
-                source_details_parsed = SourceDetails.parse_obj(
-                    json.loads(context_str)
+                source_details_parsed = SourceDetails.parse_obj(json.loads(context_str))
+                propagation_relationships = self.get_propagation_relationships(
+                    source_details_parsed
                 )
-                propagation_relationships = self.get_propagation_relationships(source_details_parsed)
 
                 origin = parameters.get("origin")
                 origin = origin or semantic_event.entityUrn
@@ -153,7 +162,11 @@ class TagPropagator(EntityPropagator):
                             if semantic_event.auditStamp
                             else self.actor_urn
                         ),
-                        propagation_started_at=source_details_parsed.propagation_started_at if source_details_parsed.propagation_started_at else int(time.time() * 1000.0),
+                        propagation_started_at=(
+                            source_details_parsed.propagation_started_at
+                            if source_details_parsed.propagation_started_at
+                            else int(time.time() * 1000.0)
+                        ),
                     )
                 else:
                     return TagPropagationDirective(
@@ -168,13 +181,15 @@ class TagPropagator(EntityPropagator):
         return None
 
     def create_property_change_proposal(
-            self,
-            propagation_directive: PropagationDirective,
-            entity_urn: Urn,
-            context: SourceDetails
+        self,
+        propagation_directive: PropagationDirective,
+        entity_urn: Urn,
+        context: SourceDetails,
     ) -> Optional[MetadataChangeProposalWrapper]:
         assert isinstance(propagation_directive, TagPropagationDirective)
-        logger.info(f"Creating tag propagation proposal for {propagation_directive} for entity {entity_urn} with context {context}")
+        logger.info(
+            f"Creating tag propagation proposal for {propagation_directive} for entity {entity_urn} with context {context}"
+        )
         self.graph.add_tags_to_dataset(
             str(entity_urn),
             [propagation_directive.tag],

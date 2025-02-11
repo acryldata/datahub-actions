@@ -61,6 +61,7 @@ class DocPropagationDirective(PropagationDirective):
         default=None, description="Documentation string to be propagated."
     )
 
+
 class ColumnPropagationRelationships(str, Enum):
     UPSTREAM = "upstream"
     DOWNSTREAM = "downstream"

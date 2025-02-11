@@ -14,17 +14,18 @@
 import logging
 from typing import Any, Callable
 
-
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import EntityChangeEvent
 
 logger = logging.getLogger(__name__)
 
+
 class MCEProcessor:
     """
     A utility class to register and process MetadataChangeLog events.
     """
-    EntityChangeEvent_v1:str = "EntityChangeEvent_v1"
+
+    EntityChangeEvent_v1: str = "EntityChangeEvent_v1"
 
     def __init__(self) -> None:
         self.entity_aspect_processors: dict[str, dict[str, Callable]] = {}
@@ -47,12 +48,12 @@ class MCEProcessor:
             category = semantic_event.category
 
             if (
-                    entity_type in self.entity_aspect_processors
-                    and category in self.entity_aspect_processors[entity_type]
+                entity_type in self.entity_aspect_processors
+                and category in self.entity_aspect_processors[entity_type]
             ):
-                logger.info(f"Processing MetadataChangeLogClass with processors with entity type {entity_type} category {category}")
-                return self.entity_aspect_processors[entity_type][category](
-                    event=event
+                logger.info(
+                    f"Processing MetadataChangeLogClass with processors with entity type {entity_type} category {category}"
                 )
+                return self.entity_aspect_processors[entity_type][category](event=event)
 
         return None

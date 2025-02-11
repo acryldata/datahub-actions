@@ -34,15 +34,18 @@ from datahub_actions.api.action_graph import AcrylDataHubGraph
 
 SYSTEM_ACTOR = "urn:li:corpuser:__datahub_system"
 
+
 class PropagationRelationships(str, Enum):
     UPSTREAM = "upstream"
     DOWNSTREAM = "downstream"
     SIBLING = "sibling"
 
+
 class PropertyType(Enum):
     DOCUMENTATION = "DOCUMENTATION"
     STRUCTURED_PROPERTY = "STRUCTURED_PROPERTY"
     TAG = "TAG"
+
 
 class RelationshipType(Enum):
     LINEAGE = "lineage"  # signifies all types of lineage
@@ -82,6 +85,7 @@ class PropagationDirective(BaseModel):
         default=0,
         description="Depth of propagation. This is used to track the depth of the propagation.",
     )
+
 
 class PropertyPropagationDirective(PropagationDirective):
     property_value: Optional[Any] = Field(

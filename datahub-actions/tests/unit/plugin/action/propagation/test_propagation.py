@@ -1,24 +1,24 @@
 import json
 from typing import Optional
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-import pytest
+import datahub.metadata.schema_classes as models
 import freezegun
+import pytest
 
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import EntityChangeEvent
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.plugin.action.propagation.generic_propagation_action import (
-    PropertyPropagationConfig,
     GenericPropagationAction,
+    PropertyPropagationConfig,
 )
 from datahub_actions.plugin.action.propagation.propagation_utils import (
-    PropertyType,
-    PropagationRelationships,
     DirectionType,
+    PropagationRelationships,
+    PropertyType,
     RelationshipType,
 )
-import datahub.metadata.schema_classes as models
 
 
 @pytest.fixture
@@ -29,20 +29,26 @@ def config():
         entity_types_enabled={"schemaField": True, "dataset": False},
         propagation_relationships=[
             PropagationRelationships.SIBLING,
-        ]
+        ],
     )
+
 
 @pytest.fixture
 def graph():
     return MagicMock()
 
+
 @pytest.fixture
 def ctx(graph):
     return PipelineContext(pipeline_name="test_pipeline", graph=graph)
 
+
 @pytest.fixture
-def action(config:PropertyPropagationConfig, ctx:PipelineContext) -> GenericPropagationAction:
+def action(
+    config: PropertyPropagationConfig, ctx: PipelineContext
+) -> GenericPropagationAction:
     return GenericPropagationAction(config=config, ctx=ctx)
+
 
 @pytest.fixture
 def event():
@@ -65,6 +71,7 @@ def event():
         meta=MagicMock(),
     )
 
+
 @pytest.fixture
 def tag_event():
     return EventEnvelope(
@@ -83,7 +90,11 @@ def tag_event():
         meta=MagicMock(),
     )
 
-def create_action(graph_mock: Optional[MagicMock] = None, propagation_config: Optional[PropertyPropagationConfig] = None) -> GenericPropagationAction:
+
+def create_action(
+    graph_mock: Optional[MagicMock] = None,
+    propagation_config: Optional[PropertyPropagationConfig] = None,
+) -> GenericPropagationAction:
     config = (
         PropertyPropagationConfig(
             enabled=True,
@@ -101,6 +112,7 @@ def create_action(graph_mock: Optional[MagicMock] = None, propagation_config: Op
     graph = MagicMock() if not graph_mock else graph_mock
     ctx = PipelineContext(pipeline_name="test_pipeline", graph=graph)
     return GenericPropagationAction(config=config, ctx=ctx)
+
 
 def test_act_async_siblings():
     action = create_action()
@@ -162,7 +174,10 @@ def test_act_async_siblings():
     results = list(action.act_async(test_event))
     assert len(results) == 1
 
-@patch("datahub_actions.plugin.action.propagation.propagator.EntityPropagator.create_property_change_proposal")
+
+@patch(
+    "datahub_actions.plugin.action.propagation.propagator.EntityPropagator.create_property_change_proposal"
+)
 def test_propagation_upstream(mock_create_property_change_proposal):
     action = create_action()
     action._rate_limited_emit_mcp = MagicMock()
@@ -223,13 +238,14 @@ def test_propagation_upstream(mock_create_property_change_proposal):
     results = list(action.act_async(test_event))
     assert len(results) == 1
     assert (
-            results[0].entityUrn
-            == "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table_upstream1,PROD),0)"
+        results[0].entityUrn
+        == "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table_upstream1,PROD),0)"
     )
     assert results[0].aspectName == "documentation"
     documentation_aspect = results[0].aspect
     assert isinstance(documentation_aspect, models.DocumentationClass)
     assert documentation_aspect.documentations[0].documentation == "test docs"
+
 
 @freezegun.freeze_time("2025-01-01 00:00:00+00:00")
 def test_tag_propagation_upstream():
@@ -278,12 +294,17 @@ def test_tag_propagation_upstream():
     )
 
 
-def test_propagation_disabled(config:PropertyPropagationConfig, action:GenericPropagationAction, event:EventEnvelope) -> None:
+def test_propagation_disabled(
+    config: PropertyPropagationConfig,
+    action: GenericPropagationAction,
+    event: EventEnvelope,
+) -> None:
     config.enabled = False
     action._rate_limited_emit_mcp = MagicMock()
     results = list(action.act_async(event))
     assert len(results) == 0
     assert action._rate_limited_emit_mcp.call_count == 0
+
 
 def test_sibling_propagation() -> None:
     config = PropertyPropagationConfig(
@@ -292,7 +313,7 @@ def test_sibling_propagation() -> None:
         entity_types_enabled={"schemaField": True, "dataset": False},
         propagation_relationships=[
             PropagationRelationships.SIBLING,
-        ]
+        ],
     )
 
     graph_mock = MagicMock()
@@ -354,12 +375,16 @@ def test_sibling_propagation() -> None:
     results = list(action.act_async(test_event))
 
     assert len(results) == 1
-    assert results[0].entityUrn == "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table_sibling1,PROD),0)"
+    assert (
+        results[0].entityUrn
+        == "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table_sibling1,PROD),0)"
+    )
     assert results[0].aspectName == "documentation"
     documentation_aspect = results[0].aspect
     assert documentation_aspect.documentations[0].documentation == "test docs"  # type: ignore
 
-def test_unsupported_property_type(action:GenericPropagationAction)-> None:
+
+def test_unsupported_property_type(action: GenericPropagationAction) -> None:
     aspect_value = MagicMock()
     aspect_value.value = json.dumps({"unsupported_property": "value"})
 

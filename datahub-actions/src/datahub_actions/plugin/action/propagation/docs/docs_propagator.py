@@ -4,33 +4,42 @@ import time
 from typing import Optional
 
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
-from datahub_actions.api.action_graph import AcrylDataHubGraph
-from datahub_actions.event.event_envelope import EventEnvelope
-from datahub_actions.event.event_registry import EntityChangeEvent
-from datahub_actions.plugin.action.propagation.docs.propagation_action import DocPropagationDirective
-from datahub_actions.plugin.action.propagation.propagation_utils import SourceDetails, PropagationDirective
-from datahub.utilities.urns.urn import guess_entity_type
-from datahub.utilities.urns.urn import Urn
-from datahub.metadata.urns import DatasetUrn
-
 from datahub.metadata.schema_classes import (
     AuditStampClass,
     DocumentationAssociationClass,
     DocumentationClass,
     GenericAspectClass,
     MetadataAttributionClass,
+)
+from datahub.metadata.urns import DatasetUrn
+from datahub.utilities.urns.urn import Urn, guess_entity_type
 
+from datahub_actions.api.action_graph import AcrylDataHubGraph
+from datahub_actions.event.event_envelope import EventEnvelope
+from datahub_actions.event.event_registry import EntityChangeEvent
+from datahub_actions.plugin.action.propagation.docs.propagation_action import (
+    DocPropagationDirective,
+)
+from datahub_actions.plugin.action.propagation.propagation_utils import (
+    PropagationDirective,
+    SourceDetails,
+)
+from datahub_actions.plugin.action.propagation.propagator import (
+    EntityPropagator,
+    EntityPropagatorConfig,
 )
 
-from datahub_actions.plugin.action.propagation.propagator import EntityPropagatorConfig, EntityPropagator
-
 logger = logging.getLogger(__name__)
+
 
 class DocsPropagatorConfig(EntityPropagatorConfig):
     columns_enabled: bool = True
 
+
 class DocsPropagator(EntityPropagator):
-    def __init__(self, action_urn: str, graph: AcrylDataHubGraph, config: DocsPropagatorConfig) -> None:
+    def __init__(
+        self, action_urn: str, graph: AcrylDataHubGraph, config: DocsPropagatorConfig
+    ) -> None:
         super().__init__(action_urn, graph, config)
         self.config = config
         self.graph = graph
@@ -49,11 +58,11 @@ class DocsPropagator(EntityPropagator):
         )
 
     def process_schema_field_documentation_mcl(
-            self,
-            entity_urn: str,
-            aspect_name: str,
-            aspect_value: GenericAspectClass,
-            previous_aspect_value: Optional[GenericAspectClass],
+        self,
+        entity_urn: str,
+        aspect_name: str,
+        aspect_value: GenericAspectClass,
+        previous_aspect_value: Optional[GenericAspectClass],
     ) -> Optional[DocPropagationDirective]:
         """
         Process changes in the documentation aspect of schemaField entities.
@@ -66,12 +75,12 @@ class DocsPropagator(EntityPropagator):
             - If we have exceeded the maximum depth of propagation or maximum
               time for propagation, then we stop propagation and don't return a directive.
         """
-        assert isinstance(self.config,DocsPropagatorConfig)
+        assert isinstance(self.config, DocsPropagatorConfig)
         logger.info("Process MCL from DocPropagation")
 
         if (
-                aspect_name != "documentation"
-                or guess_entity_type(entity_urn) != "schemaField"
+            aspect_name != "documentation"
+            or guess_entity_type(entity_urn) != "schemaField"
         ):
             # not a documentation aspect or not a schemaField entity
             return None
@@ -94,9 +103,9 @@ class DocsPropagator(EntityPropagator):
                 )[-1]
                 assert current_documentation_instance.attribution
                 if (
-                        current_documentation_instance.attribution.source is None
-                        or current_documentation_instance.attribution.source
-                        != self.action_urn
+                    current_documentation_instance.attribution.source is None
+                    or current_documentation_instance.attribution.source
+                    != self.action_urn
                 ):
                     logger.warning(
                         f"Documentation is not sourced by this action which is unexpected. Will be propagating for {entity_urn}"
@@ -117,7 +126,8 @@ class DocsPropagator(EntityPropagator):
                     return None
                 else:
                     logger.debug(f"Propagating documentation for {entity_urn}")
-                propagation_relationships = self.get_propagation_relationships(source_details=source_details_parsed
+                propagation_relationships = self.get_propagation_relationships(
+                    source_details=source_details_parsed
                 )
                 origin_entity = (
                     source_details_parsed.origin
@@ -147,8 +157,8 @@ class DocsPropagator(EntityPropagator):
                         key=lambda x: x.attribution.time if x.attribution else 0,
                     )[-1]
                     if (
-                            current_documentation_instance.documentation
-                            != old_docs_instance.documentation
+                        current_documentation_instance.documentation
+                        != old_docs_instance.documentation
                     ):
                         return DocPropagationDirective(
                             propagate=True,
@@ -171,24 +181,22 @@ class DocsPropagator(EntityPropagator):
     def process_mce(self, event: EventEnvelope) -> Optional[DocPropagationDirective]:
         assert isinstance(event.event, EntityChangeEvent)
         assert self.graph is not None
-        assert isinstance(self.config,DocsPropagatorConfig)
+        assert isinstance(self.config, DocsPropagatorConfig)
 
         semantic_event = event.event
         if (
-                semantic_event.category == "DOCUMENTATION"
-                and self.config is not None
-                and self.config.enabled
+            semantic_event.category == "DOCUMENTATION"
+            and self.config is not None
+            and self.config.enabled
         ):
             logger.info(f"MCE from DocPropagation: {event}")
             if self.config.columns_enabled and (
-                    semantic_event.entityType == "schemaField"
+                semantic_event.entityType == "schemaField"
             ):
                 if semantic_event.parameters:
                     parameters = semantic_event.parameters
                 else:
-                    parameters = semantic_event._inner_dict.get(
-                        "__parameters_json", {}
-                    )
+                    parameters = semantic_event._inner_dict.get("__parameters_json", {})
                 doc_string = parameters.get("description")
                 origin = parameters.get("origin")
                 origin = origin or semantic_event.entityUrn
@@ -223,13 +231,13 @@ class DocsPropagator(EntityPropagator):
         return None
 
     def modify_docs_on_columns(
-            self,
-            graph: AcrylDataHubGraph,
-            operation: str,
-            schema_field_urn: str,
-            dataset_urn: str,
-            field_doc: Optional[str],
-            context: SourceDetails,
+        self,
+        graph: AcrylDataHubGraph,
+        operation: str,
+        schema_field_urn: str,
+        dataset_urn: str,
+        field_doc: Optional[str],
+        context: SourceDetails,
     ) -> Optional[MetadataChangeProposalWrapper]:
         if context.origin == schema_field_urn:
             # No need to propagate to self
@@ -257,7 +265,9 @@ class DocsPropagator(EntityPropagator):
         )
         documentations = graph.graph.get_aspect(schema_field_urn, DocumentationClass)
         if documentations:
-            logger.info(f"Found existing documentation {documentations} for {schema_field_urn}")
+            logger.info(
+                f"Found existing documentation {documentations} for {schema_field_urn}"
+            )
             mutation_needed = False
             action_sourced = False
             # we check if there are any existing documentations generated by
@@ -269,7 +279,7 @@ class DocsPropagator(EntityPropagator):
                         doc_association.attribution.sourceDetail
                     )
                     if doc_association.attribution.source == self.action_urn and (
-                            source_details_parsed.origin == context.origin
+                        source_details_parsed.origin == context.origin
                     ):
                         action_sourced = True
                         if doc_association.documentation != field_doc:
@@ -314,12 +324,11 @@ class DocsPropagator(EntityPropagator):
             logger.info(f"No mutation needed for {schema_field_urn}")
         return None
 
-
     def create_property_change_proposal(
-            self,
-            propagation_directive: PropagationDirective,
-            entity_urn: Urn,
-            context: SourceDetails
+        self,
+        propagation_directive: PropagationDirective,
+        entity_urn: Urn,
+        context: SourceDetails,
     ) -> Optional[MetadataChangeProposalWrapper]:
         assert isinstance(propagation_directive, DocPropagationDirective)
 
@@ -333,4 +342,3 @@ class DocsPropagator(EntityPropagator):
             field_doc=propagation_directive.doc_string,
             context=context,
         )
-

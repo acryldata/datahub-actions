@@ -21,6 +21,7 @@ from datahub_actions.event.event_registry import METADATA_CHANGE_LOG_EVENT_V1_TY
 
 logger = logging.getLogger(__name__)
 
+
 class MCLProcessor:
     """
     A utility class to register and process MetadataChangeLog events.
@@ -50,7 +51,9 @@ class MCLProcessor:
                 entity_type in self.entity_aspect_processors
                 and aspect in self.entity_aspect_processors[entity_type]
             ):
-                logger.info(f"Processing MetadataChangeLogClass with processors with entity type {entity_type} aspect {aspect}")
+                logger.info(
+                    f"Processing MetadataChangeLogClass with processors with entity type {entity_type} aspect {aspect}"
+                )
                 return self.entity_aspect_processors[entity_type][aspect](
                     entity_urn=event.event.entityUrn,
                     aspect_name=event.event.aspectName,
