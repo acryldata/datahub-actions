@@ -24,7 +24,6 @@ from datahub.configuration.common import ConfigModel
 from datahub.emitter.mce_builder import make_schema_field_urn
 from datahub.ingestion.graph.client import DataHubGraph, SearchFilterRule
 from datahub.metadata.schema_classes import MetadataAttributionClass
-from datahub.utilities.str_enum import StrEnum
 from datahub.utilities.urns.urn import Urn, guess_entity_type
 from pydantic import validator
 from pydantic.fields import Field
@@ -35,14 +34,23 @@ from datahub_actions.api.action_graph import AcrylDataHubGraph
 
 SYSTEM_ACTOR = "urn:li:corpuser:__datahub_system"
 
+class PropagationRelationships(str, Enum):
+    UPSTREAM = "upstream"
+    DOWNSTREAM = "downstream"
+    SIBLING = "sibling"
 
-class RelationshipType(StrEnum):
+class PropertyType(Enum):
+    DOCUMENTATION = "DOCUMENTATION"
+    STRUCTURED_PROPERTY = "STRUCTURED_PROPERTY"
+    TAG = "TAG"
+
+class RelationshipType(Enum):
     LINEAGE = "lineage"  # signifies all types of lineage
     HIERARCHY = "hierarchy"  # signifies all types of hierarchy
     SIBLING = "sibling"  # signifies all types of sibling
 
 
-class DirectionType(StrEnum):
+class DirectionType(Enum):
     UP = "up"  # signifies upstream or parent (depending on relationship type)
     DOWN = "down"  # signifies downstream or child (depending on relationship type)
     ALL = "all"  # signifies all directions
@@ -73,6 +81,14 @@ class PropagationDirective(BaseModel):
     propagation_depth: Optional[int] = Field(
         default=0,
         description="Depth of propagation. This is used to track the depth of the propagation.",
+    )
+
+class PropertyPropagationDirective(PropagationDirective):
+    property_value: Optional[Any] = Field(
+        default=None, description="Property value to be propagated."
+    )
+    property_type: PropertyType = Field(
+        description="Type of property being propagated (e.g., 'documentation', 'tags', etc.)"
     )
 
 
@@ -261,8 +277,8 @@ def get_unique_siblings(graph: AcrylDataHubGraph, entity_urn: str) -> list[str]:
     """
 
     if guess_entity_type(entity_urn) == "schemaField":
-        parent_urn = Urn.from_string(entity_urn).get_entity_id()[0]
-        entity_field_path = Urn.from_string(entity_urn).get_entity_id()[1]
+        parent_urn = Urn.from_string(entity_urn).entity_ids[0]
+        entity_field_path = Urn.from_string(entity_urn).entity_ids[1]
         # Does my parent have siblings?
         siblings: Optional[models.SiblingsClass] = graph.graph.get_aspect(
             parent_urn,

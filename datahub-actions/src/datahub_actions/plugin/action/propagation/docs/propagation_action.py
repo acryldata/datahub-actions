@@ -61,7 +61,6 @@ class DocPropagationDirective(PropagationDirective):
         default=None, description="Documentation string to be propagated."
     )
 
-
 class ColumnPropagationRelationships(str, Enum):
     UPSTREAM = "upstream"
     DOWNSTREAM = "downstream"
@@ -424,6 +423,7 @@ class DocPropagationAction(Action):
     ) -> Optional[MetadataChangeProposalWrapper]:
         if context.origin == schema_field_urn:
             # No need to propagate to self
+            logger.info("Skipping propagation to self")
             return None
 
         try:
@@ -492,13 +492,15 @@ class DocPropagationAction(Action):
             mutation_needed = True
 
         if mutation_needed:
-            logger.debug(
+            logger.info(
                 f"Will emit documentation change proposal for {schema_field_urn} with {field_doc}"
             )
             return MetadataChangeProposalWrapper(
                 entityUrn=schema_field_urn,
                 aspect=documentations,
             )
+        else:
+            logger.info(f"Mutation not needed for {schema_field_urn} and {field_doc}")
         return None
 
     def refresh_config(self, event: Optional[EventEnvelope] = None) -> None:
