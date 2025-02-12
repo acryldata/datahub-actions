@@ -30,7 +30,7 @@ jobs:
       tracking_tag: ${{ steps.tag.outputs.tracking_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Compute Tag
         id: tag
         run: |
@@ -108,7 +108,7 @@ jobs:
     needs: setup
     steps:
       - name: Check out the repo (slim)
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Outputs
         run: |
           echo "GITHUB_REF: $GITHUB_REF"
@@ -149,7 +149,10 @@ jobs:
             "APP_ENV=prod-slim"
       - name: Save Docker image
         if: needs.setup.outputs.publish != 'true'
-        run: docker image save -o image.tar ${{ steps.docker_meta_slim.outputs.tags }}
+        # Replace new line characters with spaces in
+        # steps.docker_meta_slim.outputs.tags as the new lines splits the
+        # command into two otherwise.
+        run: docker image save -o image.tar $(echo "${{ steps.docker_meta_slim.outputs.tags }}" | tr '\n' ' ')
       - name: Upload artifact
         if: needs.setup.outputs.publish != 'true'
         uses: actions/upload-artifact@v4
@@ -166,7 +169,7 @@ jobs:
   #   needs: [setup, slim_image]
   #   steps:
   #     - name: Checkout # adding checkout step just to make trivy upload happy
-  #       uses: actions/checkout@v3
+  #       uses: actions/checkout@v4
   #     - name: Download image
   #       uses: ishworkh/docker-image-artifact-download@v1
   #       if: ${{ needs.setup.outputs.publish != 'true' }}
