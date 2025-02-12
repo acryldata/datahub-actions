@@ -1,4 +1,5 @@
 import json
+import time
 from typing import Optional
 from unittest.mock import MagicMock, patch
 
@@ -7,7 +8,10 @@ import freezegun
 import pytest
 
 from datahub_actions.event.event_envelope import EventEnvelope
-from datahub_actions.event.event_registry import EntityChangeEvent
+from datahub_actions.event.event_registry import (
+    EntityChangeEvent,
+    MetadataChangeLogEvent,
+)
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.plugin.action.propagation.generic_propagation_action import (
     GenericPropagationAction,
@@ -18,6 +22,7 @@ from datahub_actions.plugin.action.propagation.propagation_utils import (
     PropagationRelationships,
     PropertyType,
     RelationshipType,
+    SourceDetails,
 )
 
 
@@ -67,6 +72,48 @@ def event():
             auditStamp=models.AuditStampClass(
                 time=1234567890, actor="urn:li:corpuser:__datahub_system"
             ),
+        ),
+        meta=MagicMock(),
+    )
+
+
+def mcl_event():
+    source_details = SourceDetails(
+        origin=None,
+        via=None,
+        actor="urn:li:corpuser:__datahub_system",
+        propagated=None,
+        propagation_started_at=int(time.time() * 1000),
+        propagation_depth=1,
+        propagation_relationship=RelationshipType.LINEAGE,
+        propagation_direction=DirectionType.UP,
+    )
+    attribution = models.MetadataAttributionClass(
+        source="urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table,PROD),0)",
+        actor="urn:li:corpuser:__datahub_system",
+        time=1234567890,
+        sourceDetail=source_details.for_metadata_attribution(),
+    )
+
+    return EventEnvelope(
+        event_type="MetadataChangeLogEvent_v1",
+        event=MetadataChangeLogEvent(
+            aspectName="documentation",
+            entityType="schemaField",
+            entityUrn="urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table,PROD),0)",
+            aspect=models.GenericAspectClass(
+                contentType="application/json",
+                value=json.dumps(
+                    models.DocumentationClass(
+                        documentations=[
+                            models.DocumentationAssociationClass(
+                                documentation="test docs", attribution=attribution
+                            )
+                        ]
+                    ).to_obj()
+                ).encode("utf-8"),
+            ),
+            changeType="UPDATE",
         ),
         meta=MagicMock(),
     )
@@ -248,9 +295,62 @@ def test_propagation_upstream(mock_create_property_change_proposal):
 
 
 @freezegun.freeze_time("2025-01-01 00:00:00+00:00")
+@patch(
+    "datahub_actions.plugin.action.propagation.propagator.EntityPropagator.create_property_change_proposal"
+)
+def test_doc_propagation_upstream_mcl(mock_create_property_change_proposal):
+    graph_mock = MagicMock()
+    graph_mock.graph = MagicMock()
+    mock_create_property_change_proposal.return_value = MagicMock()
+
+    graph_mock.get_upstreams.configure_mock(
+        side_effect=lambda entity_urn: {
+            "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table,PROD),0)": [
+                "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table_upstream1,PROD),0)"
+            ]
+        }.get(entity_urn, [])
+    )
+    graph_mock.graph.get_aspect.configure_mock(
+        side_effect=lambda urn, aspect_type: {
+            (
+                "urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table_upstream1,PROD)",
+                models.SchemaMetadataClass,
+            ): models.SchemaMetadataClass(
+                schemaName="my_database.my_table_upstream1",
+                platform="urn:li:dataPlatform:hive",
+                version=1,
+                platformSchema=models.MySqlDDLClass(tableSchema="table_schema"),
+                fields=[
+                    models.SchemaFieldClass(
+                        fieldPath="0",
+                        type=models.SchemaFieldDataTypeClass(models.StringTypeClass()),
+                        description="upstream's field",
+                        nullable=True,
+                        recursive=False,
+                        nativeDataType="string",
+                    )
+                ],
+                hash="hash",
+            )
+        }.get((urn, aspect_type))
+    )
+
+    action = create_action(graph_mock)
+    test_event = mcl_event()
+    results = list(action.act_async(test_event))
+    assert len(results) == 1
+    assert (
+        results[0].entityUrn
+        == "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table_upstream1,PROD),0)"
+    )
+    assert results[0].aspectName == "documentation"
+    documentation_aspect = results[0].aspect
+    assert isinstance(documentation_aspect, models.DocumentationClass)
+    assert documentation_aspect.documentations[0].documentation == "test docs"
+
+
+@freezegun.freeze_time("2025-01-01 00:00:00+00:00")
 def test_tag_propagation_upstream():
-    action = create_action()
-    action._rate_limited_emit_mcp = MagicMock()
     graph_mock = MagicMock()
     graph_mock.graph = MagicMock()
     graph_mock.get_upstreams.configure_mock(

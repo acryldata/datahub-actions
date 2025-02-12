@@ -47,7 +47,7 @@ class DocsPropagator(EntityPropagator):
 
         self.mcl_processor.register_processor(
             entity_type="schemaField",
-            aspect="DOCUMENTATION",
+            aspect="documentation",
             processor=self.process_schema_field_documentation_mcl,
         )
 
@@ -100,7 +100,14 @@ class DocsPropagator(EntityPropagator):
                 current_documentation_instance = sorted(
                     [doc for doc in current_docs.documentations if doc.attribution],
                     key=lambda x: x.attribution.time if x.attribution else 0,
-                )[-1]
+                )
+                if current_documentation_instance is None:
+                    logger.warning(
+                        f"Documentation doesn't have any documentation attribution. Propagation will be skipped for {entity_urn} for this mcl."
+                    )
+                    return None
+
+                current_documentation_instance = current_documentation_instance[-1]
                 assert current_documentation_instance.attribution
                 if (
                     current_documentation_instance.attribution.source is None
