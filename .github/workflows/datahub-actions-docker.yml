@@ -127,7 +127,7 @@ jobs:
             type=raw,value=${{ needs.setup.outputs.tracking_tag }},enable=${{ needs.setup.outputs.tracking_tag != '' }}
       - name: Set up QEMU (slim)
         if: ${{ needs.setup.outputs.publish == 'true' }}
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx (slim)
         uses: docker/setup-buildx-action@v2
       - name: Login to DockerHub (slim)
