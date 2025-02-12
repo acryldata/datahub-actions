@@ -97,17 +97,17 @@ class DocsPropagator(EntityPropagator):
             )
             if current_docs.documentations:
                 # get the most recently updated documentation with attribution
-                current_documentation_instance = sorted(
+                documentation_instances = sorted(
                     [doc for doc in current_docs.documentations if doc.attribution],
                     key=lambda x: x.attribution.time if x.attribution else 0,
                 )
-                if current_documentation_instance is None:
+                if documentation_instances is None:
                     logger.warning(
                         f"Documentation doesn't have any documentation attribution. Propagation will be skipped for {entity_urn} for this mcl."
                     )
                     return None
 
-                current_documentation_instance = current_documentation_instance[-1]
+                current_documentation_instance = documentation_instances[-1]
                 assert current_documentation_instance.attribution
                 if (
                     current_documentation_instance.attribution.source is None
