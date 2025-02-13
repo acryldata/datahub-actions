@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Optional
+from typing import Iterable, Optional
 
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.metadata.schema_classes import (
@@ -245,7 +245,7 @@ class DocsPropagator(EntityPropagator):
         dataset_urn: str,
         field_doc: Optional[str],
         context: SourceDetails,
-    ) -> Optional[MetadataChangeProposalWrapper]:
+    ) -> Iterable[MetadataChangeProposalWrapper]:
         if context.origin == schema_field_urn:
             # No need to propagate to self
             logger.info("Skipping documentation propagation to self")
@@ -323,7 +323,7 @@ class DocsPropagator(EntityPropagator):
             logger.info(
                 f"Will emit documentation {documentations} change proposal for {schema_field_urn} with {field_doc}"
             )
-            return MetadataChangeProposalWrapper(
+            yield MetadataChangeProposalWrapper(
                 entityUrn=schema_field_urn,
                 aspect=documentations,
             )
@@ -336,12 +336,12 @@ class DocsPropagator(EntityPropagator):
         propagation_directive: PropagationDirective,
         entity_urn: Urn,
         context: SourceDetails,
-    ) -> Optional[MetadataChangeProposalWrapper]:
+    ) -> Iterable[MetadataChangeProposalWrapper]:
         assert isinstance(propagation_directive, DocPropagationDirective)
 
         parent_urn = entity_urn.entity_ids[0]
 
-        return self.modify_docs_on_columns(
+        yield from self.modify_docs_on_columns(
             graph=self.graph,
             operation=propagation_directive.operation,
             schema_field_urn=str(entity_urn),

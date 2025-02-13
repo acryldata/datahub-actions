@@ -339,12 +339,13 @@ def test_doc_propagation_upstream_mcl(mock_create_property_change_proposal):
     test_event = mcl_event()
     results = list(action.act_async(test_event))
     assert len(results) == 1
+    res = results[0]
     assert (
-        results[0].entityUrn
+        res.entityUrn
         == "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:hive,my_database.my_table_upstream1,PROD),0)"
     )
-    assert results[0].aspectName == "documentation"
-    documentation_aspect = results[0].aspect
+    assert res.aspectName == "documentation"
+    documentation_aspect = res.aspect
     assert isinstance(documentation_aspect, models.DocumentationClass)
     assert documentation_aspect.documentations[0].documentation == "test docs"
 

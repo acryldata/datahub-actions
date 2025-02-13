@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from datahub.metadata.schema_classes import MetadataChangeLogClass
 
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import METADATA_CHANGE_LOG_EVENT_V1_TYPE
+from datahub_actions.plugin.action.propagation.propagation_rule_config import (
+    MclTriggerRule,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +30,9 @@ class MCLProcessor:
     A utility class to register and process MetadataChangeLog events.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, trigger_rule: Optional[MclTriggerRule] = None) -> None:
         self.entity_aspect_processors: dict[str, dict[str, Callable]] = {}
+        self.trigger_rule = trigger_rule
         pass
 
     def is_mcl(self, event: EventEnvelope) -> bool:

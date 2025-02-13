@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from datahub.configuration.common import AllowDenyPattern
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
@@ -108,9 +108,9 @@ class EntityPropagator:
 
     def get_propagation_relationships(
         self, source_details: Optional[SourceDetails] = None
-    ) -> List[Tuple[RelationshipType, DirectionType]]:
+    ) -> Dict[RelationshipType, List[DirectionType]]:
 
-        possible_relationships = []
+        possible_relationships: Dict[RelationshipType, List[DirectionType]] = {}
         if (source_details is not None) and (
             source_details.propagation_relationship
             and source_details.propagation_direction
@@ -128,8 +128,8 @@ class EntityPropagator:
                     and restricted_direction == DirectionType.DOWN
                 ):  # Skip upstream if the propagation has been restricted to downstream
                     continue
-                possible_relationships.append(
-                    (RelationshipType.LINEAGE, DirectionType.UP)
+                possible_relationships.setdefault(RelationshipType.LINEAGE, []).append(
+                    DirectionType.UP
                 )
             elif relationship == PropagationRelationships.DOWNSTREAM:
                 if (
@@ -137,13 +137,14 @@ class EntityPropagator:
                     and restricted_direction == DirectionType.UP
                 ):  # Skip upstream if the propagation has been restricted to downstream
                     continue
-                possible_relationships.append(
-                    (RelationshipType.LINEAGE, DirectionType.DOWN)
+                possible_relationships.setdefault(RelationshipType.LINEAGE, []).append(
+                    DirectionType.DOWN
                 )
             elif relationship == PropagationRelationships.SIBLING:
-                possible_relationships.append(
-                    (RelationshipType.SIBLING, DirectionType.ALL)
+                possible_relationships.setdefault(RelationshipType.SIBLING, []).append(
+                    DirectionType.ALL
                 )
+
         logger.debug(f"Possible relationships: {possible_relationships}")
         return possible_relationships
 
@@ -152,5 +153,5 @@ class EntityPropagator:
         propagation_directive: PropagationDirective,
         entity_urn: Urn,
         context: SourceDetails,
-    ) -> Optional[MetadataChangeProposalWrapper]:
+    ) -> Iterable[MetadataChangeProposalWrapper]:
         raise NotImplementedError("Method not implemented")

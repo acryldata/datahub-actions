@@ -12,12 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-from typing import Any, Callable
+from typing import Any, Callable, Optional
+
+from datahub.configuration.common import ConfigModel
 
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import EntityChangeEvent
 
 logger = logging.getLogger(__name__)
+
+
+class MCETrigger(ConfigModel):
+    """
+    A configuration class for MetadataChangeLog event triggers.
+    """
+
+    enabled: bool = True
 
 
 class MCEProcessor:
@@ -27,12 +37,16 @@ class MCEProcessor:
 
     EntityChangeEvent_v1: str = "EntityChangeEvent_v1"
 
-    def __init__(self) -> None:
+    def __init__(self, trigger_config: Optional[MCETrigger] = None) -> None:
         self.entity_aspect_processors: dict[str, dict[str, Callable]] = {}
+        self.trigger_config = trigger_config
         pass
 
     def is_mce(self, event: EventEnvelope) -> bool:
         return event.event_type == MCEProcessor.EntityChangeEvent_v1
+
+    def check_trigger(self, event: EventEnvelope) -> bool:
+        return self.is_mce(event)
 
     def register_processor(
         self, entity_type: str, category: str, processor: Callable

@@ -62,7 +62,7 @@ class DirectionType(Enum):
 class PropagationDirective(BaseModel):
     propagate: bool
     operation: str
-    relationships: List[Tuple[RelationshipType, DirectionType]]
+    relationships: Dict[RelationshipType, List[DirectionType]]
     entity: str = Field(
         description="Entity that currently triggered the propagation directive",
     )
@@ -211,12 +211,12 @@ def get_attribution_and_context_from_directive(
         ),
     }
     if propagation_directive.relationships:
-        source_detail["propagation_relationship"] = propagation_directive.relationships[
-            0
+        # TODO: Check if this assumption is correct to take the first key. This was the logic earlier as well.
+        first_key = list(propagation_directive.relationships.keys())[0]
+        source_detail["propagation_relationship"] = first_key.value
+        source_detail["propagation_direction"] = propagation_directive.relationships[
+            first_key
         ][0].value
-        source_detail["propagation_direction"] = propagation_directive.relationships[0][
-            1
-        ].value
     if propagation_directive.actor:
         source_detail["actor"] = propagation_directive.actor
     else:

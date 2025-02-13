@@ -1,15 +1,13 @@
 import json
 import logging
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Union
 
-import cachetools
+from datahub.configuration.common import ConfigModel
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.metadata.schema_classes import GenericAspectClass
-from datahub.utilities.urns.urn import Urn, guess_entity_type
 from pydantic import Field
 
 from datahub_actions.action.action import Action
-from datahub_actions.api.action_graph import AcrylDataHubGraph
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.pipeline.pipeline_context import PipelineContext
 from datahub_actions.plugin.action.mce_utils import MCEProcessor
@@ -18,16 +16,28 @@ from datahub_actions.plugin.action.propagation.docs.docs_propagator import (
     DocsPropagator,
     DocsPropagatorConfig,
 )
+from datahub_actions.plugin.action.propagation.propagation_rule_config import (
+    AspectLookup,
+    MclTriggerRule,
+)
+from datahub_actions.plugin.action.propagation.propagation_strategy.base_strategy import (
+    BaseStrategy,
+)
+from datahub_actions.plugin.action.propagation.propagation_strategy.lineage_strategy import (
+    LineageBasedStrategy,
+    LineageBasedStrategyConfig,
+)
+from datahub_actions.plugin.action.propagation.propagation_strategy.sibling_strategy import (
+    SiblingBasedStrategy,
+    SiblingBasedStrategyConfig,
+)
 from datahub_actions.plugin.action.propagation.propagation_utils import (
-    DirectionType,
     PropagationConfig,
-    PropagationDirective,
     PropagationRelationships,
     PropertyPropagationDirective,
     PropertyType,
     RelationshipType,
     SourceDetails,
-    get_unique_siblings,
 )
 from datahub_actions.plugin.action.propagation.propagator import EntityPropagator
 from datahub_actions.plugin.action.stats_util import (
@@ -40,6 +50,24 @@ from datahub_actions.plugin.action.tag.tag_propagator import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class PropagationSettings(ConfigModel):
+    description: DocsPropagatorConfig = Field(
+        default=DocsPropagatorConfig(),
+    )
+    tags: TagPropagatorConfig = Field(
+        default=TagPropagatorConfig(),
+    )
+    # terms: TermPropagationSettings
+    # structuredProperties: StructuredPropertyPropagationSettings
+
+
+class PropagationRule(ConfigModel):
+    entityTypes: List[str]
+    propagationSettings: Union[PropagationSettings, List[AspectLookup]]
+
+    mcl: Optional[MclTriggerRule] = None
 
 
 class PropertyPropagationConfig(PropagationConfig):
@@ -74,6 +102,10 @@ class PropertyPropagationConfig(PropagationConfig):
         description="Allowed propagation relationships.",
     )
 
+    propagation_settings: PropagationSettings = Field(
+        default=PropagationSettings(),
+    )
+
 
 class GenericPropagationAction(Action):
     """
@@ -101,23 +133,40 @@ class GenericPropagationAction(Action):
         )
 
         self.propagators: List[EntityPropagator] = []
-        self.propagators.append(
-            DocsPropagator(
-                self.action_urn,
-                self.ctx.graph,
-                DocsPropagatorConfig(
-                    propagation_relationships=self.config.propagation_relationships
-                ),
+        if self.config.propagation_settings.description.enabled:
+            self.propagators.append(
+                DocsPropagator(
+                    self.action_urn,
+                    self.ctx.graph,
+                    DocsPropagatorConfig(
+                        propagation_relationships=self.config.propagation_relationships
+                    ),
+                )
             )
+        if self.config.propagation_settings.tags.enabled:
+            self.propagators.append(
+                TagPropagator(
+                    self.action_urn,
+                    self.ctx.graph,
+                    TagPropagatorConfig(
+                        propagation_relationships=self.config.propagation_relationships
+                    ),
+                )
+            )
+
+        self.propagation_strategies: Dict[RelationshipType, BaseStrategy] = {}
+        lineage_based_strategy = LineageBasedStrategy(
+            self.ctx.graph, LineageBasedStrategyConfig(), self._stats
         )
-        self.propagators.append(
-            TagPropagator(
-                self.action_urn,
-                self.ctx.graph,
-                TagPropagatorConfig(
-                    propagation_relationships=self.config.propagation_relationships
-                ),
-            )
+        self.propagation_strategies[lineage_based_strategy.type()] = (
+            lineage_based_strategy
+        )
+
+        sibling_based_strategy = SiblingBasedStrategy(
+            self.ctx.graph, SiblingBasedStrategyConfig(), self._stats
+        )
+        self.propagation_strategies[sibling_based_strategy.type()] = (
+            sibling_based_strategy
         )
 
     @classmethod
@@ -175,49 +224,15 @@ class GenericPropagationAction(Action):
                 )
                 if directive is not None and directive.propagate:
                     self._stats.increment_assets_processed(directive.entity)
-                    yield from self._propagate_directive(directive, propagator)
+                    yield from self._propagate_directive(
+                        propagator=propagator, directive=directive
+                    )
             stats.end(event, success=True)
         except Exception:
             logger.error(f"Error processing event {event}:", exc_info=True)
             stats.end(event, success=False)
 
     def _propagate_directive(
-        self, directive: PropertyPropagationDirective, propagator: EntityPropagator
-    ) -> Iterable[MetadataChangeProposalWrapper]:
-        assert self.ctx.graph
-        logger.debug(f"Doc Propagation Directive: {directive}")
-        # TODO: Put each mechanism behind a config flag to be controlled
-        # externally.
-        lineage_downstream = (
-            RelationshipType.LINEAGE,
-            DirectionType.DOWN,
-        ) in directive.relationships
-        lineage_upstream = (
-            RelationshipType.LINEAGE,
-            DirectionType.UP,
-        ) in directive.relationships
-        lineage_any = (
-            RelationshipType.LINEAGE,
-            DirectionType.ALL,
-        ) in directive.relationships
-        logger.info(
-            f"Lineage Downstream: {lineage_downstream}, Lineage Upstream: {lineage_upstream}, Lineage Any: {lineage_any}"
-        )
-        if (
-            lineage_downstream
-            or lineage_any
-            or lineage_upstream
-            or (
-                RelationshipType.SIBLING,
-                DirectionType.ALL,
-            )
-        ):
-            # Step 1: Propagate to downstream entities
-            yield from self._propagate_property(
-                propagator=propagator, directive=directive
-            )
-
-    def _propagate_property(
         self, propagator: EntityPropagator, directive: PropertyPropagationDirective
     ) -> Iterable[MetadataChangeProposalWrapper]:
         """Propagate the property according to the directive."""
@@ -232,201 +247,14 @@ class GenericPropagationAction(Action):
             propagation_depth=directive.propagation_depth,
         )
 
-        # Propagate based on relationships
-        for relationship, direction in directive.relationships:
-            if relationship == RelationshipType.LINEAGE:
-                if direction in (DirectionType.DOWN, DirectionType.ALL):
-                    yield from self._propagate_to_direction(
-                        propagator, directive, context, DirectionType.DOWN
-                    )
-                if direction in (DirectionType.UP, DirectionType.ALL):
-                    yield from self._propagate_to_direction(
-                        propagator, directive, context, DirectionType.UP
-                    )
-            elif relationship == RelationshipType.SIBLING:
-                yield from self._propagate_to_siblings(propagator, directive, context)
-
-    @cachetools.cachedmethod(cache=lambda self: cachetools.TTLCache(maxsize=1000, ttl=60 * 5))  # type: ignore[misc]
-    def get_upstreams_cached(
-        self, graph: AcrylDataHubGraph, entity_urn: str
-    ) -> List[str]:
-        """Get the upstream entity from cache."""
-        return graph.get_upstreams(entity_urn=entity_urn)
-
-    def _only_one_upstream_field(
-        self,
-        graph: AcrylDataHubGraph,
-        downstream_field: str,
-        upstream_field: str,
-    ) -> bool:
-        """
-        Check if there is only one upstream field for the downstream field. If upstream_field is provided,
-        it will also check if the upstream field is the only upstream
-
-        TODO: We should cache upstreams because we make this fetch upstreams call FOR EVERY downstream that must be propagated to.
-        """
-        upstreams = graph.get_upstreams(entity_urn=downstream_field)
-        # Use a set here in case there are duplicated upstream edges
-        upstream_fields = list(
-            {x for x in upstreams if guess_entity_type(x) == "schemaField"}
-        )
-
-        # If we found no upstreams for the downstream field, simply skip.
-        if not upstream_fields:
-            logger.debug(
-                f"No upstream fields found. Skipping propagation to downstream {downstream_field}"
-            )
-            return False
-
-        # Convert the set to a list to access by index
-        result = len(upstream_fields) == 1 and upstream_fields[0] == upstream_field
-        if not result:
-            logger.warning(
-                f"Failed check for single upstream: Found upstream fields {upstream_fields} for downstream {downstream_field}. Expecting only one upstream field: {upstream_field}"
-            )
-        return result
-
-    def _propagate_to_direction(
-        self,
-        propagator: EntityPropagator,
-        doc_propagation_directive: PropagationDirective,
-        context: SourceDetails,
-        direction: DirectionType,
-    ) -> Iterable[MetadataChangeProposalWrapper]:
-        """
-        Propagate the documentation to down/upstream entities.
-        """
-        logger.info(
-            f"Propagating to {direction} for {doc_propagation_directive.entity}, context: {context} with propagator {propagator.__class__.__name__}"
-        )
-        assert self.ctx.graph
-        direction_str = "Upstreams" if direction == DirectionType.UP else "Downstreams"
-        if direction == DirectionType.DOWN:
-            lineage_entities = self.ctx.graph.get_downstreams(
-                entity_urn=doc_propagation_directive.entity
-            )
-        elif direction == DirectionType.UP:
-            lineage_entities = self.ctx.graph.get_upstreams(
-                entity_urn=doc_propagation_directive.entity
-            )
-        else:
-            raise ValueError(f"Invalid direction: {direction}")
-
-        logger.debug(
-            f"{direction_str} {lineage_entities} for {doc_propagation_directive.entity}"
-        )
-        entity_urn = doc_propagation_directive.entity
-        propagated_context = SourceDetails.parse_obj(context.dict())
-        propagated_context.propagation_relationship = RelationshipType.LINEAGE
-        propagated_context.propagation_direction = direction
-        propagated_entities_this_hop_count = 0
-        # breakpoint()
-        if guess_entity_type(entity_urn) == "schemaField":
-            lineage_fields = {
-                x for x in lineage_entities if guess_entity_type(x) == "schemaField"
-            }
-
-            # We only propagate to the upstream field if there is only one
-            # upstream field
-            if direction == DirectionType.UP and len(lineage_fields) != 1:
-                return
-
-            for field in lineage_fields:
-                schema_field_urn = Urn.from_string(field)
-                parent_urn = schema_field_urn.entity_ids[0]
-                field_path = schema_field_urn.entity_ids[1]
-
-                logger.info(
-                    f"Will {doc_propagation_directive.operation} directive: {doc_propagation_directive} for {field_path} on {schema_field_urn}"
+        for relationship_type in directive.relationships.keys():
+            prop_strategy = self.propagation_strategies.get(relationship_type)
+            if prop_strategy:
+                yield from prop_strategy.propagate(propagator, directive, context)
+            else:
+                logger.warning(
+                    f"No propagation strategy found for relationship type {relationship_type}"
                 )
-
-                parent_entity_type = guess_entity_type(parent_urn)
-
-                if parent_entity_type == "dataset":
-                    if self._only_one_upstream_field(
-                        self.ctx.graph,
-                        downstream_field=(
-                            str(schema_field_urn)
-                            if direction == DirectionType.DOWN
-                            else entity_urn
-                        ),
-                        upstream_field=(
-                            entity_urn
-                            if direction == DirectionType.DOWN
-                            else str(schema_field_urn)
-                        ),
-                    ):
-                        if (
-                            propagated_entities_this_hop_count
-                            >= self.config.max_propagation_fanout
-                        ):
-                            # breakpoint()
-                            logger.warning(
-                                f"Exceeded max propagation fanout of {self.config.max_propagation_fanout}. Skipping propagation to {direction_str.lower()} {field}"
-                            )
-                            # No need to propagate to more downupstreams
-                            return
-
-                        if context.origin == schema_field_urn:
-                            # No need to propagate to self
-                            continue
-
-                        mcpw = propagator.create_property_change_proposal(
-                            doc_propagation_directive,
-                            schema_field_urn,
-                            context=propagated_context,
-                        )
-                        if mcpw:
-                            yield mcpw
-                        propagated_entities_this_hop_count += 1
-
-                    elif parent_entity_type == "chart":
-                        logger.warning(
-                            "Charts are expected to have fields that are dataset schema fields. Skipping for now..."
-                        )
-                self._stats.increment_assets_impacted(field)
-
-        elif guess_entity_type(entity_urn) == "dataset":
-            logger.info(f"Propagating to {direction_str.lower()} for {entity_urn}")
-            lineage_entity = {
-                x for x in lineage_entities if guess_entity_type(x) == "dataset"
-            }
-            for dataset in lineage_entity:
-                dataset_urn = Urn.from_string(dataset)
-                logger.info(
-                    f"Will {doc_propagation_directive.operation} directive: {doc_propagation_directive} for {dataset_urn}"
-                )
-                mcpw = propagator.create_property_change_proposal(
-                    doc_propagation_directive,
-                    dataset_urn,
-                    context=propagated_context,
-                )
-                if mcpw:
-                    yield mcpw
-                self._stats.increment_assets_impacted(dataset)
-
-        else:
-            logger.warning(
-                f"Unsupported entity type {guess_entity_type(entity_urn)} for {entity_urn}"
-            )
-
-    def _propagate_to_siblings(
-        self,
-        propagator: EntityPropagator,
-        directive: PropertyPropagationDirective,
-        context: SourceDetails,
-    ) -> Iterable[MetadataChangeProposalWrapper]:
-        """Propagate property to sibling entities."""
-        assert self.ctx.graph
-
-        siblings = get_unique_siblings(self.ctx.graph, directive.entity)
-        for sibling in siblings:
-            if guess_entity_type(sibling) == guess_entity_type(directive.entity):
-                maybe_mcp = propagator.create_property_change_proposal(
-                    directive, Urn.from_string(sibling), context
-                )
-                if maybe_mcp:
-                    yield maybe_mcp
 
     def close(self) -> None:
         # Implement the close method
