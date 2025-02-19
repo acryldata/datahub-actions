@@ -201,14 +201,21 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
                 done = True
         return entities
 
-    def get_upstreams(self, entity_urn: str, max_upstreams: int = 3000) -> List[str]:
+    def get_upstreams(
+        self,
+        entity_urn: str,
+        max_upstreams: int = 3000,
+        relationship_types: Optional[List] = None,
+    ) -> List[str]:
         start = 0
         count_per_page = 100
         entities = []
         done = False
         total_upstreams = 0
+        if not relationship_types:
+            relationship_types = ["DownstreamOf"]
         while not done:
-            url_frag = f"/relationships?direction=OUTGOING&types=List(DownstreamOf)&urn={urllib.parse.quote(entity_urn)}&count={count_per_page}&start={start}"
+            url_frag = f"/relationships?direction=OUTGOING&types=List({','.join(relationship_types)})&urn={urllib.parse.quote(entity_urn)}&count={count_per_page}&start={start}"
             url = f"{self.graph._gms_server}{url_frag}"
             response = self.graph._get_generic(url)
             if response["count"] > 0:
