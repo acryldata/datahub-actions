@@ -21,6 +21,9 @@ MONITORING_PORT="${DATAHUB_ACTIONS_MONITORING_PORT:-8000}"
 
 touch /tmp/datahub/logs/actions/actions.out
 
+# update executor.yaml
+/initialize_executor_yaml.sh
+
 # Deploy System Actions
 if [ "$(ls -A ${SYS_CONFIGS_PATH}/)" ]; then
     config_files=""
