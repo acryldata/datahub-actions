@@ -31,14 +31,11 @@ from pydantic.main import BaseModel
 from ratelimit import limits, sleep_and_retry
 
 from datahub_actions.api.action_graph import AcrylDataHubGraph
+from datahub_actions.plugin.action.propagation.propagation_rule_config import (
+    AspectLookup,
+)
 
 SYSTEM_ACTOR = "urn:li:corpuser:__datahub_system"
-
-
-class PropagationRelationships(str, Enum):
-    UPSTREAM = "upstream"
-    DOWNSTREAM = "downstream"
-    SIBLING = "sibling"
 
 
 class PropertyType(Enum):
@@ -306,4 +303,69 @@ def get_unique_siblings(graph: AcrylDataHubGraph, entity_urn: str) -> list[str]:
                                     target_sibling, schema_field.fieldPath
                                 )
                                 return [schema_field_urn]
+    return []
+
+
+def get_urns_from_aspect(
+    graph: AcrylDataHubGraph, entity_urn: str, aspect_lookup: AspectLookup
+) -> list[str]:
+    """
+    Get urn(s) from aspect field
+    """
+
+    if guess_entity_type(entity_urn) == "schemaField":
+        parent_urn = Urn.from_string(entity_urn).entity_ids[0]
+        entity_field_path = Urn.from_string(entity_urn).entity_ids[1]
+
+        aspect = graph.graph.get_aspect(
+            parent_urn,
+            models.KEY_ASPECTS[aspect_lookup.aspect_name],
+        )
+
+        if not aspect:
+            return []
+
+        field_value: Optional[str] = None
+
+        fields = aspect_lookup.field.split(".")
+
+        current = aspect.to_obj()
+        if len(fields) > 1:
+            # Navigate through all fields except the last one
+            for field in fields[:-1]:
+                if field not in current or current[field] is None:
+                    return []
+                current = current[field]
+
+            # Get the value of the last field
+            field_value = current.get(fields[-1])
+        else:
+            # If there's only one field, get it directly
+            field_value = aspect.get(aspect_lookup.field)
+
+        if field_value:
+            urns = []
+            if isinstance(field_value, str):
+                urns = [field_value]
+            elif isinstance(field_value, list):
+                urns = [x for x in urns if x != parent_urn]
+            else:
+                raise ValueError(f"Unexpected field value type: {type(field_value)}")
+
+            for urn in urns:
+                target_urn = urn
+                # now we need to find the schema field the matches
+                if guess_entity_type(target_urn) == "dataset":
+                    schema_fields = graph.graph.get_aspect(
+                        target_urn, models.SchemaMetadataClass
+                    )
+                    if schema_fields:
+                        for schema_field in schema_fields.fields:
+                            if schema_field.fieldPath == entity_field_path:
+                                schema_field_urn = make_schema_field_urn(
+                                    target_urn, schema_field.fieldPath
+                                )
+                                return [schema_field_urn]
+                else:
+                    return [target_urn]
     return []

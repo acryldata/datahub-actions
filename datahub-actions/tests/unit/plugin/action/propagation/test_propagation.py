@@ -17,10 +17,14 @@ from datahub_actions.plugin.action.propagation.generic_propagation_action import
     GenericPropagationAction,
     PropertyPropagationConfig,
 )
+from datahub_actions.plugin.action.propagation.propagation_rule_config import (
+    PropagatedMetadata,
+    PropagationRelationships,
+    PropagationRule,
+    RelationshipLookup,
+)
 from datahub_actions.plugin.action.propagation.propagation_utils import (
     DirectionType,
-    PropagationRelationships,
-    PropertyType,
     RelationshipType,
     SourceDetails,
 )
@@ -30,11 +34,18 @@ from datahub_actions.plugin.action.propagation.propagation_utils import (
 def config():
     return PropertyPropagationConfig(
         enabled=True,
-        supported_properties=[PropertyType.DOCUMENTATION, PropertyType.TAG],
-        entity_types_enabled={"schemaField": True, "dataset": False},
-        propagation_relationships=[
-            PropagationRelationships.SIBLING,
-        ],
+        propagation_rule=PropagationRule(
+            metadataPropagated={
+                PropagatedMetadata.DOCUMENTATION: {},
+                PropagatedMetadata.TAGS: {},
+            },
+            entityTypes=["schemaField", "dataset"],
+            targetUrnResolution=[
+                RelationshipLookup(
+                    type=PropagationRelationships.SIBLING,
+                )
+            ],
+        ),
     )
 
 
@@ -144,14 +155,24 @@ def create_action(
 ) -> GenericPropagationAction:
     config = (
         PropertyPropagationConfig(
-            enabled=True,
-            supported_properties=[PropertyType.DOCUMENTATION, PropertyType.TAG],
-            entity_types_enabled={"schemaField": True, "dataset": False},
-            propagation_relationships=[
-                PropagationRelationships.SIBLING,
-                PropagationRelationships.DOWNSTREAM,
-                PropagationRelationships.UPSTREAM,
-            ],
+            propagation_rule=PropagationRule(
+                metadataPropagated={
+                    PropagatedMetadata.DOCUMENTATION: {},
+                    PropagatedMetadata.TAGS: {},
+                },
+                entityTypes=["schemaField", "dataset"],
+                targetUrnResolution=[
+                    RelationshipLookup(
+                        type=PropagationRelationships.DOWNSTREAM,
+                    ),
+                    RelationshipLookup(
+                        type=PropagationRelationships.UPSTREAM,
+                    ),
+                    RelationshipLookup(
+                        type=PropagationRelationships.SIBLING,
+                    ),
+                ],
+            )
         )
         if not propagation_config
         else propagation_config
@@ -410,11 +431,18 @@ def test_propagation_disabled(
 def test_sibling_propagation() -> None:
     config = PropertyPropagationConfig(
         enabled=True,
-        supported_properties=[PropertyType.DOCUMENTATION, PropertyType.TAG],
-        entity_types_enabled={"schemaField": True, "dataset": False},
-        propagation_relationships=[
-            PropagationRelationships.SIBLING,
-        ],
+        propagation_rule=PropagationRule(
+            targetUrnResolution=[
+                RelationshipLookup(
+                    type=PropagationRelationships.SIBLING,
+                )
+            ],
+            entityTypes=["schemaField", "dataset"],
+            metadataPropagated={
+                PropagatedMetadata.DOCUMENTATION: {"columns_enabled": True},
+                PropagatedMetadata.TAGS: {},
+            },
+        ),
     )
 
     graph_mock = MagicMock()

@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional
 
 from datahub.configuration.common import ConfigModel
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
@@ -17,8 +17,8 @@ from datahub_actions.plugin.action.propagation.docs.docs_propagator import (
     DocsPropagatorConfig,
 )
 from datahub_actions.plugin.action.propagation.propagation_rule_config import (
-    AspectLookup,
-    MclTriggerRule,
+    EntityLookup,
+    PropagatedMetadata,
 )
 from datahub_actions.plugin.action.propagation.propagation_strategy.base_strategy import (
     BaseStrategy,
@@ -33,9 +33,7 @@ from datahub_actions.plugin.action.propagation.propagation_strategy.sibling_stra
 )
 from datahub_actions.plugin.action.propagation.propagation_utils import (
     PropagationConfig,
-    PropagationRelationships,
     PropertyPropagationDirective,
-    PropertyType,
     RelationshipType,
     SourceDetails,
 )
@@ -53,21 +51,20 @@ logger = logging.getLogger(__name__)
 
 
 class PropagationSettings(ConfigModel):
-    description: DocsPropagatorConfig = Field(
-        default=DocsPropagatorConfig(),
-    )
-    tags: TagPropagatorConfig = Field(
-        default=TagPropagatorConfig(),
-    )
+    description: DocsPropagatorConfig
+    tags: TagPropagatorConfig
     # terms: TermPropagationSettings
     # structuredProperties: StructuredPropertyPropagationSettings
 
 
 class PropagationRule(ConfigModel):
-    entityTypes: List[str]
-    propagationSettings: Union[PropagationSettings, List[AspectLookup]]
+    metadataPropagated: Dict[PropagatedMetadata, Dict] = {}
+    targetUrnResolution: List[EntityLookup]
 
-    mcl: Optional[MclTriggerRule] = None
+    entityTypes: List[str]
+    # propagationSettings: Union[PropagationSettings, List[AspectLookup]]
+
+    # mcl: Optional[MclTriggerRule] = None
 
 
 class PropertyPropagationConfig(PropagationConfig):
@@ -84,26 +81,9 @@ class PropertyPropagationConfig(PropagationConfig):
     enabled: bool = Field(
         True, description="Indicates whether property propagation is enabled."
     )
-    supported_properties: List[PropertyType] = Field(
-        [PropertyType.DOCUMENTATION, PropertyType.TAG],
-        description="List of property types that can be propagated.",
-    )
 
-    entity_types_enabled: Dict[str, bool] = Field(
-        {"schemaField": True, "dataset": False},
-        description="Mapping of entity types to whether propagation is enabled.",
-    )
-    propagation_relationships: List[PropagationRelationships] = Field(
-        [
-            PropagationRelationships.SIBLING,
-            PropagationRelationships.DOWNSTREAM,
-            PropagationRelationships.UPSTREAM,
-        ],
-        description="Allowed propagation relationships.",
-    )
-
-    propagation_settings: PropagationSettings = Field(
-        default=PropagationSettings(),
+    propagation_rule: PropagationRule = Field(
+        description="Rule for property propagation.",
     )
 
 
@@ -133,28 +113,38 @@ class GenericPropagationAction(Action):
         )
 
         self.propagators: List[EntityPropagator] = []
-        if self.config.propagation_settings.description.enabled:
+        if (
+            PropagatedMetadata.DOCUMENTATION
+            in self.config.propagation_rule.metadataPropagated.keys()
+        ):
             self.propagators.append(
                 DocsPropagator(
                     self.action_urn,
                     self.ctx.graph,
                     DocsPropagatorConfig(
-                        propagation_relationships=self.config.propagation_relationships
+                        propagation_rule=self.config.propagation_rule,
+                        **self.config.propagation_rule.metadataPropagated.get(
+                            PropagatedMetadata.DOCUMENTATION, {}
+                        ),
                     ),
                 )
             )
-        if self.config.propagation_settings.tags.enabled:
+        if PropagatedMetadata.TAGS in self.config.propagation_rule.metadataPropagated:
             self.propagators.append(
                 TagPropagator(
                     self.action_urn,
                     self.ctx.graph,
                     TagPropagatorConfig(
-                        propagation_relationships=self.config.propagation_relationships
+                        propagation_rule=self.config.propagation_rule,
+                        **self.config.propagation_rule.metadataPropagated.get(
+                            PropagatedMetadata.TAGS, {}
+                        ),
                     ),
                 )
             )
 
         self.propagation_strategies: Dict[RelationshipType, BaseStrategy] = {}
+
         lineage_based_strategy = LineageBasedStrategy(
             self.ctx.graph, LineageBasedStrategyConfig(), self._stats
         )
@@ -165,6 +155,7 @@ class GenericPropagationAction(Action):
         sibling_based_strategy = SiblingBasedStrategy(
             self.ctx.graph, SiblingBasedStrategyConfig(), self._stats
         )
+
         self.propagation_strategies[sibling_based_strategy.type()] = (
             sibling_based_strategy
         )

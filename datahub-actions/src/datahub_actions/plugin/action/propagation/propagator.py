@@ -12,10 +12,14 @@ from datahub_actions.api.action_graph import AcrylDataHubGraph
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.plugin.action.mce_utils import MCEProcessor
 from datahub_actions.plugin.action.mcl_utils import MCLProcessor
+from datahub_actions.plugin.action.propagation.propagation_rule_config import (
+    PropagationRelationships,
+    PropagationRule,
+    RelationshipLookup,
+)
 from datahub_actions.plugin.action.propagation.propagation_utils import (
     DirectionType,
     PropagationDirective,
-    PropagationRelationships,
     PropertyPropagationDirective,
     RelationshipType,
     SourceDetails,
@@ -25,8 +29,15 @@ logger = logging.getLogger(__name__)
 
 
 class EntityPropagatorConfig(BaseModel):
+    class Config:
+        extra = "forbid"
+
     enabled: bool = Field(
         True, description="Indicates whether entity propagation is enabled."
+    )
+
+    propagation_rule: PropagationRule = Field(
+        description="Rule to determine if a property should be propagated.",
     )
 
     entity_pattern: AllowDenyPattern = Field(
@@ -121,8 +132,12 @@ class EntityPropagator:
             restricted_relationship = None
             restricted_direction = None
 
-        for relationship in self.config.propagation_relationships:
-            if relationship == PropagationRelationships.UPSTREAM:
+        for relationship in filter(
+            lambda r: r.type if isinstance(r, RelationshipLookup) else False,
+            self.config.propagation_rule.targetUrnResolution,
+        ):
+            assert isinstance(relationship, RelationshipLookup)
+            if relationship.type == PropagationRelationships.UPSTREAM:
                 if (
                     restricted_relationship == RelationshipType.LINEAGE
                     and restricted_direction == DirectionType.DOWN
@@ -131,7 +146,7 @@ class EntityPropagator:
                 possible_relationships.setdefault(RelationshipType.LINEAGE, []).append(
                     DirectionType.UP
                 )
-            elif relationship == PropagationRelationships.DOWNSTREAM:
+            elif relationship.type == PropagationRelationships.DOWNSTREAM:
                 if (
                     restricted_relationship == RelationshipType.LINEAGE
                     and restricted_direction == DirectionType.UP
@@ -140,7 +155,7 @@ class EntityPropagator:
                 possible_relationships.setdefault(RelationshipType.LINEAGE, []).append(
                     DirectionType.DOWN
                 )
-            elif relationship == PropagationRelationships.SIBLING:
+            elif relationship.type == PropagationRelationships.SIBLING:
                 possible_relationships.setdefault(RelationshipType.SIBLING, []).append(
                     DirectionType.ALL
                 )
