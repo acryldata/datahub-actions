@@ -236,7 +236,7 @@ setuptools.setup(
         "all": list(
             framework_common.union(
                 *[requirements for plugin, requirements in plugins.items()]
-            )
+                )
         ),
         "dev": list(dev_requirements),
         "integration-tests": list(full_test_dev_requirements),
