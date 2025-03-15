@@ -42,6 +42,3 @@
     file: tests/actions/doc_propagation/resources/user_clicks.avsc
   downstreams:
     - urn:li:dataset:(urn:li:dataPlatform:hive,{{ test_id }}.user.clicks_2,PROD)
-  siblings:
-    - urn: urn:li:dataset:(urn:li:dataPlatform:events,{{ test_id }}.ClickEvent,PROD)
-      primary: true
