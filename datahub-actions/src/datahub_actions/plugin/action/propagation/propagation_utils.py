@@ -22,7 +22,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 import datahub.metadata.schema_classes as models
 from datahub.configuration.common import ConfigModel
 from datahub.emitter.mce_builder import make_schema_field_urn
-from datahub.ingestion.graph.client import DataHubGraph, SearchFilterRule
+from datahub.ingestion.graph.client import DataHubGraph
+from datahub.ingestion.graph.filters import SearchFilterRule
 from datahub.metadata.schema_classes import MetadataAttributionClass
 from datahub.utilities.str_enum import StrEnum
 from datahub.utilities.urns.urn import Urn, guess_entity_type
