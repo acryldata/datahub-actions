@@ -11,13 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from typing import Any, Callable
+import logging
+from typing import Any, Callable, Optional
 
 from datahub.metadata.schema_classes import MetadataChangeLogClass
 
 from datahub_actions.event.event_envelope import EventEnvelope
 from datahub_actions.event.event_registry import METADATA_CHANGE_LOG_EVENT_V1_TYPE
+from datahub_actions.plugin.action.propagation.propagation_rule_config import (
+    MclTriggerRule,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class MCLProcessor:
@@ -25,8 +30,9 @@ class MCLProcessor:
     A utility class to register and process MetadataChangeLog events.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, trigger_rule: Optional[MclTriggerRule] = None) -> None:
         self.entity_aspect_processors: dict[str, dict[str, Callable]] = {}
+        self.trigger_rule = trigger_rule
         pass
 
     def is_mcl(self, event: EventEnvelope) -> bool:
@@ -40,14 +46,18 @@ class MCLProcessor:
         self.entity_aspect_processors[entity_type][aspect] = processor
 
     def process(self, event: EventEnvelope) -> Any:
-
+        logger.info("Processing MCL event")
         if isinstance(event.event, MetadataChangeLogClass):
             entity_type = event.event.entityType
             aspect = event.event.aspectName
+
             if (
                 entity_type in self.entity_aspect_processors
                 and aspect in self.entity_aspect_processors[entity_type]
             ):
+                logger.info(
+                    f"Processing MetadataChangeLogClass with processors with entity type {entity_type} aspect {aspect}"
+                )
                 return self.entity_aspect_processors[entity_type][aspect](
                     entity_urn=event.event.entityUrn,
                     aspect_name=event.event.aspectName,
