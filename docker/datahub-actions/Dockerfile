@@ -29,7 +29,8 @@ RUN chmod a+x /start_datahub_actions.sh && \
     apt-get update && \
     apt-get install -y -qq default-jre && \
     apt-get clean && \
-    rm -rf /var/lib/{apt,dpkg,cache,log}/
+    rm -rf /var/lib/apt && \
+    rm -rf /var/lib/cache
 
 COPY --chown=datahub:datahub datahub-actions /actions-src
 # Add other default configurations into this!
