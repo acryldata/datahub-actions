@@ -15,36 +15,45 @@
 # Defining environment
 ARG APP_ENV=prod
 
-FROM acryldata/datahub-ingestion-base:head-full as prod-install
-COPY datahub-actions /actions-src
-RUN mkdir -p /etc/datahub/actions && mkdir -p /tmp/datahub/logs/actions/system
-RUN cd /actions-src && \
-    pip install "." && \
-    pip install '.[all]' && \
-    # This is required to fix security vulnerability in htrace-core4
-    rm -f /usr/local/lib/python3.10/site-packages/pyspark/jars/htrace-core4-4.1.0-incubating.jar
+FROM acryldata/datahub-ingestion-base:head-full AS base
 
-COPY ./docker/datahub-actions/start.sh /start_datahub_actions.sh
-COPY ./docker/datahub-actions/readiness-check.sh /readiness-check.sh
-RUN chmod a+x /start_datahub_actions.sh
+USER root
 
+COPY --chown=datahub:datahub ./docker/datahub-actions/start.sh /start_datahub_actions.sh
+COPY --chown=datahub:datahub ./docker/datahub-actions/readiness-check.sh /readiness-check.sh
+
+RUN chmod a+x /start_datahub_actions.sh && \
+    mkdir -p /etc/datahub/actions && \
+    mkdir -p /tmp/datahub/logs/actions/system && \
+    chown -R datahub:datahub /etc/datahub /tmp/datahub && \
+    apt-get update && \
+    apt-get install -y -qq default-jre && \
+    apt-get clean && \
+    rm -rf /var/lib/{apt,dpkg,cache,log}/
+
+COPY --chown=datahub:datahub datahub-actions /actions-src
 # Add other default configurations into this!
-RUN mkdir -p /etc/datahub/actions/conf && mkdir -p /etc/datahub/actions/system/conf
-COPY ./docker/config/*.yaml /etc/datahub/actions/system/conf
+COPY --chown=datahub:datahub ./docker/config /etc/datahub/actions/system/conf
 
-# datahub:datahub is created in datahub-ingestion-base image
-RUN chown datahub:datahub /etc/datahub && \
-    chown -R datahub:datahub /tmp/datahub
-
-# By transferring the root user's pip cache directory to the datahub
-# user, we can avoid the need for some redundant dependency downloads.
-RUN mkdir -p /home/datahub/.cache \
-    && mv /root/.cache/pip /home/datahub/.cache/pip \
-    && chown -R datahub:datahub /home/datahub/.cache/pip
-
-FROM ${APP_ENV}-install as final
 USER datahub
-RUN curl -s "https://get.sdkman.io" | bash
-RUN /bin/bash -c "source /$HOME/.sdkman/bin/sdkman-init.sh; sdk version; sdk install java 8.0.332-zulu"
+WORKDIR /actions-src
+
+FROM base AS prod-slim-install
+
+# Effectively builds the image without the .cache (looks like it is duplicated but is not)
+RUN --mount=type=cache,target=/datahub-ingestion/.cache/uv,uid=1000,gid=1000 \
+    UV_LINK_MODE=copy uv pip install -e ".[all]"
+
+FROM base AS prod-install
+
+RUN --mount=type=cache,target=/datahub-ingestion/.cache/uv,uid=1000,gid=1000 \
+    UV_LINK_MODE=copy uv pip install -e ".[all]"
+
+FROM ${APP_ENV}-install AS final
+WORKDIR /datahub-ingestion
+
+# This is required to fix security vulnerability in htrace-core4
+RUN find . -name "htrace-core4-4.1.0-incubating.jar" -exec rm "{}" \;
+
 ENTRYPOINT [ ]
 CMD dockerize -wait ${DATAHUB_GMS_PROTOCOL:-http}://$DATAHUB_GMS_HOST:$DATAHUB_GMS_PORT/health -timeout 240s /start_datahub_actions.sh

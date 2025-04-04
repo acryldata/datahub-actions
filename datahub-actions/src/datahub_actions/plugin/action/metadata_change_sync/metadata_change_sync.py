@@ -9,7 +9,7 @@ from datahub.metadata.schema_classes import (
     MetadataChangeLogClass,
     MetadataChangeProposalClass,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from datahub_actions.action.action import Action
 from datahub_actions.event.event_envelope import EventEnvelope
@@ -24,6 +24,7 @@ class MetadataChangeEmitterConfig(BaseModel):
     gms_auth_token: Optional[str]
     aspects_to_exclude: Optional[List]
     aspects_to_include: Optional[List]
+    entity_type_to_exclude: List[str] = Field(default_factory=list)
     extra_headers: Optional[Dict[str, str]]
     urn_regex: Optional[str]
 
@@ -65,6 +66,8 @@ class MetadataChangeSyncAction(Action):
         )
         self.aspects_include_set = self.config.aspects_to_include
         
+
+
         extra_headers_keys = (
             list(self.config.extra_headers.keys())
             if self.config.extra_headers
@@ -90,14 +93,18 @@ class MetadataChangeSyncAction(Action):
             logger.info(f"urn_match {urn_match} for entityUrn {orig_event.entityUrn}")
             if (((self.aspects_include_set is not None and aspect_name in self.aspects_include_set)
                 or (self.aspects_include_set is None and aspect_name not in self.aspects_exclude_set))
+                and (orig_event.get("entityType") not in self.config.entity_type_to_exclude
+                if self.config.entity_type_to_exclude
+                else True)
                 and urn_match is not None):
+
                 mcp = self.buildMcp(orig_event)
                 
                 if mcp is not None:
                     logger.debug(f"built mcp {mcp}")
                     self.emit(mcp)
             else:
-                logger.debug(f"skip emitting mcp for aspect {orig_event.get('aspectName')} or entityUrn {orig_event.entityUrn}")
+                logger.debug(f"skip emitting mcp for aspect {orig_event.get('aspectName')} or entityUrn {orig_event.entityUrn} or entity type {orig_event.get('entityType')} on exclude list")
 
     def buildMcp(
         self, orig_event: MetadataChangeLogClass

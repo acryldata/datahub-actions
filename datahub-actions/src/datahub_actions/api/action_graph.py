@@ -176,15 +176,51 @@ query listIngestionSources($input: ListIngestionSourcesInput!, $execution_start:
                 break
         return sources
 
-    def get_downstreams(self, entity_urn: str) -> List[str]:
-        url_frag = f"/relationships?direction=INCOMING&types=List(DownstreamOf)&urn={urllib.parse.quote(entity_urn)}"
-        url = f"{self.graph._gms_server}{url_frag}"
-        response = self.graph._get_generic(url)
-        if response["count"] > 0:
-            relnships = response["relationships"]
-            entities = [x["entity"] for x in relnships]
-            return entities
-        return []
+    def get_downstreams(
+        self, entity_urn: str, max_downstreams: int = 3000
+    ) -> List[str]:
+        start = 0
+        count_per_page = 1000
+        entities = []
+        done = False
+        total_downstreams = 0
+        while not done:
+            # if start > 0:
+            #     breakpoint()
+            url_frag = f"/relationships?direction=INCOMING&types=List(DownstreamOf)&urn={urllib.parse.quote(entity_urn)}&count={count_per_page}&start={start}"
+            url = f"{self.graph._gms_server}{url_frag}"
+            response = self.graph._get_generic(url)
+            if response["count"] > 0:
+                relnships = response["relationships"]
+                entities.extend([x["entity"] for x in relnships])
+                start += count_per_page
+                total_downstreams += response["count"]
+                if start >= response["total"] or total_downstreams >= max_downstreams:
+                    done = True
+            else:
+                done = True
+        return entities
+
+    def get_upstreams(self, entity_urn: str, max_upstreams: int = 3000) -> List[str]:
+        start = 0
+        count_per_page = 100
+        entities = []
+        done = False
+        total_upstreams = 0
+        while not done:
+            url_frag = f"/relationships?direction=OUTGOING&types=List(DownstreamOf)&urn={urllib.parse.quote(entity_urn)}&count={count_per_page}&start={start}"
+            url = f"{self.graph._gms_server}{url_frag}"
+            response = self.graph._get_generic(url)
+            if response["count"] > 0:
+                relnships = response["relationships"]
+                entities.extend([x["entity"] for x in relnships])
+                start += count_per_page
+                total_upstreams += response["count"]
+                if start >= response["total"] or total_upstreams >= max_upstreams:
+                    done = True
+            else:
+                done = True
+        return entities
 
     def get_relationships(
         self, entity_urn: str, direction: str, relationship_types: List[str]
