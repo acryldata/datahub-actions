@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Dict, List, Optional, Pattern, Set, Union, cast
+from typing import Dict, List, Optional, Set, Union, cast
 
 from datahub.emitter.rest_emitter import DatahubRestEmitter
 from datahub.metadata.schema_classes import (
@@ -25,7 +25,7 @@ class MetadataChangeEmitterConfig(BaseModel):
     aspects_to_include: Optional[List]
     entity_type_to_exclude: List[str] = Field(default_factory=list)
     extra_headers: Optional[Dict[str, str]]
-    urn_regex: Union[str, Pattern[str]]
+    urn_regex: str
 
 
 class MetadataChangeSyncAction(Action):
@@ -85,7 +85,9 @@ class MetadataChangeSyncAction(Action):
             orig_event = cast(MetadataChangeLogClass, event.event)
             logger.debug(f"received orig_event {orig_event}")
             regexUrn = self.urn_regex
-            if orig_event.entityUrn is not None:
+            if regexUrn is None:
+                urn_match = True
+            elif orig_event.entityUrn is not None:
                 urn_match = re.match(regexUrn, orig_event.entityUrn)
             else:
                 logger.warn(f"event missing entityUrn: {orig_event}")
