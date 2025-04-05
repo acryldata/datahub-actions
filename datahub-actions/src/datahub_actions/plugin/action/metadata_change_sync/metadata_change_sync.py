@@ -1,8 +1,7 @@
 import json
 import logging
-from typing import Dict, List, Optional, Set, Union, cast
-
 import re
+from typing import Dict, List, Optional, Pattern, Set, Union, cast
 
 from datahub.emitter.rest_emitter import DatahubRestEmitter
 from datahub.metadata.schema_classes import (
@@ -26,7 +25,7 @@ class MetadataChangeEmitterConfig(BaseModel):
     aspects_to_include: Optional[List]
     entity_type_to_exclude: List[str] = Field(default_factory=list)
     extra_headers: Optional[Dict[str, str]]
-    urn_regex: Optional[str]
+    urn_regex: Union[str, Pattern[str]]
 
 
 class MetadataChangeSyncAction(Action):
@@ -65,8 +64,6 @@ class MetadataChangeSyncAction(Action):
             else self.DEFAULT_ASPECTS_EXCLUDE_SET
         )
         self.aspects_include_set = self.config.aspects_to_include
-        
-
 
         extra_headers_keys = (
             list(self.config.extra_headers.keys())
@@ -88,23 +85,42 @@ class MetadataChangeSyncAction(Action):
             orig_event = cast(MetadataChangeLogClass, event.event)
             logger.debug(f"received orig_event {orig_event}")
             regexUrn = self.urn_regex
-            urn_match = re.match(regexUrn, orig_event.entityUrn)
+            if orig_event.entityUrn is not None:
+                urn_match = re.match(regexUrn, orig_event.entityUrn)
+            else:
+                logger.warn(f"event missing entityUrn: {orig_event}")
+                urn_match = None
             aspect_name = orig_event.get("aspectName")
             logger.info(f"urn_match {urn_match} for entityUrn {orig_event.entityUrn}")
-            if (((self.aspects_include_set is not None and aspect_name in self.aspects_include_set)
-                or (self.aspects_include_set is None and aspect_name not in self.aspects_exclude_set))
-                and (orig_event.get("entityType") not in self.config.entity_type_to_exclude
-                if self.config.entity_type_to_exclude
-                else True)
-                and urn_match is not None):
+            if (
+                (
+                    (
+                        self.aspects_include_set is not None
+                        and aspect_name in self.aspects_include_set
+                    )
+                    or (
+                        self.aspects_include_set is None
+                        and aspect_name not in self.aspects_exclude_set
+                    )
+                )
+                and (
+                    orig_event.get("entityType")
+                    not in self.config.entity_type_to_exclude
+                    if self.config.entity_type_to_exclude
+                    else True
+                )
+                and urn_match is not None
+            ):
 
                 mcp = self.buildMcp(orig_event)
-                
+
                 if mcp is not None:
                     logger.debug(f"built mcp {mcp}")
                     self.emit(mcp)
             else:
-                logger.debug(f"skip emitting mcp for aspect {orig_event.get('aspectName')} or entityUrn {orig_event.entityUrn} or entity type {orig_event.get('entityType')} on exclude list")
+                logger.debug(
+                    f"skip emitting mcp for aspect {orig_event.get('aspectName')} or entityUrn {orig_event.entityUrn} or entity type {orig_event.get('entityType')} on exclude list"
+                )
 
     def buildMcp(
         self, orig_event: MetadataChangeLogClass
