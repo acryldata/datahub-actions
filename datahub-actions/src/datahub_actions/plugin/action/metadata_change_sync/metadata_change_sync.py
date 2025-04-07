@@ -25,7 +25,7 @@ class MetadataChangeEmitterConfig(BaseModel):
     aspects_to_include: Optional[List]
     entity_type_to_exclude: List[str] = Field(default_factory=list)
     extra_headers: Optional[Dict[str, str]]
-    urn_regex: str
+    urn_regex: Optional[str]
 
 
 class MetadataChangeSyncAction(Action):
