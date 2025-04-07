@@ -86,7 +86,7 @@ class MetadataChangeSyncAction(Action):
             logger.debug(f"received orig_event {orig_event}")
             regexUrn = self.urn_regex
             if regexUrn is None:
-                urn_match = True
+                urn_match = re.match(".*", "default match")
             elif orig_event.entityUrn is not None:
                 urn_match = re.match(regexUrn, orig_event.entityUrn)
             else:
