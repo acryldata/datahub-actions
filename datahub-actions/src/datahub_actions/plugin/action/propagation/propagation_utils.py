@@ -25,7 +25,6 @@ from datahub.emitter.mce_builder import make_schema_field_urn
 from datahub.ingestion.graph.client import DataHubGraph
 from datahub.ingestion.graph.filters import SearchFilterRule
 from datahub.metadata.schema_classes import MetadataAttributionClass
-from datahub.utilities.str_enum import StrEnum
 from datahub.utilities.urns.urn import Urn, guess_entity_type
 from pydantic import validator
 from pydantic.fields import Field
@@ -33,17 +32,26 @@ from pydantic.main import BaseModel
 from ratelimit import limits, sleep_and_retry
 
 from datahub_actions.api.action_graph import AcrylDataHubGraph
+from datahub_actions.plugin.action.propagation.propagation_rule_config import (
+    AspectLookup,
+)
 
 SYSTEM_ACTOR = "urn:li:corpuser:__datahub_system"
 
 
-class RelationshipType(StrEnum):
+class PropertyType(Enum):
+    DOCUMENTATION = "DOCUMENTATION"
+    STRUCTURED_PROPERTY = "STRUCTURED_PROPERTY"
+    TAG = "TAG"
+
+
+class RelationshipType(Enum):
     LINEAGE = "lineage"  # signifies all types of lineage
     HIERARCHY = "hierarchy"  # signifies all types of hierarchy
     SIBLING = "sibling"  # signifies all types of sibling
 
 
-class DirectionType(StrEnum):
+class DirectionType(Enum):
     UP = "up"  # signifies upstream or parent (depending on relationship type)
     DOWN = "down"  # signifies downstream or child (depending on relationship type)
     ALL = "all"  # signifies all directions
@@ -52,7 +60,7 @@ class DirectionType(StrEnum):
 class PropagationDirective(BaseModel):
     propagate: bool
     operation: str
-    relationships: List[Tuple[RelationshipType, DirectionType]]
+    relationships: Dict[RelationshipType, List[DirectionType]]
     entity: str = Field(
         description="Entity that currently triggered the propagation directive",
     )
@@ -74,6 +82,15 @@ class PropagationDirective(BaseModel):
     propagation_depth: Optional[int] = Field(
         default=0,
         description="Depth of propagation. This is used to track the depth of the propagation.",
+    )
+
+
+class PropertyPropagationDirective(PropagationDirective):
+    property_value: Optional[Any] = Field(
+        default=None, description="Property value to be propagated."
+    )
+    property_type: PropertyType = Field(
+        description="Type of property being propagated (e.g., 'documentation', 'tags', etc.)"
     )
 
 
@@ -192,12 +209,12 @@ def get_attribution_and_context_from_directive(
         ),
     }
     if propagation_directive.relationships:
-        source_detail["propagation_relationship"] = propagation_directive.relationships[
-            0
+        # TODO: Check if this assumption is correct to take the first key. This was the logic earlier as well.
+        first_key = list(propagation_directive.relationships.keys())[0]
+        source_detail["propagation_relationship"] = first_key.value
+        source_detail["propagation_direction"] = propagation_directive.relationships[
+            first_key
         ][0].value
-        source_detail["propagation_direction"] = propagation_directive.relationships[0][
-            1
-        ].value
     if propagation_directive.actor:
         source_detail["actor"] = propagation_directive.actor
     else:
@@ -262,8 +279,8 @@ def get_unique_siblings(graph: AcrylDataHubGraph, entity_urn: str) -> list[str]:
     """
 
     if guess_entity_type(entity_urn) == "schemaField":
-        parent_urn = Urn.from_string(entity_urn).get_entity_id()[0]
-        entity_field_path = Urn.from_string(entity_urn).get_entity_id()[1]
+        parent_urn = Urn.from_string(entity_urn).entity_ids[0]
+        entity_field_path = Urn.from_string(entity_urn).entity_ids[1]
         # Does my parent have siblings?
         siblings: Optional[models.SiblingsClass] = graph.graph.get_aspect(
             parent_urn,
@@ -287,4 +304,69 @@ def get_unique_siblings(graph: AcrylDataHubGraph, entity_urn: str) -> list[str]:
                                     target_sibling, schema_field.fieldPath
                                 )
                                 return [schema_field_urn]
+    return []
+
+
+def get_urns_from_aspect(
+    graph: AcrylDataHubGraph, entity_urn: str, aspect_lookup: AspectLookup
+) -> list[str]:
+    """
+    Get urn(s) from aspect field
+    """
+
+    if guess_entity_type(entity_urn) == "schemaField":
+        parent_urn = Urn.from_string(entity_urn).entity_ids[0]
+        entity_field_path = Urn.from_string(entity_urn).entity_ids[1]
+
+        aspect = graph.graph.get_aspect(
+            parent_urn,
+            models.KEY_ASPECTS[aspect_lookup.aspect_name],
+        )
+
+        if not aspect:
+            return []
+
+        field_value: Optional[str] = None
+
+        fields = aspect_lookup.field.split(".")
+
+        current = aspect.to_obj()
+        if len(fields) > 1:
+            # Navigate through all fields except the last one
+            for field in fields[:-1]:
+                if field not in current or current[field] is None:
+                    return []
+                current = current[field]
+
+            # Get the value of the last field
+            field_value = current.get(fields[-1])
+        else:
+            # If there's only one field, get it directly
+            field_value = aspect.get(aspect_lookup.field)
+
+        if field_value:
+            urns = []
+            if isinstance(field_value, str):
+                urns = [field_value]
+            elif isinstance(field_value, list):
+                urns = [x for x in urns if x != parent_urn]
+            else:
+                raise ValueError(f"Unexpected field value type: {type(field_value)}")
+
+            for urn in urns:
+                target_urn = urn
+                # now we need to find the schema field the matches
+                if guess_entity_type(target_urn) == "dataset":
+                    schema_fields = graph.graph.get_aspect(
+                        target_urn, models.SchemaMetadataClass
+                    )
+                    if schema_fields:
+                        for schema_field in schema_fields.fields:
+                            if schema_field.fieldPath == entity_field_path:
+                                schema_field_urn = make_schema_field_urn(
+                                    target_urn, schema_field.fieldPath
+                                )
+                                return [schema_field_urn]
+                else:
+                    return [target_urn]
     return []
