@@ -75,6 +75,7 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+.aws
 
 # Mac OS
 **/.DS_Store
