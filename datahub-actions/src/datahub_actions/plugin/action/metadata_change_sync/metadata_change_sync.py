@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Set, Union, cast
 
 from datahub.emitter.rest_emitter import DatahubRestEmitter
 from datahub.metadata.schema_classes import (
+    ChangeTypeClass,
     MetadataChangeLogClass,
     MetadataChangeProposalClass,
 )
@@ -132,7 +133,7 @@ class MetadataChangeSyncAction(Action):
                 changeType = ChangeTypeClass.UPSERT
             mcp = MetadataChangeProposalClass(
                 entityType=orig_event.get("entityType"),
-                changeType=orig_event.get("changeType"),
+                changeType=change_type,
                 entityUrn=orig_event.get("entityUrn"),
                 entityKeyAspect=orig_event.get("entityKeyAspect"),
                 aspectName=orig_event.get("aspectName"),
