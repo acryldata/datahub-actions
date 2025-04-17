@@ -1,13 +1,18 @@
+# ⚠️ DEPRECATED ⚠️
+
+This repository has been deprecated. The code has been moved to [datahub-project/datahub](https://github.com/datahub-project/datahub).
+
+Please use the new repository for all issues, pull requests, and development.
+
 # ⚡ DataHub Actions Framework
 
 Welcome to DataHub Actions! The Actions framework makes responding to realtime changes in your Metadata Graph easy, enabling you to seamlessly integrate [DataHub](https://github.com/datahub-project/datahub) into a broader events-based architecture.
 
-For a detailed introduction, check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall. For a more in-depth look at use cases and concepts, check out [DataHub Actions Concepts](./docs/concepts.md). 
+For a detailed introduction, check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall. For a more in-depth look at use cases and concepts, check out [DataHub Actions Concepts](./docs/concepts.md).
 
 ## Quickstart
 
 To get started right away, check out the [DataHub Actions Quickstart](./docs/quickstart.md) Guide.
-
 
 ## Prerequisites
 
@@ -22,7 +27,6 @@ datahub --version
 
 > Note that the Actions Framework requires a version of `acryl-datahub` >= v0.8.34
 
-
 ## Installation
 
 Next, simply install the `acryl-datahub-actions` package from PyPi:
@@ -32,7 +36,6 @@ python3 -m pip install --upgrade pip wheel setuptools
 python3 -m pip install --upgrade acryl-datahub-actions
 datahub actions version
 ```
-
 
 ## Configuring an Action
 
@@ -45,7 +48,7 @@ Actions are configured using a YAML file, much in the same way DataHub ingestion
 5. Pipeline Options (Optional)
 6. DataHub API configs (Optional - required for select actions)
 
-With each component being independently pluggable and configurable. 
+With each component being independently pluggable and configurable.
 
 ```yml
 # 1. Required: Action Pipeline Name
@@ -134,7 +137,6 @@ action:
   type: "hello_world"
 ```
 
-
 ## Running an Action
 
 To run a new Action, just use the `actions` CLI command
@@ -142,7 +144,7 @@ To run a new Action, just use the `actions` CLI command
 ```
 datahub actions -c <config.yml>
 ```
- 
+
 Once the Action is running, you will see
 
 ```
@@ -151,7 +153,7 @@ Action Pipeline with name '<action-pipeline-name>' is now running.
 
 ### Running multiple Actions
 
-You can run multiple actions pipeline within the same command. Simply provide multiple 
+You can run multiple actions pipeline within the same command. Simply provide multiple
 config files by restating the "-c" command line argument.
 
 For example,
@@ -177,14 +179,12 @@ summary of processing results.
 Actions Pipeline with name '<action-pipeline-name' has been stopped.
 ```
 
-
 ## Supported Events
 
 Two event types are currently supported. Read more about them below.
 
 - [Entity Change Event V1](./docs/events/entity-change-event.md)
 - [Metadata Change Log V1](./docs/events/metadata-change-log-event.md)
-
 
 ## Supported Event Sources
 
@@ -196,7 +196,7 @@ Currently, the following event sources are supported:
 ## Supported Actions
 
 By default, DataHub supports a set of standard actions plugins. These can be found inside the folder
-`src/datahub-actions/plugins`. 
+`src/datahub-actions/plugins`.
 
 Some pre-included Actions include
 
@@ -205,12 +205,11 @@ Some pre-included Actions include
 - [Slack](./docs/actions/slack.md)
 - [Microsoft Teams](./docs/actions/teams.md)
 
-
 ## Development
 
 ### Build and Test
 
-Notice that we support all actions command using a separate `datahub-actions` CLI entry point. Feel free 
+Notice that we support all actions command using a separate `datahub-actions` CLI entry point. Feel free
 to use this during development.
 
 ```
@@ -232,22 +231,19 @@ datahub-actions actions -c ../examples/executor.yaml -c ../examples/hello_world.
 
 ### Developing a Transformer
 
-To develop a new Transformer, check out the [Developing a Transformer](./docs/guides/developing-a-transformer.md) guide. 
+To develop a new Transformer, check out the [Developing a Transformer](./docs/guides/developing-a-transformer.md) guide.
 
 ### Developing an Action
 
-To develop a new Action, check out the [Developing an Action](./docs/guides/developing-an-action.md) guide. 
-
+To develop a new Action, check out the [Developing an Action](./docs/guides/developing-an-action.md) guide.
 
 ## Contributing
 
 Contributing guidelines follow those of the [main DataHub project](https://github.com/datahub-project/datahub/blob/master/docs/CONTRIBUTING.md). We are accepting contributions for Actions, Transformers, and general framework improvements (tests, error handling, etc).
 
-
 ## Resources
 
-Check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall. 
-
+Check out the [original announcement](https://www.youtube.com/watch?v=7iwNxHgqxtg&t=2189s) of the DataHub Actions Framework at the DataHub April 2022 Town Hall.
 
 ## License
 
